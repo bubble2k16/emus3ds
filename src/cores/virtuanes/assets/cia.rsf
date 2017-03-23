@@ -1,7 +1,7 @@
 BasicInfo:
-  Title                  : "SNES9x for 3DS"
+  Title                  : "VirtuaNES for 3DS"
   CompanyCode            : "00"
-  ProductCode            : "CTR-P-SNSX"
+  ProductCode            : "CTR-P-VNES"
   ContentType            : Application
   Logo                  : Nintendo # Nintendo / Licensed / Distributed / iQue / iQueForSystem
  
@@ -10,7 +10,7 @@ RomFs:
   RootPath                : "romfs"
  
 TitleInfo:
-  UniqueId                : 0x3849
+  UniqueId                : 0x384a
   Category                : Application
  
 CardInfo:

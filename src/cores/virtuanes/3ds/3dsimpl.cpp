@@ -216,9 +216,6 @@ char *impl3dsTitleText = "VirtuaNES for 3DS v0.9";
 
 //---------------------------------------------------------
 // Initializes the emulator core.
-//
-// You must call snd3dsSetSampleRate here to set 
-// the CSND's sampling rate.
 //---------------------------------------------------------
 bool impl3dsInitializeCore()
 {
@@ -317,7 +314,7 @@ void impl3dsFinalize()
 }
 
 
-int soundSamplesPerFrame = 0;
+int soundSamplesPerGeneration = 0;
 int soundSamplesPerSecond = 0;
 short soundSamples[1000];
 
@@ -330,9 +327,9 @@ short soundSamples[1000];
 //---------------------------------------------------------
 void impl3dsGenerateSoundSamples()
 {
-	if (nes && soundSamplesPerFrame)
+	if (nes && soundSamplesPerGeneration)
 	{
-		nes->apu->Process((unsigned char *)soundSamples, soundSamplesPerFrame * 2);
+		nes->apu->Process((unsigned char *)soundSamples, soundSamplesPerGeneration * 2);
 	}
 }
 
@@ -349,7 +346,7 @@ void impl3dsGenerateSoundSamples()
 //---------------------------------------------------------
 void impl3dsOutputSoundSamples(short *leftSamples, short *rightSamples)
 {
-	for (int i = 0; i < soundSamplesPerFrame; i++)
+	for (int i = 0; i < soundSamplesPerGeneration; i++)
 	{
 		leftSamples[i] = soundSamples[i];
 	}
@@ -374,12 +371,13 @@ bool impl3dsLoadROM(char *romFilePath)
 
 	// compute a sample rate closes to 32000 kHz.
 	//
-	soundSamplesPerFrame = 32000 / nes->nescfg->FrameRate;
-	soundSamplesPerSecond = soundSamplesPerFrame * nes->nescfg->FrameRate;
+    int numberOfGenerationsPerSecond = nes->nescfg->FrameRate * 2;
+    soundSamplesPerGeneration = 32000 / numberOfGenerationsPerSecond;
+	soundSamplesPerSecond = soundSamplesPerGeneration * numberOfGenerationsPerSecond;
 	snd3dsSetSampleRate(
 		false,
 		soundSamplesPerSecond, 
-		soundSamplesPerFrame, 
+		soundSamplesPerGeneration, 
 		true);
 	
 	Config.sound.nRate = soundSamplesPerSecond;
