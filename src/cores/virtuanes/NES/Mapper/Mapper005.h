@@ -46,14 +46,14 @@ protected:
 	BYTE	chr_type;
 	BYTE	chr_mode;		// $5120-$512B use
 	BYTE	chr_page[2][8];		// $5120-$512B
-	LPBYTE	BG_MEM_BANK[8];		// BGƒpƒ^[ƒ“—pƒoƒ“ƒN
+	LPBYTE	BG_MEM_BANK[8];		// BGï¿½pï¿½^ï¿½[ï¿½ï¿½ï¿½pï¿½oï¿½ï¿½ï¿½N
 	BYTE	BG_MEM_PAGE[8];
 
 	BYTE	irq_status;		// $5204(R)
 	BYTE	irq_enable;		// $5204(W)
 	BYTE	irq_line;		// $5203
 	BYTE	irq_scanline;
-	BYTE	irq_clear;		// HSync‚Åg—p
+	BYTE	irq_clear;		// HSyncï¿½Ågï¿½p
 	BYTE	irq_type;
 
 	BYTE	mult_a, mult_b;		// $5205-$5206

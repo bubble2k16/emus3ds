@@ -110,9 +110,11 @@ SMenuItem optionsForTurboFire[] = {
 };
 
 SMenuItem optionsForButtons[] = {
-    MENU_MAKE_DIALOG_ACTION (0,         "None",          ""),
-    MENU_MAKE_DIALOG_ACTION (BTNNES_A,  "NES 'A'",         ""),
-    MENU_MAKE_DIALOG_ACTION (BTNNES_B,  "NES 'B'",         ""),
+    MENU_MAKE_DIALOG_ACTION (0,             "None",             ""),
+    MENU_MAKE_DIALOG_ACTION (BTNNES_A,      "NES 'A'",          ""),
+    MENU_MAKE_DIALOG_ACTION (BTNNES_B,      "NES 'B'",          ""),
+    MENU_MAKE_DIALOG_ACTION (BTNNES_SELECT, "NES 'SELECT'",     ""),
+    MENU_MAKE_DIALOG_ACTION (BTNNES_START,  "NES 'START'",      ""),
     MENU_MAKE_LASTITEM  ()
 };
 
@@ -177,8 +179,9 @@ SMenuItem optionsForDisk[] =
 // marked 'do not modify'.
 //-------------------------------------------------------
 SMenuItem emulatorMenu[] = {
-    MENU_MAKE_HEADER2   ("Resume"),                 // Do not modify
+    MENU_MAKE_HEADER2   ("Emulator"),               // Do not modify
     MENU_MAKE_ACTION    (1000, "  Resume Game"),    // Do not modify
+    MENU_MAKE_PICKER2   (30000,"  Choose Disk", "", optionsForDisk, DIALOGCOLOR_CYAN),
     MENU_MAKE_HEADER2   (""),
 
     MENU_MAKE_HEADER2   ("Savestates"),
@@ -192,11 +195,6 @@ SMenuItem emulatorMenu[] = {
     MENU_MAKE_ACTION    (3002, "  Load Slot #2"),   // Do not modify
     MENU_MAKE_ACTION    (3003, "  Load Slot #3"),   // Do not modify
     MENU_MAKE_ACTION    (3004, "  Load Slot #4"),   // Do not modify
-    MENU_MAKE_HEADER2   (""),
-
-    MENU_MAKE_HEADER2   ("Famicon Disk System"),
-    MENU_MAKE_PICKER    (30000, "  Choose Disk", "", optionsForDisk, DIALOGCOLOR_CYAN),
-    
     MENU_MAKE_HEADER2   (""),
 
     MENU_MAKE_HEADER2   ("Others"),                 // Do not modify
@@ -443,6 +441,28 @@ bool impl3dsLoadROM(char *romFilePath)
 
 	nes->Reset();
 
+    // If this is a FDS game, enable the FDS menu.
+    //
+    int fdsDiskNo = nes->rom->GetDiskNo();
+
+    for (int i = 0; ; i++)
+    {
+        if (emulatorMenu[i].Type == MENUITEM_LASTITEM)
+            break;
+        if (emulatorMenu[i].ID == 30000)
+        {
+            if (fdsDiskNo > 0) 
+                emulatorMenu[i].Type = MENUITEM_PICKER2;
+            else
+                emulatorMenu[i].Type = MENUITEM_DISABLED;
+            break;
+        }
+    }
+    for (int i = 1; i <= 8; i++)
+        optionsForDisk[i].Type = (fdsDiskNo >= i) ? MENUITEM_ACTION : MENUITEM_DISABLED;
+
+
+
 	return true;
 }
 
@@ -621,6 +641,7 @@ void impl3dsRenderDrawTextureToMainScreen(int textureIndex)
     gpu3dsSetTextureEnvironmentReplaceColor();
     gpu3dsDrawRectangle(0, 0, 400, 240, 0, 0x000000ff);
 
+    gpu3dsSetTextureEnvironmentReplaceTexture0();
     gpu3dsBindTextureMainScreen(nesMainScreenTarget[textureIndex], GPU_TEXUNIT0);
 	switch (settings3DS.ScreenStretch)
 	{

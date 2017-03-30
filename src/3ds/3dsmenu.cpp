@@ -239,7 +239,8 @@ void menu3dsDrawItems(
             gauge[max] = 0;
             ui3dsDrawStringWithNoWrapping(245, y, 320 - horizontalPadding, y + fontHeight, color, HALIGN_RIGHT, gauge);
         }
-        else if (currentTab->MenuItems[i].Type == MENUITEM_PICKER)
+        else if (currentTab->MenuItems[i].Type == MENUITEM_PICKER ||
+            currentTab->MenuItems[i].Type == MENUITEM_PICKER2)
         {
             color = normalItemTextColor;
             if (currentTab->SelectedItemIndex == i)
@@ -247,19 +248,22 @@ void menu3dsDrawItems(
 
             ui3dsDrawStringWithNoWrapping(horizontalPadding, y, 160, y + fontHeight, color, HALIGN_LEFT, menuTextBuffer);
 
-            snprintf(selectedTextBuffer, 511, "????");
-            if (currentTab->MenuItems[i].PickerItems != NULL)
+            if (currentTab->MenuItems[i].Type == MENUITEM_PICKER)
             {
-                int j = 0;
-                SMenuItem *pickerItems = (SMenuItem *)currentTab->MenuItems[i].PickerItems;
-                for (j = 0; pickerItems[j].Type == MENUITEM_ACTION; j++)
+                snprintf(selectedTextBuffer, 511, "????");
+                if (currentTab->MenuItems[i].PickerItems != NULL)
                 {
-                    if (pickerItems[j].ID == currentTab->MenuItems[i].Value)
+                    int j = 0;
+                    SMenuItem *pickerItems = (SMenuItem *)currentTab->MenuItems[i].PickerItems;
+                    for (j = 0; pickerItems[j].Type == MENUITEM_ACTION; j++)
                     {
-                        snprintf(selectedTextBuffer, 511, "%s", pickerItems[j].Text, j);
+                        if (pickerItems[j].ID == currentTab->MenuItems[i].Value)
+                        {
+                            snprintf(selectedTextBuffer, 511, "%s", pickerItems[j].Text, j);
+                        }
                     }
+                    ui3dsDrawStringWithNoWrapping(160, y, 320 - horizontalPadding, y + fontHeight, color, HALIGN_RIGHT, selectedTextBuffer);
                 }
-                ui3dsDrawStringWithNoWrapping(160, y, 320 - horizontalPadding, y + fontHeight, color, HALIGN_RIGHT, selectedTextBuffer);
             }
         }
 
@@ -644,7 +648,8 @@ int menu3dsMenuSelectItem(bool (*itemChangedCallback)(int ID, int value))
                     currentTab->MenuItems[currentTab->SelectedItemIndex].Value = 0;
                 menu3dsDrawEverything();
             }
-            if (currentTab->MenuItems[currentTab->SelectedItemIndex].Type == MENUITEM_PICKER)
+            if (currentTab->MenuItems[currentTab->SelectedItemIndex].Type == MENUITEM_PICKER ||
+                currentTab->MenuItems[currentTab->SelectedItemIndex].Type == MENUITEM_PICKER2)
             {
                 snprintf(menuTextBuffer, 511, "%s", currentTab->MenuItems[currentTab->SelectedItemIndex].Text);
                 int resultValue = menu3dsShowDialog(menuTextBuffer, 
@@ -659,15 +664,16 @@ int menu3dsMenuSelectItem(bool (*itemChangedCallback)(int ID, int value))
                     {
                         bool returnFromMenu = itemChangedCallback(currentTab->MenuItems[currentTab->SelectedItemIndex].ID, resultValue);
                         if (returnFromMenu)
+                        {
+                            menu3dsDrawEverything();
+                            menu3dsHideDialog();
                             return -1;
+                        }
                     }
-                    
                     currentTab->MenuItems[currentTab->SelectedItemIndex].Value = resultValue;
                 }
                 menu3dsDrawEverything();
                 menu3dsHideDialog();
-
-
             }
         }
         if (keysDown & KEY_UP || ((thisKeysHeld & KEY_UP) && (framesDKeyHeld > 15) && (framesDKeyHeld % 2 == 0)))
@@ -880,6 +886,25 @@ int menu3dsGetValueByID(int tabIndex, int ID)
     }
     return -1;
 }
+
+
+//-------------------------------------------------------
+// Gets the menu item by its ID.
+//-------------------------------------------------------
+SMenuItem* menu3dsGetMenuItemByID(int tabIndex, int ID)
+{
+    SMenuTab *currentTab = &menuTab[tabIndex];
+
+    for (int i = 0; i < currentTab->ItemCount; i++)
+    {
+        if (currentTab->MenuItems[i].ID == ID)
+        {
+            return &currentTab->MenuItems[i];
+        }
+    }
+    return NULL;
+}
+
 
 
 //-------------------------------------------------------

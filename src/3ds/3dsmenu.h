@@ -9,16 +9,19 @@
 #define MENUITEM_CHECKBOX           3
 #define MENUITEM_GAUGE              4
 #define MENUITEM_PICKER             5
+#define MENUITEM_PICKER2            6
 #define MENUITEM_LASTITEM           9999
 
 typedef struct
 {
     int     Type;               // -1 - Disabled
                                 // 0 - Header
-                                // 1 - Action 
-                                // 2 - Checkbox
-                                // 3 - Gauge
-                                // 4 - Picker
+                                // 1 - Header 2
+                                // 2 - Action 
+                                // 3 - Checkbox
+                                // 4 - Gauge
+                                // 5 - Picker
+                                // 6 - Picker 2 (doesn't show the selected item)
 
     int     ID;                 
     
@@ -110,6 +113,12 @@ int menu3dsGetValueByID(int tabIndex, int ID);
 
 
 //-------------------------------------------------------
+// Gets the menu item by its ID.
+//-------------------------------------------------------
+SMenuItem* menu3dsGetMenuItemByID(int tabIndex, int ID);
+
+
+//-------------------------------------------------------
 // Slides the menu up and runs it until an action is 
 // selected, or the user quits by pressing B.
 //
@@ -172,6 +181,9 @@ bool menu3dsTakeScreenshot(const char *path);
 
 #define MENU_MAKE_PICKER(ID, text, pickerDescription, pickerOptions, backColor) \
     { MENUITEM_PICKER, ID, text, NULL, 0, 0, 0, pickerDescription, sizeof(pickerOptions)/sizeof(SMenuItem), pickerOptions, backColor }
+
+#define MENU_MAKE_PICKER2(ID, text, pickerDescription, pickerOptions, backColor) \
+    { MENUITEM_PICKER2, ID, text, NULL, 0, 0, 0, pickerDescription, sizeof(pickerOptions)/sizeof(SMenuItem), pickerOptions, backColor }
 
 #define MENU_MAKE_LASTITEM() \
     { MENUITEM_LASTITEM }
