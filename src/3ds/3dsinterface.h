@@ -204,10 +204,23 @@ extern SMenuItem cheatMenu[];
 
 
 //---------------------------------------------------------
+// This function will be called everytime the user
+// selects an action on the menu.
+//
+// Returns true if the menu should close and the game 
+// should resume
+//---------------------------------------------------------
+bool impl3dsOnMenuSelected(int ID);
+
+
+//---------------------------------------------------------
 // This function will be called everytime the user 
 // changes the value in the specified menu item.
+//
+// Returns true if the menu should close and the game 
+// should resume
 //---------------------------------------------------------
-void impl3dsOnMenuSelectedChanged(int ID, int value);
+bool impl3dsOnMenuSelectedChanged(int ID, int value);
 
 
 //---------------------------------------------------------

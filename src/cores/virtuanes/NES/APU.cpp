@@ -44,6 +44,7 @@ APU::APU( NES* parent )
 	ZEROMEMORY( lowpass_filter, sizeof(lowpass_filter) );
 	ZEROMEMORY( &queue, sizeof(queue) );
 	ZEROMEMORY( &exqueue, sizeof(exqueue) );
+	ZEROMEMORY( &queueDAC, sizeof(queueDAC) );
 
 	for( INT i = 0; i < 16; i++ ) {
 		m_bMute[i] = TRUE;
@@ -54,19 +55,56 @@ APU::~APU()
 {
 }
 
-void	APU::SetQueue( INT writetime, WORD addr, BYTE data )
+void	APU::SetQueue( u64 writetime, WORD addr, BYTE data )
 {
+	/*if( queue.wrptr == queue.rdptr )
+	{
+		if (writetime - queue.data[queue.wrptr].time >= 0x1ff && new_elapsed_time == 0)
+			new_elapsed_time = writetime;
+	}*/
+	
 	queue.data[queue.wrptr].time = writetime;
 	queue.data[queue.wrptr].addr = addr;
 	queue.data[queue.wrptr].data = data;
-	queue.wrptr++;
-	queue.wrptr&=QUEUE_LENGTH-1;
+	
+	// Write to wrptr after completing both increment and masking.
+	// (helps prevent race conditions?)
+	//queue.wrptr++;
+	//queue.wrptr&=QUEUE_LENGTH-1;
+	queue.wrptr = (queue.wrptr + 1) & (QUEUE_LENGTH - 1);
+
 	if( queue.wrptr == queue.rdptr ) {
 		DEBUGOUT( "queue overflow.\n" );
 	}
 }
 
-BOOL	APU::GetQueue( INT writetime, QUEUEDATA& ret )
+// Fixed: Writes to the DAC register is now synced to the emulation
+// cycles so that the samples play correctly.
+//
+void	APU::SetQueueDAC( u64 writetime, WORD addr, BYTE data )
+{
+	if( queueDAC.wrptr == queueDAC.rdptr )
+	{
+		if (writetime - queueDAC.data[queueDAC.wrptr].time >= 0x1ff && new_elapsed_time == 0)
+			new_elapsed_time = writetime;
+	}
+
+	queueDAC.data[queueDAC.wrptr].time = writetime;
+	queueDAC.data[queueDAC.wrptr].addr = addr;
+	queueDAC.data[queueDAC.wrptr].data = data;
+
+	// Write to wrptr after completing both increment and masking.
+	// (helps prevent race conditions?)
+	//queueDAC.wrptr++;
+	//queueDAC.wrptr&=QUEUE_LENGTH-1;
+	queueDAC.wrptr = (queueDAC.wrptr + 1) & (QUEUE_LENGTH - 1);
+
+	if( queueDAC.wrptr == queueDAC.rdptr ) {
+		DEBUGOUT( "queue overflow.\n" );
+	}
+}
+
+BOOL	APU::GetQueue( u64 writetime, QUEUEDATA& ret )
 {
 	if( queue.wrptr == queue.rdptr ) {
 		return	FALSE;
@@ -80,19 +118,48 @@ BOOL	APU::GetQueue( INT writetime, QUEUEDATA& ret )
 	return	FALSE;
 }
 
-void	APU::SetExQueue( INT writetime, WORD addr, BYTE data )
+// Fixed: Reads from the DAC register is now synced to the emulation
+// cycles so that the samples play correctly.
+//
+BOOL	APU::GetQueueDAC( u64 writetime, QUEUEDATA& ret )
 {
+	if( queueDAC.wrptr == queueDAC.rdptr ) {
+		return	FALSE;
+	}
+	if( queueDAC.data[queueDAC.rdptr].time <= writetime ) {
+		ret = queueDAC.data[queueDAC.rdptr];
+		queueDAC.rdptr++;
+		queueDAC.rdptr&=QUEUE_LENGTH-1;
+		return	TRUE;
+	}
+	return	FALSE;
+}
+
+void	APU::SetExQueue( u64 writetime, WORD addr, BYTE data )
+{
+	/*if( exqueue.wrptr == exqueue.rdptr )
+	{
+		if (writetime - exqueue.data[exqueue.wrptr].time >= 0x1ff && new_elapsed_time == 0)
+			new_elapsed_time = writetime;
+	}*/
+		
 	exqueue.data[exqueue.wrptr].time = writetime;
 	exqueue.data[exqueue.wrptr].addr = addr;
 	exqueue.data[exqueue.wrptr].data = data;
-	exqueue.wrptr++;
-	exqueue.wrptr&=QUEUE_LENGTH-1;
+
+	// Write to wrptr after completing both increment and masking.
+	// (helps prevent race conditions?)
+	//exqueue.wrptr++;
+	//exqueue.wrptr&=QUEUE_LENGTH-1;
+	exqueue.wrptr = (exqueue.wrptr + 1) & (QUEUE_LENGTH - 1);
+
 	if( exqueue.wrptr == exqueue.rdptr ) {
 		DEBUGOUT( "exqueue overflow.\n" );
 	}
 }
 
-BOOL	APU::GetExQueue( INT writetime, QUEUEDATA& ret )
+
+BOOL	APU::GetExQueue( u64 writetime, QUEUEDATA& ret )
 {
 	if( exqueue.wrptr == exqueue.rdptr ) {
 		return	FALSE;
@@ -106,20 +173,24 @@ BOOL	APU::GetExQueue( INT writetime, QUEUEDATA& ret )
 	return	FALSE;
 }
 
+
 void	APU::QueueClear()
 {
 	ZEROMEMORY( &queue, sizeof(queue) );
 	ZEROMEMORY( &exqueue, sizeof(exqueue) );
+	ZEROMEMORY( &queueDAC, sizeof(queueDAC) );
 }
 
 void	APU::QueueFlush()
 {
-	while( queue.wrptr != queue.rdptr ) {
+	int wrptr = queue.wrptr;
+	while( wrptr != queue.rdptr ) {
 		WriteProcess( queue.data[queue.rdptr].addr, queue.data[queue.rdptr].data );
 		queue.rdptr++;
 		queue.rdptr&=QUEUE_LENGTH-1;
 	}
 
+	wrptr = exqueue.wrptr;
 	while( exqueue.wrptr != exqueue.rdptr ) {
 		WriteExProcess( exqueue.data[exqueue.rdptr].addr, exqueue.data[exqueue.rdptr].data );
 		exqueue.rdptr++;
@@ -144,8 +215,10 @@ void	APU::Reset()
 {
 	ZEROMEMORY( &queue, sizeof(queue) );
 	ZEROMEMORY( &exqueue, sizeof(exqueue) );
+	ZEROMEMORY( &queueDAC, sizeof(queueDAC) );
 
 	elapsed_time = 0;
+	new_elapsed_time = 0;
 
 	FLOAT	fClock = nes->nescfg->CpuClock;
 	INT	nRate = (INT)Config.sound.nRate;
@@ -175,7 +248,12 @@ void	APU::Write( WORD addr, BYTE data )
 	// $4018��VirtuaNES�ŗL�|�[�g
 	if( addr >= 0x4000 && addr <= 0x401F ) {
 		internal.SyncWrite( addr, data );
-		SetQueue( nes->cpu->GetTotalCycles(), addr, data );
+
+		// Fix: If we are writing to 4011, put this in the synchronized DAC queue.
+		if (addr == 0x4011)
+			SetQueueDAC( nes->cpu->GetTotalCycles(), addr, data );
+		else
+			SetQueue( nes->cpu->GetTotalCycles(), addr, data );
 	}
 }
 
@@ -204,7 +282,11 @@ BYTE	data = 0;
 
 void	APU::ExWrite( WORD addr, BYTE data )
 {
-	SetExQueue( nes->cpu->GetTotalCycles(), addr, data );
+	// Fix: If we are writing to 4011, put this in the synchronized DAC queue.
+	if (addr == 0x5011)
+		SetQueueDAC( nes->cpu->GetTotalCycles(), addr, data );
+	else
+		SetExQueue( nes->cpu->GetTotalCycles(), addr, data );
 
 	if( exsound_select & 0x04 ) {
 		if( addr >= 0x4040 && addr < 0x4100 ) {
@@ -277,7 +359,7 @@ DWORD	dwLength = dwSize / (nBits/8);
 
 INT	output;
 QUEUEDATA q;
-DWORD	writetime;
+double	writetime;
 
 LPSHORT	pSoundBuf = m_SoundBuffer;
 INT	nCcount = 0;
@@ -347,16 +429,26 @@ INT	nFilterType = Config.sound.nFilterType;
 	vol[23] = bMute[8]?(FME7_VOL*nVolume[11]*nMasterVolume)/(100*100):0;
 
 //	double	cycle_rate = ((double)FRAME_CYCLES*60.0/12.0)/(double)Config.sound.nRate;
-	double	cycle_rate = ((double)nes->nescfg->FrameCycles*60.0/12.0)/(double)Config.sound.nRate;
+	//double	cycle_rate = ((double)nes->nescfg->FrameCycles*60.0/12.0)/(double)Config.sound.nRate;
+	cycle_rate = ((double)nes->nescfg->FrameCycles*60.0/12.0)/(double)Config.sound.nRate;
 
 	// CPU�T�C�N���������[�v���Ă��܂������̑΍􏈗�
-	if( elapsed_time > nes->cpu->GetTotalCycles() ) {
+	//if( elapsed_time > nes->cpu->GetTotalCycles() ) {
+		// This flushes writes to the non-DAC registers
 		QueueFlush();
+	//}
+
+	if (new_elapsed_time != 0)
+	{
+		elapsed_time = new_elapsed_time;
+		new_elapsed_time = 0;
 	}
 
-	while( dwLength-- ) {
-		writetime = (DWORD)elapsed_time;
-
+	while( dwLength-- ) 
+	{
+		writetime = elapsed_time;
+		
+		/*
 		while( GetQueue( writetime, q ) ) {
 			WriteProcess( q.addr, q.data );
 		}
@@ -364,7 +456,17 @@ INT	nFilterType = Config.sound.nFilterType;
 		while( GetExQueue( writetime, q ) ) {
 			WriteExProcess( q.addr, q.data );
 		}
+		*/
 
+		// We handle writes to the DAC here
+		//
+		while( GetQueueDAC( writetime, q ) ) {
+			if (q.addr == 0x4011)
+				WriteProcess( q.addr, q.data );
+			if (q.addr == 0x5011)
+				WriteExProcess( q.addr, q.data );
+		}
+		
 		// 0-4:internal 5-7:VRC6 8:VRC7 9:FDS 10-12:MMC5 13-20:N106 21-23:FME7
 		output = 0;
 		output += internal.Process( 0 )*vol[0];
@@ -493,23 +595,32 @@ INT	nFilterType = Config.sound.nFilterType;
 			*lpBuffer++ = (output>>8)^0x80;
 		}
 
-		if( nCcount < 0x0100 )
-			pSoundBuf[nCcount++] = (SHORT)output;
+		//if( nCcount < 0x0100 )
+		//	pSoundBuf[nCcount++] = (SHORT)output;
 
 //		elapsedtime += cycle_rate;
-		elapsed_time += cycle_rate;
+		if (new_elapsed_time != 0)
+		{
+			elapsed_time = new_elapsed_time;
+			new_elapsed_time = 0;
+		}
+		else
+			elapsed_time += cycle_rate;
 	}
 
+/*
 #if	1
-	if( elapsed_time > ((nes->nescfg->FrameCycles/24)+nes->cpu->GetTotalCycles()) ) {
-		elapsed_time = nes->cpu->GetTotalCycles();
+	u64 total_cycles = nes->cpu->GetTotalCycles();
+	if( elapsed_time > total_cycles + ((double)(nes->nescfg->FrameCycles/24)) ) {
+		elapsed_time = total_cycles;
 	}
-	if( (elapsed_time+(nes->nescfg->FrameCycles/6)) < nes->cpu->GetTotalCycles() ) {
-		elapsed_time = nes->cpu->GetTotalCycles();
+	if( elapsed_time < total_cycles - ((double)(nes->nescfg->FrameCycles/6)) ) {
+		elapsed_time = total_cycles;
 	}
 #else
 	elapsed_time = nes->cpu->GetTotalCycles();
 #endif
+*/
 }
 
 // �`�����l���̎��g���擾�T�u���[�`��(NSF�p)

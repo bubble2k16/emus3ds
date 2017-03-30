@@ -116,7 +116,7 @@ int menu3dsGetValueByID(int tabIndex, int ID);
 // NOTE: You must call menu3dsHideMenu to transit
 //       the menu away.
 //-------------------------------------------------------
-int menu3dsShowMenu(void (*itemChangedCallback)(int ID, int value), bool animateMenu);
+int menu3dsShowMenu(bool (*itemChangedCallback)(int ID, int value), bool animateMenu);
 
 
 //-------------------------------------------------------

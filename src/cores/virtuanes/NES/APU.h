@@ -68,9 +68,9 @@ public:
 
 	void	SaveState( LPBYTE p );
 	void	LoadState( LPBYTE p );
-protected:
+//protected:
 	typedef	struct {
-		INT	time;
+		u64		time;
 		WORD	addr;
 		BYTE	data;
 		BYTE	reserved;
@@ -82,11 +82,16 @@ protected:
 		QUEUEDATA	data[QUEUE_LENGTH];
 	} QUEUE, *LPQUEUE;
 
-	void	SetQueue( INT writetime, WORD addr, BYTE data );
-	BOOL	GetQueue( INT writetime, QUEUEDATA& ret );
+	void	SetQueue( u64 writetime, WORD addr, BYTE data );
+	BOOL	GetQueue( u64 writetime, QUEUEDATA& ret );
 
-	void	SetExQueue( INT writetime, WORD addr, BYTE data );
-	BOOL	GetExQueue( INT writetime, QUEUEDATA& ret );
+	void	SetExQueue( u64 writetime, WORD addr, BYTE data );
+	BOOL	GetExQueue( u64 writetime, QUEUEDATA& ret );
+
+	// Create a separate queue for synchronized DAC writes.
+	//
+	void	SetQueueDAC( u64 writetime, WORD addr, BYTE data );
+	BOOL	GetQueueDAC( u64 writetime, QUEUEDATA& ret );
 
 	void	QueueFlush();
 
@@ -98,9 +103,17 @@ protected:
 	QUEUE	queue;
 	QUEUE	exqueue;
 
+	// Added these queues for writing to the DAC output
+	//
+	QUEUE	queueDAC;
+
 	BYTE	exsound_select;
 
 	double	elapsed_time;
+	double  new_elapsed_time;
+
+	double  cycle_rate;
+	double  sample_time;
 //	INT	elapsed_time;
 
 	// Filter

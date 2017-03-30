@@ -37,6 +37,7 @@
 #include "MMU.h"
 #include "APU.h"
 #include "PPU.h"
+#include "ROM.h"
 #include "NES.h"
 #include "Pad.h"
 #include "Config.h"
@@ -154,6 +155,60 @@ SMenuItem optionMenu[] = {
 };
 
 
+//-------------------------------------------------------
+SMenuItem optionsForDisk[] =
+{
+    MENU_MAKE_DIALOG_ACTION (0, "Eject Disk",               ""),
+    MENU_MAKE_DIALOG_ACTION (1, "Change to Disk 1 Side A",  ""),
+    MENU_MAKE_DIALOG_ACTION (2, "Change to Disk 1 Side B",  ""),
+    MENU_MAKE_DIALOG_ACTION (3, "Change to Disk 2 Side A",  ""),
+    MENU_MAKE_DIALOG_ACTION (4, "Change to Disk 2 Side B",  ""),
+    MENU_MAKE_DIALOG_ACTION (5, "Change to Disk 3 Side A",  ""),
+    MENU_MAKE_DIALOG_ACTION (6, "Change to Disk 3 Side B",  ""),
+    MENU_MAKE_DIALOG_ACTION (7, "Change to Disk 4 Side A",  ""),
+    MENU_MAKE_DIALOG_ACTION (8, "Change to Disk 4 Side B",  ""),
+    MENU_MAKE_LASTITEM  ()  
+};
+
+
+//-------------------------------------------------------
+// Standard in-game emulator menu.
+// You should not modify those menu items that are
+// marked 'do not modify'.
+//-------------------------------------------------------
+SMenuItem emulatorMenu[] = {
+    MENU_MAKE_HEADER2   ("Resume"),                 // Do not modify
+    MENU_MAKE_ACTION    (1000, "  Resume Game"),    // Do not modify
+    MENU_MAKE_HEADER2   (""),
+
+    MENU_MAKE_HEADER2   ("Savestates"),
+    MENU_MAKE_ACTION    (2001, "  Save Slot #1"),   // Do not modify
+    MENU_MAKE_ACTION    (2002, "  Save Slot #2"),   // Do not modify
+    MENU_MAKE_ACTION    (2003, "  Save Slot #3"),   // Do not modify
+    MENU_MAKE_ACTION    (2004, "  Save Slot #4"),   // Do not modify
+    MENU_MAKE_HEADER2   (""),   
+    
+    MENU_MAKE_ACTION    (3001, "  Load Slot #1"),   // Do not modify
+    MENU_MAKE_ACTION    (3002, "  Load Slot #2"),   // Do not modify
+    MENU_MAKE_ACTION    (3003, "  Load Slot #3"),   // Do not modify
+    MENU_MAKE_ACTION    (3004, "  Load Slot #4"),   // Do not modify
+    MENU_MAKE_HEADER2   (""),
+
+    MENU_MAKE_HEADER2   ("Famicon Disk System"),
+    MENU_MAKE_PICKER    (30000, "  Choose Disk", "", optionsForDisk, DIALOGCOLOR_CYAN),
+    
+    MENU_MAKE_HEADER2   (""),
+
+    MENU_MAKE_HEADER2   ("Others"),                 // Do not modify
+    MENU_MAKE_ACTION    (4001, "  Take Screenshot"),// Do not modify
+    MENU_MAKE_ACTION    (5001, "  Reset Console"),  // Do not modify
+    MENU_MAKE_ACTION    (6001, "  Exit"),           // Do not modify
+    MENU_MAKE_LASTITEM  ()
+    };
+
+
+
+
 
 //------------------------------------------------------------------------
 // Memory Usage = 0.003 MB   for 4-point rectangle (triangle strip) vertex buffer
@@ -199,7 +254,7 @@ extern SSettings3DS settings3DS;
 //---------------------------------------------------------
 // Provide a comma-separated list of file extensions
 //---------------------------------------------------------
-char *impl3dsRomExtensions = "nes";
+char *impl3dsRomExtensions = "nes,fds";
 
 
 //---------------------------------------------------------
@@ -212,7 +267,7 @@ char *impl3dsTitleImage = "./virtuanes_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "VirtuaNES for 3DS v0.9";
+char *impl3dsTitleText = "VirtuaNES for 3DS v0.91";
 
 //---------------------------------------------------------
 // Initializes the emulator core.
@@ -271,14 +326,14 @@ bool impl3dsInitializeCore()
     if (emulator.isReal3DS)
     {
         gpu3dsAllocVertexList(&GPU3DSExt.rectangleVertexes, RECTANGLE_BUFFER_SIZE, sizeof(SVertexColor), 2, SVERTEXCOLOR_ATTRIBFORMAT);
-        gpu3dsAllocVertexList(&GPU3DSExt.quadVertexes, REAL3DS_VERTEX_BUFFER_SIZE, sizeof(STileVertex), 2, STILEVERTEX_ATTRIBFORMAT);
-        gpu3dsAllocVertexList(&GPU3DSExt.tileVertexes, REAL3DS_TILE_BUFFER_SIZE, sizeof(STileVertex), 2, STILEVERTEX_ATTRIBFORMAT);
+        gpu3dsAllocVertexList(&GPU3DSExt.quadVertexes, REAL3DS_VERTEX_BUFFER_SIZE, sizeof(SVertexTexCoord), 2, SVERTEXTEXCOORD_ATTRIBFORMAT);
+        gpu3dsAllocVertexList(&GPU3DSExt.tileVertexes, REAL3DS_TILE_BUFFER_SIZE, sizeof(SVertexTexCoord), 2, SVERTEXTEXCOORD_ATTRIBFORMAT);
     }
     else
     {
         gpu3dsAllocVertexList(&GPU3DSExt.rectangleVertexes, RECTANGLE_BUFFER_SIZE, sizeof(SVertexColor), 2, SVERTEXCOLOR_ATTRIBFORMAT);
-        gpu3dsAllocVertexList(&GPU3DSExt.quadVertexes, CITRA_VERTEX_BUFFER_SIZE, sizeof(STileVertex), 2, STILEVERTEX_ATTRIBFORMAT);
-        gpu3dsAllocVertexList(&GPU3DSExt.tileVertexes, CITRA_TILE_BUFFER_SIZE, sizeof(STileVertex), 2, STILEVERTEX_ATTRIBFORMAT);
+        gpu3dsAllocVertexList(&GPU3DSExt.quadVertexes, CITRA_VERTEX_BUFFER_SIZE, sizeof(SVertexTexCoord), 2, SVERTEXTEXCOORD_ATTRIBFORMAT);
+        gpu3dsAllocVertexList(&GPU3DSExt.tileVertexes, CITRA_TILE_BUFFER_SIZE, sizeof(SVertexTexCoord), 2, SVERTEXTEXCOORD_ATTRIBFORMAT);
     }
 
     if (GPU3DSExt.quadVertexes.ListBase == NULL ||
@@ -457,8 +512,8 @@ void impl3dsEmulationBegin()
 	gpu3dsSetTextureEnvironmentReplaceTexture0();
 	gpu3dsSetRenderTargetToTopFrameBuffer();
 	gpu3dsFlush();	
-	if (emulator.isReal3DS)
-		gpu3dsWaitForPreviousFlush();
+	//if (emulator.isReal3DS)
+	//	gpu3dsWaitForPreviousFlush();
 }
 
 
@@ -560,21 +615,26 @@ void impl3dsRenderTransferNESScreenToTexture(u32 *buffer, int textureIndex)
 void impl3dsRenderDrawTextureToMainScreen(int textureIndex)
 {
 	t3dsStartTiming(14, "Draw Texture");	
-	gpu3dsBindTextureMainScreen(nesMainScreenTarget[textureIndex], GPU_TEXUNIT0);
 
+    // Draw a black colored rectangle covering the entire screen.
+    //
+    gpu3dsSetTextureEnvironmentReplaceColor();
+    gpu3dsDrawRectangle(0, 0, 400, 240, 0, 0x000000ff);
+
+    gpu3dsBindTextureMainScreen(nesMainScreenTarget[textureIndex], GPU_TEXUNIT0);
 	switch (settings3DS.ScreenStretch)
 	{
 		case 0:
-			gpu3dsAddQuadVertexes(72, 0, 72 + 256, 240, 8, 0 + 16, 256 + 8, 240 + 16, 0);
+			gpu3dsAddQuadVertexes(72, 0, 328, 240, 8, 0 + 16, 264, 240 + 16, 0);
 			break;
 		case 1:
-			gpu3dsAddQuadVertexes(40, 0, 360, 240, 8, 0 + 16, 256 + 8, 240 + 16, 0);
+			gpu3dsAddQuadVertexes(40, 0, 360, 240, 8.2, 0 + 16, 263.8, 240 + 16, 0);
 			break;
 		case 2:
-			gpu3dsAddQuadVertexes(0, 0, 400, 240, 8, 0 + 16, 256 + 8, 240 + 16, 0);
+			gpu3dsAddQuadVertexes(0, 0, 400, 240, 8.2, 0 + 16, 263.8, 240 + 16, 0);
 			break;
 	}
-	gpu3dsDrawVertexes();
+    gpu3dsDrawVertexes();
 	t3dsEndTiming(14);
 
 	t3dsStartTiming(15, "Flush");
@@ -644,9 +704,11 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
 	}
 
 	skipDrawingPreviousFrame = skipDrawingFrame;
-
 	t3dsEndTiming(1);
 
+    //double cpucycles = nes->cpu->GetTotalCycles();
+    //double apucycles = nes->apu->elapsed_time;
+    //printf ("%8f\n", cpucycles - apucycles);
 }
 
 
@@ -737,14 +799,88 @@ bool impl3dsLoadState(int slotNumber)
 
 
 //---------------------------------------------------------
+// This function will be called everytime the user
+// selects an action on the menu.
+//
+// Returns true if the menu should close and the game 
+// should resume
+//---------------------------------------------------------
+bool impl3dsOnMenuSelected(int ID)
+{
+    return false;
+}
+
+
+
+//---------------------------------------------------------
 // This function will be called everytime the user 
 // changes the value in the specified menu item.
+//
+// Returns true if the menu should close and the game 
+// should resume
 //---------------------------------------------------------
-void impl3dsOnMenuSelectedChanged(int ID, int value)
+bool impl3dsOnMenuSelectedChanged(int ID, int value)
 {
+	gfxSetDoubleBuffering(GFX_BOTTOM, false);
+	gfxSwapBuffersGpu();
+	consoleInit(GFX_BOTTOM, NULL);
+	consoleClear();
+
     if (ID == 18000)
     {
         ui3dsSetFont(value);
+        return false;
+    }
+    if (ID == 30000)
+    {
+        switch (value)
+        {
+            case 0:
+                if( nes->rom->GetDiskNo() > 0 ) 
+                    nes->Command( NES::NESCMD_DISK_EJECT );
+                return true;
+                break;
+            case 1:
+                if( nes->rom->GetDiskNo() > 0 )
+                    nes->Command( NES::NESCMD_DISK_0A );
+                return true;
+                break;
+            case 2:
+                if( nes->rom->GetDiskNo() > 1 )
+                    nes->Command( NES::NESCMD_DISK_0B );
+                return true;
+                break;
+            case 3:
+                if( nes->rom->GetDiskNo() > 2 )
+                    nes->Command( NES::NESCMD_DISK_1A );
+                return true;
+                break;
+            case 4:
+                if( nes->rom->GetDiskNo() > 3 )
+                    nes->Command( NES::NESCMD_DISK_1B );
+                return true;
+                break;
+            case 5:
+                if( nes->rom->GetDiskNo() > 4 )
+                    nes->Command( NES::NESCMD_DISK_2A );
+                return true;
+                break;
+            case 6:
+                if( nes->rom->GetDiskNo() > 5 )
+                    nes->Command( NES::NESCMD_DISK_2B );
+                return true;
+                break;
+            case 7:
+                if( nes->rom->GetDiskNo() > 6 )
+                    nes->Command( NES::NESCMD_DISK_3A );
+                return true;
+                break;
+            case 8:
+                if( nes->rom->GetDiskNo() > 7 )
+                    nes->Command( NES::NESCMD_DISK_3B );
+                return true;
+                break;
+        }
     }
 }
 
@@ -908,26 +1044,6 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
         Config.sound.nVolume[0] = 100 + settings3DS.Volume * 100 / 4;
 
         Config.graphics.bAllSprite = settings3DS.OtherOptions[SETTINGS_ALLSPRITES];
-        /*
-        if (settings3DS.SRAMSaveInterval == 1)
-            Settings.AutoSaveDelay = 60;
-        else if (settings3DS.SRAMSaveInterval == 2)
-            Settings.AutoSaveDelay = 600;
-        else if (settings3DS.SRAMSaveInterval == 3)
-            Settings.AutoSaveDelay = 3600;
-        else if (settings3DS.SRAMSaveInterval == 4)
-            Settings.AutoSaveDelay = -1;
-        else
-        {
-            if (Settings.AutoSaveDelay == 60)
-                settings3DS.SRAMSaveInterval = 1;
-            else if (Settings.AutoSaveDelay == 600)
-                settings3DS.SRAMSaveInterval = 2;
-            else if (Settings.AutoSaveDelay == 3600)
-                settings3DS.SRAMSaveInterval = 3;
-            settingsChanged = true;
-        }
-        */
     }
 
     return settingsChanged;

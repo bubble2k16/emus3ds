@@ -45,7 +45,7 @@ u32 input3dsScanInputForEmulation()
         }
     }
 
-    if (keysDown & (KEY_SELECT))
+    if (keysDown & (KEY_R))
     {
         emulator.enableDebug = !emulator.enableDebug;
         printf ("Debug mode = %d\n", emulator.enableDebug);

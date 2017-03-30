@@ -17,8 +17,8 @@
 .fvec		uPadding8			; #9
 
 ; Constants
-;.constf RGBA8_TO_FLOAT4	(0.00392156862, 0, 0, 0)
-.constf RGBA8_TO_FLOAT4		(0.004032258064516, 0, 0, 0)	; Bug fix for 5-bit color conversion
+.constf RGBA8_TO_FLOAT4	(0.00392156862, 0, 0, 0)
+;.constf RGBA8_TO_FLOAT4		(0.004032258064516, 0, 0, 0)	; Bug fix for 5-bit color conversion
 
 .proc main
 	; outpos = projection * in.pos

@@ -33,8 +33,8 @@ class	Mapper;
 #define	IRQ_DPCM	0x08
 #define	IRQ_MAPPER	0x10
 #define	IRQ_MAPPER2	0x20
-#define	IRQ_TRIGGER	0x40		// one shot(‹ŒIRQ())
-#define	IRQ_TRIGGER2	0x80		// one shot(‹ŒIRQ_NotPending())
+#define	IRQ_TRIGGER	0x40		// one shot(ï¿½ï¿½IRQ())
+#define	IRQ_TRIGGER2	0x80		// one shot(ï¿½ï¿½IRQ_NotPending())
 
 #define	IRQ_MASK	(~(NMI_FLAG|IRQ_FLAG))
 
@@ -52,7 +52,7 @@ typedef	struct	{
 	BYTE	Y;
 	BYTE	S;
 
-	BYTE	INT_pending;	// Š„‚è‚İƒyƒ“ƒfƒBƒ“ƒOƒtƒ‰ƒO
+	BYTE	INT_pending;	// ï¿½ï¿½ï¿½èï¿½İƒyï¿½ï¿½ï¿½fï¿½Bï¿½ï¿½ï¿½Oï¿½tï¿½ï¿½ï¿½O
 } R6502;
 
 
@@ -79,7 +79,8 @@ public:
 	INT	GetDmaCycles();
 	void	SetDmaCycles( INT cycles );
 
-	INT	GetTotalCycles();
+	// Fix: changed to u64 to fix the overflow problem.
+	u64		GetTotalCycles();
 	void	SetTotalCycles( INT cycles );
 
 	void	SetContext( R6502 r )	{ R = r; }
@@ -93,8 +94,10 @@ protected:
 
 	R6502	R;
 
-	INT	TOTAL_cycles;	// CPUƒg[ƒ^ƒ‹ƒTƒCƒNƒ‹”
-	INT	DMA_cycles;	// DMAƒTƒCƒNƒ‹”
+	// Fix: changed to u64 to fix the overflow problem.
+	u64		TOTAL_cycles;	// CPUï¿½gï¿½[ï¿½^ï¿½ï¿½ï¿½Tï¿½Cï¿½Nï¿½ï¿½ï¿½ï¿½
+	
+	INT		DMA_cycles;	// DMAï¿½Tï¿½Cï¿½Nï¿½ï¿½ï¿½ï¿½
 
 	// PTR
 	LPBYTE	STACK;

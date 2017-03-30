@@ -779,7 +779,7 @@ public:
 	// �f�[�^
 	INT	nRenderMethod;
 	INT	nIRQtype;
-	BOOL	bFrameIRQ;
+	BOOL	bFrameIRQ = TRUE;		// Set to TRUE by default, fixes Qix
 	BOOL	bVideoMode;
 protected:
 private:

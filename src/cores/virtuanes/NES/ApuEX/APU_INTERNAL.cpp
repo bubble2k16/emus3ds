@@ -13,6 +13,9 @@
 
 #include "state.h"
 #include "rom.h"
+#include "mmu.h"
+#include "ppu.h"
+
 
 // Dummy
 #define	APU_CLOCK	1789772.5f

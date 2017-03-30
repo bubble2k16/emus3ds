@@ -26,6 +26,9 @@
 #include "rom.h"
 #include "mapper.h"
 
+#include "3dsemu.h"
+#include "3dsmain.h"
+
 /*--------------[ DEFINE                ]-------------------------------*/
 #define	DPCM_SYNCCLOCK	FALSE
 /*--------------[ EXTERNAL PROGRAM      ]-------------------------------*/
@@ -690,7 +693,12 @@ void	CPU::Reset()
 
 	R.INT_pending = 0;
 
+#ifndef EMU_RELEASE
+	TOTAL_cycles = 0x7f000000;
+#else
 	TOTAL_cycles = 0;
+#endif
+
 	DMA_cycles = 0;
 
 	// STACK quick access
@@ -712,7 +720,7 @@ void	CPU::SetDmaCycles( INT cycles )
 	DMA_cycles = cycles;
 }
 
-INT	CPU::GetTotalCycles()
+u64	CPU::GetTotalCycles()
 {
 	return	TOTAL_cycles;
 }
@@ -757,7 +765,7 @@ void	CPU::ClrIRQ( BYTE mask )
 INT	CPU::EXEC( INT request_cycles )
 {
 BYTE	opcode;		// �I�y�R�[�h
-INT	OLD_cycles = TOTAL_cycles;
+u64	OLD_cycles = TOTAL_cycles;
 INT	exec_cycles;
 BYTE	nmi_request, irq_request;
 BOOL	bClockProcess = m_bClockProcess;
@@ -795,6 +803,14 @@ register BYTE	DT;
 
 		nmi_request = irq_request = 0;
 		opcode = OP6502( R.PC++ );
+
+		/*
+		if (emulator.enableDebug)
+		{
+			printf ("%04x:%02x A%02x X%02x Y%02x\n", R.PC - 1, opcode, R.A, R.X, R.Y);
+			DEBUG_WAIT_L_KEY
+		}
+		*/
 
 		if( R.INT_pending ) {
 			if( R.INT_pending & NMI_FLAG ) {

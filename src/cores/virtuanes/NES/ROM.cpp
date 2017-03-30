@@ -105,11 +105,23 @@ LONG	FileSize;
 			&& header.ID[2] == 'S' && header.ID[3] == 0x1A ) {
 			// �w�b�_�R�s�[
 			memcpy( &header, temp, sizeof(NESHEADER) );
+			header.control1 = 0;
+		} else if( header.ID[0] == 0x01 && header.ID[1] == '*'
+			&& header.ID[2] == 'N' && header.ID[3] == 'I' &&
+			(FileSize % 65500) == 0) {
+			// �w�b�_�R�s�[
+			header.ID[0] = 'F';
+			header.ID[1] = 'D';
+			header.ID[2] = 'S';
+			header.ID[3] = 0x1A;
+			header.PRG_PAGE_SIZE = FileSize / 65500;
+			header.control1 = 1;
 		} else if( header.ID[0] == 'N' && header.ID[1] == 'E'
 			&& header.ID[2] == 'S' && header.ID[3] == 'M') {
 			// �w�b�_�R�s�[
 			memcpy( &header, temp, sizeof(NESHEADER) );
 		} else {
+			
 			FREE( temp );
 
 			/*if( !UnCompress( fname, &temp, (LPDWORD)&FileSize ) ) {
@@ -205,7 +217,14 @@ LONG	FileSize;
 			// �f�B�X�N�T�C�Y
 			diskno = header.PRG_PAGE_SIZE;
 
-			if( FileSize < (16+65500*diskno) ) {
+			bool headerlessFDS = (header.control1 == 1);
+
+			if( header.control1 == 0 && FileSize < (16+65500*diskno) ) {
+				// �f�B�X�N�T�C�Y���ُ��ł�
+				error =	CApp::GetErrorString( IDS_ERROR_ILLEGALDISKSIZE );
+				goto has_error;
+			}
+			if( header.control1 == 1 && FileSize < (65500*diskno) ) {
 				// �f�B�X�N�T�C�Y���ُ��ł�
 				error =	CApp::GetErrorString( IDS_ERROR_ILLEGALDISKSIZE );
 				goto has_error;
@@ -245,7 +264,11 @@ LONG	FileSize;
 			lpCHR = NULL;
 
 			::memcpy( lpPRG, &header, sizeof(NESHEADER) );
-			::memcpy( lpPRG+sizeof(NESHEADER), temp+sizeof(NESHEADER), 65500*(LONG)diskno );
+
+			if (headerlessFDS)
+				::memcpy( lpPRG+sizeof(NESHEADER), temp, 65500*(LONG)diskno );
+			else
+				::memcpy( lpPRG+sizeof(NESHEADER), temp+sizeof(NESHEADER), 65500*(LONG)diskno );
 			// �f�[�^�̏��������ꏊ�����p
 			ZEROMEMORY( lpDisk, PRGsize );
 //			memcpy( lpDisk, &header, sizeof(NESHEADER) );
@@ -259,7 +282,7 @@ LONG	FileSize;
 
 			// DISKSYSTEM BIOS�̃��[�h
 			//string	Path = CPathlib::MakePathExt( CApp::GetModulePath(), "DISKSYS", "ROM" );
-			string Path = "";
+			string Path = "/3ds/virtuanes_3ds/bios/disksys.rom";
 
 			if( !(fp = fopen( Path.c_str(), "rb" )) ) {
 				// DISKSYS.ROM�������܂���

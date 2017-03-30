@@ -526,7 +526,7 @@ static u32 thisKeysHeld = 0;
 // Displays the menu and allows the user to select from
 // a list of choices.
 //-------------------------------------------------------
-int menu3dsMenuSelectItem(void (*itemChangedCallback)(int ID, int value))
+int menu3dsMenuSelectItem(bool (*itemChangedCallback)(int ID, int value))
 {
     int framesDKeyHeld = 0;
     int returnResult = -1;
@@ -656,7 +656,11 @@ int menu3dsMenuSelectItem(void (*itemChangedCallback)(int ID, int value))
                 if (resultValue != -1)
                 {
                     if (itemChangedCallback)
-                        itemChangedCallback(currentTab->MenuItems[currentTab->SelectedItemIndex].ID, resultValue);
+                    {
+                        bool returnFromMenu = itemChangedCallback(currentTab->MenuItems[currentTab->SelectedItemIndex].ID, resultValue);
+                        if (returnFromMenu)
+                            return -1;
+                    }
                     
                     currentTab->MenuItems[currentTab->SelectedItemIndex].Value = resultValue;
                 }
@@ -896,7 +900,7 @@ void menu3dsClearMenuTabs()
 // NOTE: You must call menu3dsHideMenu to transit
 //       the menu away.
 //-------------------------------------------------------
-int menu3dsShowMenu(void (*itemChangedCallback)(int ID, int value), bool animateMenu)
+int menu3dsShowMenu(bool (*itemChangedCallback)(int ID, int value), bool animateMenu)
 {
     isDialog = false;
 

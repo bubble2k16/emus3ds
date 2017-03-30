@@ -85,34 +85,7 @@ SMenuItem emulatorNewMenu[] = {
     MENU_MAKE_LASTITEM  ()
     };
 
-
-//-------------------------------------------------------
-// Standard in-game emulator menu.
-//-------------------------------------------------------
-SMenuItem emulatorMenu[] = {
-    MENU_MAKE_HEADER2   ("Resume"),
-    MENU_MAKE_ACTION    (1000, "  Resume Game"),
-    MENU_MAKE_HEADER2   (""),
-
-    MENU_MAKE_HEADER2   ("Savestates"),
-    MENU_MAKE_ACTION    (2001, "  Save Slot #1"),
-    MENU_MAKE_ACTION    (2002, "  Save Slot #2"),
-    MENU_MAKE_ACTION    (2003, "  Save Slot #3"),
-    MENU_MAKE_ACTION    (2004, "  Save Slot #4"),
-    MENU_MAKE_HEADER2   (""),
-    
-    MENU_MAKE_ACTION    (3001, "  Load Slot #1"),
-    MENU_MAKE_ACTION    (3002, "  Load Slot #2"),
-    MENU_MAKE_ACTION    (3003, "  Load Slot #3"),
-    MENU_MAKE_ACTION    (3004, "  Load Slot #4"),
-    MENU_MAKE_HEADER2   (""),
-
-    MENU_MAKE_HEADER2   ("Others"),
-    MENU_MAKE_ACTION    (4001, "  Take Screenshot"),
-    MENU_MAKE_ACTION    (5001, "  Reset Console"),
-    MENU_MAKE_ACTION    (6001, "  Exit"),
-    MENU_MAKE_LASTITEM  ()
-    };
+extern SMenuItem emulatorMenu[];
 
 
 //-------------------------------------------------------
@@ -389,6 +362,7 @@ void menuPause()
 
         int selection = menu3dsShowMenu(impl3dsOnMenuSelectedChanged, animateMenu);
         animateMenu = false;
+        
 
         if (selection == -1 || selection == 1000)
         {
@@ -544,6 +518,15 @@ void menuPause()
             else
                 menu3dsHideDialog();
             
+        }
+        else
+        {
+            bool endMenu = impl3dsOnMenuSelected(selection);
+            if (endMenu)
+            {
+                returnToEmulation = true;
+                break;
+            }
         }
 
     }
