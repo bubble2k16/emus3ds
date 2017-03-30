@@ -71,6 +71,8 @@ SMenuItem optionsForStretch[] = {
     MENU_MAKE_DIALOG_ACTION (0, "No Stretch",               "'Pixel Perfect'"),
     MENU_MAKE_DIALOG_ACTION (1, "4:3 Fit",                  "Stretch to 320x240"),
     MENU_MAKE_DIALOG_ACTION (2, "Fullscreen",               "Stretch to 400x240"),
+    MENU_MAKE_DIALOG_ACTION (3, "Cropped 4:3 Fit",          "Crop & Stretch to 320x240"),
+    MENU_MAKE_DIALOG_ACTION (4, "Cropped Fullscreen",       "Crop & Stretch to 400x240"),
     MENU_MAKE_LASTITEM  ()
 };
 
@@ -654,6 +656,12 @@ void impl3dsRenderDrawTextureToMainScreen(int textureIndex)
 		case 2:
 			gpu3dsAddQuadVertexes(0, 0, 400, 240, 8.2, 0 + 16, 263.8, 240 + 16, 0);
 			break;
+		case 3:
+			gpu3dsAddQuadVertexes(40, 0, 360, 240, 8.2 + 8, 0 + 16 + 8, 263.8 - 8, 240 + 16 - 8, 0);
+			break;
+		case 4:
+			gpu3dsAddQuadVertexes(0, 0, 400, 240, 8.2 + 8, 0 + 16 + 8, 263.8 - 8, 240 + 16 - 8, 0);
+			break;
 	}
     gpu3dsDrawVertexes();
 	t3dsEndTiming(14);
@@ -903,6 +911,7 @@ bool impl3dsOnMenuSelectedChanged(int ID, int value)
                 break;
         }
     }
+    return false;
 }
 
 
