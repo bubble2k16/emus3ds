@@ -216,6 +216,9 @@ void	SetVROM_8K_Bank( INT bank0, INT bank1, INT bank2, INT bank3,
 void	SetCRAM_1K_Bank( BYTE page, INT bank )
 {
 	bank &= 0x1F;
+	if (VROM == NULL)
+		bank &= 0x7;
+
 	PPU_MEM_BANK[page] = CRAM+0x0400*bank;
 	PPU_MEM_TYPE[page] = BANKTYPE_CRAM;
 	PPU_MEM_PAGE[page] = bank;

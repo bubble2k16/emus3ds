@@ -640,26 +640,43 @@ void impl3dsRenderDrawTextureToMainScreen(int textureIndex)
 
     // Draw a black colored rectangle covering the entire screen.
     //
-    gpu3dsSetTextureEnvironmentReplaceColor();
-    gpu3dsDrawRectangle(0, 0, 400, 240, 0, 0x000000ff);
-
-    gpu3dsSetTextureEnvironmentReplaceTexture0();
-    gpu3dsBindTextureMainScreen(nesMainScreenTarget[textureIndex], GPU_TEXUNIT0);
 	switch (settings3DS.ScreenStretch)
 	{
 		case 0:
+            gpu3dsSetTextureEnvironmentReplaceColor();
+            gpu3dsDrawRectangle(0, 0, 72, 240, 0, 0x000000ff);
+            gpu3dsDrawRectangle(328, 0, 400, 240, 0, 0x000000ff);
+
+            gpu3dsSetTextureEnvironmentReplaceTexture0();
+            gpu3dsBindTextureMainScreen(nesMainScreenTarget[textureIndex], GPU_TEXUNIT0);
 			gpu3dsAddQuadVertexes(72, 0, 328, 240, 8, 0 + 16, 264, 240 + 16, 0);
 			break;
 		case 1:
+            gpu3dsSetTextureEnvironmentReplaceColor();
+            gpu3dsDrawRectangle(0, 0, 40, 240, 0, 0x000000ff);
+            gpu3dsDrawRectangle(360, 0, 400, 240, 0, 0x000000ff);
+
+            gpu3dsSetTextureEnvironmentReplaceTexture0();
+            gpu3dsBindTextureMainScreen(nesMainScreenTarget[textureIndex], GPU_TEXUNIT0);
 			gpu3dsAddQuadVertexes(40, 0, 360, 240, 8.2, 0 + 16, 263.8, 240 + 16, 0);
 			break;
 		case 2:
+            gpu3dsSetTextureEnvironmentReplaceTexture0();
+            gpu3dsBindTextureMainScreen(nesMainScreenTarget[textureIndex], GPU_TEXUNIT0);
 			gpu3dsAddQuadVertexes(0, 0, 400, 240, 8.2, 0 + 16, 263.8, 240 + 16, 0);
 			break;
 		case 3:
+            gpu3dsSetTextureEnvironmentReplaceColor();
+            gpu3dsDrawRectangle(0, 0, 40, 240, 0, 0x000000ff);
+            gpu3dsDrawRectangle(360, 0, 400, 240, 0, 0x000000ff);
+
+            gpu3dsSetTextureEnvironmentReplaceTexture0();
+            gpu3dsBindTextureMainScreen(nesMainScreenTarget[textureIndex], GPU_TEXUNIT0);
 			gpu3dsAddQuadVertexes(40, 0, 360, 240, 8.2 + 8, 0 + 16 + 8, 263.8 - 8, 240 + 16 - 8, 0);
 			break;
 		case 4:
+            gpu3dsSetTextureEnvironmentReplaceTexture0();
+            gpu3dsBindTextureMainScreen(nesMainScreenTarget[textureIndex], GPU_TEXUNIT0);
 			gpu3dsAddQuadVertexes(0, 0, 400, 240, 8.2 + 8, 0 + 16 + 8, 263.8 - 8, 240 + 16 - 8, 0);
 			break;
 	}

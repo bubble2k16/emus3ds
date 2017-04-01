@@ -657,7 +657,7 @@ void	NES::EmulateFrame( BOOL bDraw )
 					if( RenderMethod == PRE_RENDER )
 						EmulationCPU( nescfg->HDrawCycles );
 
-						/*
+					/*
 					ppu->ScanlineNext();
 					mapper->HSync( scanline );
 					EmulationCPU( FETCH_CYCLES*32 );
@@ -738,7 +738,6 @@ void	NES::EmulateFrame( BOOL bDraw )
 			NES_scanline = scanline;
 		}
 	} else {
-		printf ("t");
 		bZapper = FALSE;
 		while( TRUE ) {
 			ppu->SetRenderScanline( scanline );

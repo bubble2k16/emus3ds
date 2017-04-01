@@ -40,7 +40,9 @@ INT	i;
 		chr_page[1][i] = 4+(i&0x03);
 	}
 
-	SetPROM_32K_Bank( PROM_8K_SIZE-1, PROM_8K_SIZE-1, PROM_8K_SIZE-1, PROM_8K_SIZE-1 );
+	// Bug fix?
+	//SetPROM_32K_Bank( PROM_8K_SIZE-1, PROM_8K_SIZE-1, PROM_8K_SIZE-1, PROM_8K_SIZE-1 );
+	SetPROM_32K_Bank( PROM_8K_SIZE-4, PROM_8K_SIZE-3, PROM_8K_SIZE-2, PROM_8K_SIZE-1 );
 	SetVROM_8K_Bank( 0 );
 
 	for( i = 0; i < 8; i++ ) {
@@ -132,11 +134,11 @@ void	Mapper005::WriteLow( WORD addr, BYTE data )
 {
 INT	i;
 
-#if	0
-if( addr >= 0x5000 && addr <=0x50FF ) {
-DEBUGOUT( "$%04X=%02X C:%10d\n", addr, data, nes->cpu->GetTotalCycles() );
-}
-#endif
+//#if	0
+//if( addr >= 0x5000 && addr <=0x5206 ) {
+//	dbgprintf ("$%04X=%02X C:%10d\n", addr, data, (int) nes->cpu->GetTotalCycles() );
+//}
+//#endif
 
 	switch( addr ) {
 		case	0x5100:
@@ -343,8 +345,81 @@ void	Mapper005::SetBank_SRAM( BYTE page, BYTE data )
 
 void	Mapper005::SetBank_PPU()
 {
-INT	i;
+	// Use an 8K CHR-RAM for MMC5 games that require it.
+	// (eg: Rockman 4 Minus Infinity)
+	if (nes->rom->GetVROM() == NULL)
+	{
+		if( chr_mode == 0 ) {
+			// PPU SP Bank
+			switch( chr_size ) {
+				case	0:
+					SetCRAM_8K_Bank( chr_page[0][7] );
+					break;
+				case	1:
+					SetCRAM_4K_Bank( 0, chr_page[0][3] );
+					SetCRAM_4K_Bank( 4, chr_page[0][7] );
+					break;
+				case	2:
+					SetCRAM_2K_Bank( 0, chr_page[0][1] );
+					SetCRAM_2K_Bank( 2, chr_page[0][3] );
+					SetCRAM_2K_Bank( 4, chr_page[0][5] );
+					SetCRAM_2K_Bank( 6, chr_page[0][7] );
+					break;
+				case	3:
+					SetCRAM_1K_Bank( 0, chr_page[0][0] );
+					SetCRAM_1K_Bank( 1, chr_page[0][1] );
+					SetCRAM_1K_Bank( 2, chr_page[0][2] );
+					SetCRAM_1K_Bank( 3, chr_page[0][3] );
+					SetCRAM_1K_Bank( 4, chr_page[0][4] );
+					SetCRAM_1K_Bank( 5, chr_page[0][5] );
+					SetCRAM_1K_Bank( 6, chr_page[0][6] );
+					SetCRAM_1K_Bank( 7, chr_page[0][7] );
 
+					break;
+			}		
+		}
+		else
+		{
+			INT i;
+			switch( chr_size ) {
+				case	0:
+					for( i = 0; i < 8; i++ ) {
+						BG_MEM_BANK[i] = CRAM+0x2000*(chr_page[1][7]%1)+0x0400*i;
+						BG_MEM_PAGE[i] = (chr_page[1][7]%1)*8+i;
+					}
+					break;
+				case	1:
+					for( i = 0; i < 4; i++ ) {
+						BG_MEM_BANK[i+0] = CRAM+0x1000*(chr_page[1][3]%2)+0x0400*i;
+						BG_MEM_BANK[i+4] = CRAM+0x1000*(chr_page[1][7]%2)+0x0400*i;
+						BG_MEM_PAGE[i+0] = (chr_page[1][3]%2)*4+i;
+						BG_MEM_PAGE[i+4] = (chr_page[1][7]%2)*4+i;
+					}
+					break;
+				case	2:
+					for( i = 0; i < 2; i++ ) {
+						BG_MEM_BANK[i+0] = CRAM+0x0800*(chr_page[1][1]%4)+0x0400*i;
+						BG_MEM_BANK[i+2] = CRAM+0x0800*(chr_page[1][3]%4)+0x0400*i;
+						BG_MEM_BANK[i+4] = CRAM+0x0800*(chr_page[1][5]%4)+0x0400*i;
+						BG_MEM_BANK[i+6] = CRAM+0x0800*(chr_page[1][7]%4)+0x0400*i;
+						BG_MEM_PAGE[i+0] = (chr_page[1][1]%4)*2+i;
+						BG_MEM_PAGE[i+2] = (chr_page[1][3]%4)*2+i;
+						BG_MEM_PAGE[i+4] = (chr_page[1][5]%4)*2+i;
+						BG_MEM_PAGE[i+6] = (chr_page[1][7]%4)*2+i;
+					}
+					break;
+				case	3:
+					for( i = 0; i < 8; i++ ) {
+						BG_MEM_BANK[i] = CRAM+0x0400*(chr_page[1][i]%8);
+						BG_MEM_PAGE[i] = (chr_page[1][i]%8)+i;
+					}
+					break;
+			}	
+		}
+		return;
+	}
+
+	INT	i;
 	if( chr_mode == 0 ) {
 	// PPU SP Bank
 		switch( chr_size ) {
@@ -487,6 +562,8 @@ void	Mapper005::PPU_ExtLatchX( INT x )
 	split_x = x;
 }
 
+#include "3dsmain.h"
+
 void	Mapper005::PPU_ExtLatch( WORD addr, BYTE& chr_l, BYTE& chr_h, BYTE& attr )
 {
 WORD	ntbladr, attradr, tileadr, tileofs;
@@ -564,6 +641,9 @@ BOOL	bSplit;
 			if( ntbladr & 0x0002 ) attr >>= 2;
 			if( ntbladr & 0x0040 ) attr >>= 4;
 			attr = (attr&0x03)<<2;
+
+
+			
 			// Get Pattern
 			if( chr_type ) {
 				chr_l = PPU_MEM_BANK[tileadr>>10][ tileadr&0x03FF   ];
@@ -572,6 +652,7 @@ BOOL	bSplit;
 				chr_l = BG_MEM_BANK[tileadr>>10][ tileadr&0x03FF   ];
 				chr_h = BG_MEM_BANK[tileadr>>10][(tileadr&0x03FF)+8];
 			}
+
 		}
 	} else {
 		ntbladr = ((split_addr&0x03E0)|(split_x&0x1F))&0x03FF;

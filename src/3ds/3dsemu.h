@@ -1,5 +1,9 @@
 
+#ifndef _3DSEMU_H_
+#define _3DSEMU_H_
+
 #include "3dstypes.h"
+
 
 // Uncomment this to convert before releasing this to remove
 // all the debugging stuff.
@@ -24,10 +28,12 @@
             hidScanInput(); \ 
             uint32 key = hidKeysHeld(); \
             if (key == KEY_L) break; \
-            if (key == KEY_R) { emulator.enableDebug = false; break; } \
+            if (key == KEY_SELECT) { emulator.enableDebug = !emulator.enableDebug; break; } \
             if (key == KEY_TOUCH) break; \
             if (prevkey != 0 && key == 0) \
                 break;  \
             prevkey = key; \
         } \ 
     }
+
+#endif
