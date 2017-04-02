@@ -34,6 +34,9 @@ protected:
 
 	BYTE	sram_page;		// $5113
 
+	// Added MMC5 logic
+	BYTE	chr_bank_upper_bits;	// $5130
+
 	BYTE	fill_chr, fill_pal;	// $5106-$5107
 	BYTE	split_control;		// $5200
 	BYTE	split_scroll;		// $5201
@@ -45,7 +48,12 @@ protected:
 
 	BYTE	chr_type;
 	BYTE	chr_mode;		// $5120-$512B use
-	BYTE	chr_page[2][8];		// $5120-$512B
+
+	// For 3DS: Use INT instead because we need to store the
+	// upper 2 bits from $5130.
+	//
+	INT		chr_page[2][8];		// $5120-$512B
+	
 	LPBYTE	BG_MEM_BANK[8];		// BG�p�^�[���p�o���N
 	BYTE	BG_MEM_PAGE[8];
 

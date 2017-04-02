@@ -114,8 +114,12 @@ void	PAD::Reset()
 		nes->SetVideoMode( TRUE );
 	}
 	if( crc == 0xc68363f6		// Crazy Climber(J)
+	 /*
+	 // For 3DS. 
+	 // Removed this, otherwise the player is unable to move in
+	 // Smash TV.
 	 || crc == 0x2989ead6		// Smash TV(U) [!]
-	 || crc == 0x0b8f8128 ) {	// Smash TV(E) [!]
+	 || crc == 0x0b8f8128 */) {	// Smash TV(E) [!]
 		SetExController( EXCONTROLLER_CRAZYCLIMBER );
 	}
 	if( crc == 0x20d22251 ) {	// Top rider(J)

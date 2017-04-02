@@ -419,7 +419,7 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 	BYTE	BGwrite[33+1];
 	//BYTE	BGmono[33+1];
 
-	//t3dsStartTiming(30, "Scanline:BG");
+	t3dsStartTiming(30, "Scanline:BG");
 	ZEROMEMORY( BGwrite, sizeof(BGwrite) );
 	//ZEROMEMORY( BGmono, sizeof(BGmono) );
 
@@ -454,14 +454,9 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 		pScnRGBA[6] = pScnRGBA[-2]; \
 		pScnRGBA[7] = pScnRGBA[-1]; \
 
-		/*
-		*(LPDWORD)(pScn+0) = *(LPDWORD)(pScn-8); \
-		*(LPDWORD)(pScn+4) = *(LPDWORD)(pScn-4); \
-		*/
-
 	#define RENDER_BG_TILES \
-			register INT	c1 = ((chr_l>>1)&0x55)|(chr_h&0xAA); \
-			register INT	c2 = (chr_l&0x55)|((chr_h<<1)&0xAA); \
+		register INT	c1 = ((chr_l>>1)&0x55)|(chr_h&0xAA); \
+		register INT	c2 = (chr_l&0x55)|((chr_h<<1)&0xAA); \
 		u32 *tilePalette = &bgPalette[attr]; \
 		pScnRGBA[0] = tilePalette[(c1>>6)]; \
 		pScnRGBA[1] = tilePalette[(c2>>6)]; \
@@ -472,16 +467,6 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 		pScnRGBA[6] = tilePalette[c1&3]; \
 		pScnRGBA[7] = tilePalette[c2&3]; \
 
-		/*
-		pScn[0] = pBGPAL[(c1>>6)]; \
-		pScn[4] = pBGPAL[(c1>>2)&3]; \
-		pScn[1] = pBGPAL[(c2>>6)]; \
-		pScn[5] = pBGPAL[(c2>>2)&3]; \
-		pScn[2] = pBGPAL[(c1>>4)&3]; \
-		pScn[6] = pBGPAL[c1&3]; \
-		pScn[3] = pBGPAL[(c2>>4)&3]; \
-		pScn[7] = pBGPAL[c2&3];	 \
-		*/
 
 	//if (scanline == 1)
 	//	printf ("bExtLatch=%d, bExtNameTable=%d, R=%d\n", bExtLatch, bExtNameTable, nes->GetRenderMethod());
@@ -785,7 +770,7 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 	// Render sprites
 	PPUREG[2] &= ~PPU_SPMAX_FLAG;
 
-	//t3dsEndTiming(30);
+	t3dsEndTiming(30);
 
 	// �\�����ԊO�ł����΃L�����Z��
 	if( scanline > 239 )
@@ -797,7 +782,7 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 		return;
 	}
 
-	//t3dsStartTiming(31, "Scanline:OBJ");
+	t3dsStartTiming(31, "Scanline:OBJ");
 
 	BYTE	SPwrite[33+1];
 	INT	spmax;
@@ -1060,7 +1045,7 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 	}
 	}
 
-	//t3dsEndTiming(31);	
+	t3dsEndTiming(31);	
 }
 
 // �X�v���C�g�O���q�b�g���邩���m���Ȃ����C���H

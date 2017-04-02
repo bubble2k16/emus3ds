@@ -2662,6 +2662,11 @@ void	NES::WriteState( FILE* fp )
 		}
 	}
 
+	// For 3DS: TODO: How about saving XRAM too? 
+	// This is required for MMC5 and possibly other mappers
+	// that use XRAM.
+	//
+
 has_error:
 	;
 

@@ -1114,9 +1114,10 @@ register BYTE	DT;
 #if	DPCM_SYNCCLOCK
 				apu->SyncDPCM( request_cycles );
 #endif
-				if( bClockProcess ) {
-					nes->Clock( request_cycles );
-				}
+				// For 3DS: Nope, we are not going to clock anything
+				//if( bClockProcess ) {
+				//	nes->Clock( request_cycles );
+				//}
 //				nes->Clock( request_cycles );
 				goto	_execute_exit;
 			} else {
@@ -1129,23 +1130,22 @@ register BYTE	DT;
 		nmi_request = irq_request = 0;
 		opcode = OP6502( R.PC++ );
 
-		//if (R.PC - 1 == 0xFE39)
+		/*if (R.PC - 1 == 0xE1A9)
+		{
+			printf ("Pad : %02x %02x\n", CPU_MEM_BANK[0x270 >> 13][0x270], CPU_MEM_BANK[0x271 >> 13][0x271]);
+		}*/
+
+		//if (R.PC - 1 == 0xE1A9)
 		//	emulator.enableDebug = true;
 		
 		/*
-		//if (emulator.enableDebug)
+		if (emulator.enableDebug)
 		{
 			int addr = R.PC - 1;
 			int opsz = opsize[opcode];
 			BYTE *opcodefull = &CPU_MEM_BANK[addr>>13][addr&0x1FFF];
 
-			if (addr == 0xD684)
-			{
-				u32 a = (u32)opcodefull - (u32)PROM;
-				printf ("%08x\n", a);
-			}
-
-			FILE *fp = fopen("rm4mi-mmc5.txt", "a");
+			FILE *fp = fopen("cpudbg.txt", "a");
 			fprintf (fp, "$%04X:%-54s A:%02X X:%02X Y:%02X S:%02X P:%s%s%s%s%s%s%s%s \n", 
 				R.PC - 1,
 				Disassemble(R.PC + opsz - 1, opcodefull), R.A, R.X, R.Y, R.S,
@@ -1162,6 +1162,7 @@ register BYTE	DT;
 			//DEBUG_WAIT_L_KEY
 		}
 		*/
+
 
 		if( R.INT_pending ) {
 			if( R.INT_pending & NMI_FLAG ) {
@@ -2184,9 +2185,10 @@ register BYTE	DT;
 #if	DPCM_SYNCCLOCK
 		apu->SyncDPCM( exec_cycles );
 #endif
-		if( bClockProcess ) {
-			nes->Clock( exec_cycles );
-		}
+		// For 3DS: We are not going to clock this.
+		//if( bClockProcess ) {
+		//	nes->Clock( exec_cycles );
+		//}
 //		nes->Clock( exec_cycles );
 	}
 _execute_exit:

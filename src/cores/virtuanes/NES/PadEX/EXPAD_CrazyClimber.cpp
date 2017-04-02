@@ -3,6 +3,7 @@
 //////////////////////////////////////////////////////////////////////////
 void	EXPAD_CrazyClimber::Strobe()
 {
+	printf ("CC Strobe\n");
 	nes->pad->pad1bit &= ~0xF0;
 	nes->pad->pad1bit |=  bits & 0xF0;
 	nes->pad->pad2bit &= ~0xF0;
@@ -25,7 +26,7 @@ void	EXPAD_CrazyClimber::Sync()
 	if( Config.ExButtonCheck( 0,  6 ) ) bits |= 1<<1;
 	if( Config.ExButtonCheck( 0,  7 ) ) bits |= 1<<0;
 
-	// “¯Žž“ü—Í‚ð‹ÖŽ~‚·‚é
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í‚ï¿½ï¿½ÖŽ~ï¿½ï¿½ï¿½ï¿½
 	if( (bits&((1<<0)|(1<<1))) == ((1<<0)|(1<<1)) )
 		bits &= ~((1<<0)|(1<<1));
 	if( (bits&((1<<2)|(1<<3))) == ((1<<2)|(1<<3)) )

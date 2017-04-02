@@ -130,14 +130,17 @@ BYTE	data = (BYTE)(addr>>8);
 	return	data;
 }
 
+#include "stdio.h"
+#include "3dsdbg.h"
+
 void	Mapper005::WriteLow( WORD addr, BYTE data )
 {
 INT	i;
 
 //#if	0
-//if( addr >= 0x5000 && addr <=0x5206 ) {
-//	dbgprintf ("$%04X=%02X C:%10d\n", addr, data, (int) nes->cpu->GetTotalCycles() );
-//}
+if( addr >= 0x5000 && addr <=0x5206 ) {
+	dbgprintf ("$%04X=%02X C:%10d\n", addr, data, (int) nes->cpu->GetTotalCycles() );
+}
 //#endif
 
 	switch( addr ) {
@@ -194,7 +197,7 @@ INT	i;
 		case	0x5126:
 		case	0x5127:
 			chr_mode = 0;
-			chr_page[0][addr&0x07] = data;
+			chr_page[0][addr&0x07] = data | (((INT)chr_bank_upper_bits) << 8);
 			SetBank_PPU();
 			break;
 
@@ -203,9 +206,15 @@ INT	i;
 		case	0x512A:
 		case	0x512B:
 			chr_mode = 1;
-			chr_page[1][(addr&0x03)+0] = data;
-			chr_page[1][(addr&0x03)+4] = data;
+			chr_page[1][(addr&0x03)+0] = data | (((INT)chr_bank_upper_bits) << 8);
+			chr_page[1][(addr&0x03)+4] = data | (((INT)chr_bank_upper_bits) << 8);
 			SetBank_PPU();
+			break;
+
+		// For 3DS: Additional MMC5 logic - handling of $5130 upper bits for 
+		// subsequent $5120-$512b writes
+		case	0x5130:
+			chr_bank_upper_bits = (data & 0x3);
 			break;
 
 		case	0x5200:
@@ -242,6 +251,12 @@ INT	i;
 			} else if( addr >= 0x5C00 && addr <= 0x5FFF ) {
 				if( graphic_mode == 2 ) {		// ExRAM
 					VRAM[0x0800+(addr&0x3FF)] = data;
+
+					// For 3DS: Some games uses ExRAM to run code
+					// So we must ensure this code is readable by CPU.cpp.
+					// (CPU_MEM_BANK is already mapped to XRAM)
+					//
+					XRAM[addr - 0x4000] = data;		
 				} else if( graphic_mode != 3 ) {	// Split,ExGraphic
 					if( irq_status&0x40 ) {
 						VRAM[0x0800+(addr&0x3FF)] = data;
@@ -701,9 +716,20 @@ void	Mapper005::SaveState( LPBYTE p )
 	INT	i, j;
 	for( j = 0; j < 2; j++ ) {
 		for( i = 0; i < 8; i++ ) {
-			p[24+j*8+i] = chr_page[j][i];
+			p[24+j*8+i] = chr_page[j][i] & 0xff;
 		}
 	}
+
+	// For 3DS: Save the additional MMC5 state information.
+	for( j = 0; j < 2; j++ ) {
+		for( i = 0; i < 8; i++ ) {
+			p[40+j*8+i] = (chr_page[j][i] >> 8) & 0xff;
+		}
+	}
+
+	p[56] = chr_bank_upper_bits;
+
+
 //	for( i = 0; i < 8; i++ ) {
 //		p[40+i] = BG_MEM_PAGE[i];
 //	}
@@ -743,6 +769,16 @@ void	Mapper005::LoadState( LPBYTE p )
 			chr_page[j][i] = p[24+j*8+i];
 		}
 	}
+
+	// For 3DS: Load the additional MMC5 state information.
+	for( j = 0; j < 2; j++ ) {
+		for( i = 0; i < 8; i++ ) {
+			chr_page[j][i] = chr_page[j][i] | (((INT)p[40+j*8+i]) << 8);
+		}
+	}
+
+	chr_bank_upper_bits = p[56];
+	
 //	// BG�o���N�̍Đݒ菈��
 //	for( i = 0; i < 8; i++ ) {
 //		BG_MEM_PAGE[i] = p[40+i]%VROM_1K_SIZE;
