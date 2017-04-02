@@ -546,31 +546,28 @@ void impl3dsEmulationPollInput()
 {
 	u32 keysHeld3ds = input3dsGetCurrentKeysHeld();
     u32 consoleJoyPad = 0;
+	
+	// First controller
 
-    if (keysHeld3ds & KEY_UP) consoleJoyPad |= BTNNES_UP;
-    if (keysHeld3ds & KEY_DOWN) consoleJoyPad |= BTNNES_DOWN;
-    if (keysHeld3ds & KEY_LEFT) consoleJoyPad |= BTNNES_LEFT;
-    if (keysHeld3ds & KEY_RIGHT) consoleJoyPad |= BTNNES_RIGHT;
+    if (keysHeld3ds & KEY_DUP) consoleJoyPad |= BTNNES_UP;
+    if (keysHeld3ds & KEY_DDOWN) consoleJoyPad |= BTNNES_DOWN;
+    if (keysHeld3ds & KEY_DLEFT) consoleJoyPad |= BTNNES_LEFT;
+    if (keysHeld3ds & KEY_DRIGHT) consoleJoyPad |= BTNNES_RIGHT;
     if (keysHeld3ds & KEY_SELECT) consoleJoyPad |= BTNNES_SELECT;
     if (keysHeld3ds & KEY_START) consoleJoyPad |= BTNNES_START;
+    if (keysHeld3ds & KEY_A) consoleJoyPad |= BTNNES_A;  
+    if (keysHeld3ds & KEY_B) consoleJoyPad |= BTNNES_B;
 
-	buttons3dsPressed[BTN3DS_L] = (keysHeld3ds & KEY_L);
-	if (keysHeld3ds & KEY_L) consoleJoyPad |= settings3DS.ButtonMapping[BTN3DS_L];
-    
-	buttons3dsPressed[BTN3DS_R] = (keysHeld3ds & KEY_R);
-	if (keysHeld3ds & KEY_R) consoleJoyPad |= settings3DS.ButtonMapping[BTN3DS_R];
-    
-	buttons3dsPressed[BTN3DS_A] = (keysHeld3ds & KEY_A);
-    if (keysHeld3ds & KEY_A) consoleJoyPad |= settings3DS.ButtonMapping[BTN3DS_A];
-    
-	buttons3dsPressed[BTN3DS_B] = (keysHeld3ds & KEY_B);
-    if (keysHeld3ds & KEY_B) consoleJoyPad |= settings3DS.ButtonMapping[BTN3DS_B];
-    
-	buttons3dsPressed[BTN3DS_X] = (keysHeld3ds & KEY_X);
-    if (keysHeld3ds & KEY_X) consoleJoyPad |= settings3DS.ButtonMapping[BTN3DS_X];
-    
-	buttons3dsPressed[BTN3DS_Y] = (keysHeld3ds & KEY_Y);
-    if (keysHeld3ds & KEY_Y) consoleJoyPad |= settings3DS.ButtonMapping[BTN3DS_Y];
+	// Second controller
+
+    if (keysHeld3ds & KEY_CPAD_UP) consoleJoyPad |= BTNNES_2UP;
+    if (keysHeld3ds & KEY_CPAD_DOWN) consoleJoyPad |= BTNNES_2DOWN;
+    if (keysHeld3ds & KEY_CPAD_LEFT) consoleJoyPad |= BTNNES_2LEFT;
+    if (keysHeld3ds & KEY_CPAD_RIGHT) consoleJoyPad |= BTNNES_2RIGHT;
+    if (keysHeld3ds & KEY_R) consoleJoyPad |= BTNNES_2SELECT;
+    if (keysHeld3ds & KEY_L) consoleJoyPad |= BTNNES_2START;
+    if (keysHeld3ds & KEY_X) consoleJoyPad |= BTNNES_2A;  
+    if (keysHeld3ds & KEY_Y) consoleJoyPad |= BTNNES_2B;
 
     // Handle turbo / rapid fire buttons.
     //
@@ -587,8 +584,6 @@ void impl3dsEmulationPollInput()
 			} \
 		} \
 
-    HANDLE_TURBO(BTN3DS_L, settings3DS.ButtonMapping[BTN3DS_L]);
-    HANDLE_TURBO(BTN3DS_R, settings3DS.ButtonMapping[BTN3DS_R]);
     HANDLE_TURBO(BTN3DS_A, settings3DS.ButtonMapping[BTN3DS_A]);
     HANDLE_TURBO(BTN3DS_B, settings3DS.ButtonMapping[BTN3DS_B]);
     HANDLE_TURBO(BTN3DS_X, settings3DS.ButtonMapping[BTN3DS_X]);
@@ -596,8 +591,9 @@ void impl3dsEmulationPollInput()
 
     prevConsoleJoyPad = consoleJoyPad;
 
-    if (nes)
+    if (nes) {
 		nes->pad->SetSyncData(consoleJoyPad);
+	}
 }
 
 
