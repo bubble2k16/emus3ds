@@ -28,6 +28,7 @@
 #include "3dsmain.h"
 
 #include "3dsinterface.h"
+#include "3dscheat.h"
 
 
 SEmulator emulator;
@@ -92,13 +93,13 @@ extern SMenuItem emulatorMenu[];
 // Load the ROM and reset the CPU.
 //-------------------------------------------------------
 
-void menuSetupCheats();  // forward declaration
 bool emulatorSettingsLoad(bool, bool);
 bool emulatorSettingsSave(bool, bool);
 
 bool emulatorLoadRom()
 {
     menu3dsShowDialog("Load ROM", "Loading... this may take a while.", DIALOGCOLOR_CYAN, NULL);
+
     emulatorSettingsSave(false, false);
     snprintf(romFileNameFullPath, _MAX_PATH, "%s%s", file3dsGetCurrentDir(), romFileName);
     if (!impl3dsLoadROM(romFileNameFullPath))
@@ -111,8 +112,11 @@ bool emulatorLoadRom()
 
     emulatorSettingsLoad(true, false);
     impl3dsApplyAllSettings();
-    menuSetupCheats();
+    cheat3dsLoadCheatTextFile(file3dsReplaceFilenameExtension(romFileNameFullPath, ".chx"));
     menu3dsHideDialog();
+
+    // Fix: Game-specific settings that never get saved.
+    impl3dsCopyMenuToOrFromSettings(false);
 
     return true;
 }
@@ -178,8 +182,9 @@ bool emulatorSettingsLoad(bool includeGameSettings, bool showMessage = true)
         success = impl3dsReadWriteSettingsByGame(false);
         if (success)
         {
-            if (impl3dsApplyAllSettings())
-                emulatorSettingsSave(true, showMessage);
+            impl3dsApplyAllSettings();
+            /*if (impl3dsApplyAllSettings())
+                emulatorSettingsSave(true, showMessage);*/
             return true;
         }
         else
@@ -188,9 +193,11 @@ bool emulatorSettingsLoad(bool includeGameSettings, bool showMessage = true)
 
             impl3dsApplyAllSettings();
 
-            return emulatorSettingsSave(true, showMessage);
+            //return emulatorSettingsSave(true, showMessage);
+            return true;
         }
     }
+    return true;
 }
 
 
@@ -322,6 +329,24 @@ bool IsFileExists(const char * filename) {
 //----------------------------------------------------------------------
 // Menu when the emulator is paused in-game.
 //----------------------------------------------------------------------
+bool menuSelectedChanged(int ID, int value)
+{
+    if (ID >= 50000 && ID <= 51000)
+    {
+        // Handle cheats
+        int enabled = menu3dsGetValueByID(2, ID);
+        impl3dsSetCheatEnabledFlag(ID - 50000, enabled == 1);
+        cheat3dsSetCheatEnabledFlag(ID - 50000, enabled == 1);
+        return false;
+    }
+
+    return impl3dsOnMenuSelectedChanged(ID, value);
+}
+
+
+//----------------------------------------------------------------------
+// Menu when the emulator is paused in-game.
+//----------------------------------------------------------------------
 void menuPause()
 {
     gfxSetDoubleBuffering(GFX_BOTTOM, true);
@@ -339,7 +364,6 @@ void menuPause()
     menu3dsAddTab("Select ROM", fileMenu);
 
     impl3dsCopyMenuToOrFromSettings(false);
-    impl3dsCopyMenuToCheats(false);
 
     int previousFileID = fileFindLastSelectedFile();
     menu3dsSetTabSubTitle(0, NULL);
@@ -360,7 +384,7 @@ void menuPause()
             break;
         }
 
-        int selection = menu3dsShowMenu(impl3dsOnMenuSelectedChanged, animateMenu);
+        int selection = menu3dsShowMenu(menuSelectedChanged, animateMenu);
         animateMenu = false;
         
 
@@ -539,12 +563,7 @@ void menuPause()
         emulatorSettingsSave(true, true);
     impl3dsApplyAllSettings();
 
-    if (impl3dsCopyMenuToCheats(true))
-    {
-        // Only one of these will succeeed.
-        //S9xSaveCheatFile (S9xGetFilename(".cht"));
-        //S9xSaveCheatTextFile (S9xGetFilename(".chx"));
-    }
+    cheat3dsSaveCheatTextFile (file3dsReplaceFilenameExtension(romFileNameFullPath, ".chx"));
 
     if (returnToEmulation)
     {
@@ -562,6 +581,13 @@ void menuPause()
 //-------------------------------------------------------
 // Sets up all the cheats to be displayed in the menu.
 //-------------------------------------------------------
+SMenuItem cheatMenu[401] =
+{
+    MENU_MAKE_HEADER2   ("Cheats"),
+    MENU_MAKE_LASTITEM  ()
+};
+
+
 char *noCheatsText[] {
     "",
     "    No cheats available for this game ",
@@ -578,39 +604,6 @@ char *noCheatsText[] {
     "    Refer to readme.md for the .CHX file format. ",
     ""
      };
-
-void menuSetupCheats()
-{
-    /*
-    if (Cheat.num_cheats > 0)
-    {
-        cheatMenuCount = Cheat.num_cheats + 1;
-
-        // Bug fix: If the number of cheats exceeds what we can store,
-        // make sure we limit it.
-        //
-        if (cheatMenuCount > MAX_CHEATS)
-            cheatMenuCount = MAX_CHEATS;
-        for (int i = 0; i < MAX_CHEATS && i < Cheat.num_cheats; i++)
-        {
-            cheatMenu[i+1].Type = MENUITEM_CHECKBOX;
-            cheatMenu[i+1].ID = 20000 + i;
-            cheatMenu[i+1].Text = Cheat.c[i].name;
-            cheatMenu[i+1].Value = Cheat.c[i].enabled ? 1 : 0;
-        }
-    }
-    else
-    {
-        cheatMenuCount = 14;
-        for (int i = 0; i < cheatMenuCount; i++)
-        {
-            cheatMenu[i+1].Type = MENUITEM_DISABLED;
-            cheatMenu[i+1].ID = -2;
-            cheatMenu[i+1].Text = noCheatsText[i];
-        }
-    }
-    */
-}
 
 
 //--------------------------------------------------------

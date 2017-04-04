@@ -35,6 +35,9 @@ public:
 
 class	GENIECODE {
 public:
+	bool	enabled;
+	BYTE	original;
+	
 	WORD	address;
 	BYTE	data;
 	BYTE	cmp;

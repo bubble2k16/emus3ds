@@ -1,6 +1,7 @@
 #ifndef _3DSDBG_H_
 #define _3DSDBG_H_
 
+#include "3ds.h"
 #include "3dsemu.h"
 #include "stdio.h"
 #include "cstdarg"
@@ -22,6 +23,14 @@
 #else
     static void dbgprintf (const char *format, ...) {}
 #endif
+
+
+#define CLEAR_BOTTOM_SCREEN \
+    gfxSetDoubleBuffering(GFX_BOTTOM,false); \
+    gfxSwapBuffers(); \
+    consoleInit(GFX_BOTTOM, NULL); \
+    consoleClear(); \
+
 
 
 #endif
