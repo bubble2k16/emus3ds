@@ -277,12 +277,36 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings);
 
 
 //----------------------------------------------------------------------
-// Copy values from menu to the cheats structure within the emulator,
-// or from the cheats structure in the emulator to the menu, 
-// depending on the copyMenuToCheats parameter.
+// Clears all cheats from the core.
 //
-// This must return return if any of the cheats were changed.
+// This method is called only when cheats are loaded.
+// This only happens after a new ROM is loaded.
 //----------------------------------------------------------------------
-bool impl3dsCopyMenuToCheats(bool copyMenuToCheats);
+void impl3dsClearAllCheats();
+
+
+//----------------------------------------------------------------------
+// Adds cheats into the emulator core after being loaded up from 
+// the .CHX file.
+//
+// This method is called only when cheats are loaded.
+// This only happens after a new ROM is loaded.
+//
+// This method must return true if the cheat code format is valid,
+// and the cheat is added successfully into the core.
+//----------------------------------------------------------------------
+bool impl3dsAddCheat(bool cheatEnabled, char *name, char *code);
+
+
+//----------------------------------------------------------------------
+// Enable/disables a cheat in the emulator core.
+// 
+// This method will be triggered when the user enables/disables
+// cheats in the cheat menu.
+//----------------------------------------------------------------------
+void impl3dsSetCheatEnabledFlag(int cheatIdx, bool enabled);
+
+
+
 
 #endif
