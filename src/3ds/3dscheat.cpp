@@ -124,6 +124,9 @@ bool cheat3dsLoadCheatTextFile (const char *filename)
 //----------------------------------------------------------
 bool cheat3dsSaveCheatTextFile (const char *filename)
 {
+    if (cheatCount == 0)
+        return false;
+
     FILE *fp = fopen (filename, "w");
     if (fp == NULL)
         return false;

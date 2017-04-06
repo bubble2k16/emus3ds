@@ -137,11 +137,11 @@ void	Mapper005::WriteLow( WORD addr, BYTE data )
 {
 INT	i;
 
-//#if	0
+#if	0
 if( addr >= 0x5000 && addr <=0x5206 ) {
 	dbgprintf ("$%04X=%02X C:%10d\n", addr, data, (int) nes->cpu->GetTotalCycles() );
 }
-//#endif
+#endif
 
 	switch( addr ) {
 		case	0x5100:
@@ -603,6 +603,8 @@ BOOL	bSplit;
 		}
 	}
 
+//printf ("%d %d %d %d\n", bSplit, graphic_mode, nametable_type[(addr&0x0C00)>>10], chr_type);
+
 	if( !bSplit ) {
 		if( nametable_type[(addr&0x0C00)>>10] == 3 ) {
 		// Fill mode
@@ -624,7 +626,10 @@ BOOL	bSplit;
 				tileadr = tileofs+fill_chr*0x10+tile_yofs;
 				attr = (fill_pal<<2)&0x0C;
 				// Get Pattern
-				if( chr_type ) {
+
+				// Fixes some games, esp Super Mario All Stars hack
+				//if( chr_type ) {
+				if( !chr_mode ) {
 					chr_l = PPU_MEM_BANK[tileadr>>10][ tileadr&0x03FF   ];
 					chr_h = PPU_MEM_BANK[tileadr>>10][(tileadr&0x03FF)+8];
 				} else {
@@ -660,7 +665,10 @@ BOOL	bSplit;
 
 			
 			// Get Pattern
-			if( chr_type ) {
+
+			// Fixes some games, esp Super Mario All Stars hack
+			//if( chr_type ) {
+			if( !chr_mode ) {
 				chr_l = PPU_MEM_BANK[tileadr>>10][ tileadr&0x03FF   ];
 				chr_h = PPU_MEM_BANK[tileadr>>10][(tileadr&0x03FF)+8];
 			} else {
