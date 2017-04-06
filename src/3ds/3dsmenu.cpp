@@ -646,6 +646,18 @@ int menu3dsMenuSelectItem(bool (*itemChangedCallback)(int ID, int value))
                     currentTab->MenuItems[currentTab->SelectedItemIndex].Value = 1;
                 else
                     currentTab->MenuItems[currentTab->SelectedItemIndex].Value = 0;
+                
+                int resultValue = currentTab->MenuItems[currentTab->SelectedItemIndex].Value;
+                if (itemChangedCallback)
+                {
+                    bool returnFromMenu = itemChangedCallback(currentTab->MenuItems[currentTab->SelectedItemIndex].ID, resultValue);
+                    if (returnFromMenu)
+                    {
+                        menu3dsDrawEverything();
+                        menu3dsHideDialog();
+                        return -1;
+                    }
+                }
                 menu3dsDrawEverything();
             }
             if (currentTab->MenuItems[currentTab->SelectedItemIndex].Type == MENUITEM_PICKER ||

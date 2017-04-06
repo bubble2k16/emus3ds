@@ -54,12 +54,6 @@ SSettings3DS settings3DS;
 // Menu options
 //----------------------------------------------------------------------
 
-SMenuItem cheatMenu[201] =
-{
-    MENU_MAKE_HEADER2   ("Cheats"),
-    MENU_MAKE_LASTITEM  ()
-};
-
 SMenuItem optionsForFont[] = {
     MENU_MAKE_DIALOG_ACTION (0, "Tempesta",               ""),
     MENU_MAKE_DIALOG_ACTION (1, "Ronda",                  ""),
@@ -863,11 +857,6 @@ bool impl3dsOnMenuSelected(int ID)
 //---------------------------------------------------------
 bool impl3dsOnMenuSelectedChanged(int ID, int value)
 {
-	gfxSetDoubleBuffering(GFX_BOTTOM, false);
-	gfxSwapBuffersGpu();
-	consoleInit(GFX_BOTTOM, NULL);
-	consoleClear();
-
     if (ID == 18000)
     {
         ui3dsSetFont(value);
@@ -975,12 +964,12 @@ bool impl3dsReadWriteSettingsByGame(bool writeMode)
 
     config3dsReadWriteInt32("Frameskips=%d\n", &settings3DS.MaxFrameSkips, 0, 4);
     config3dsReadWriteInt32("Framerate=%d\n", &settings3DS.ForceFrameRate, 0, 2);
-    config3dsReadWriteInt32("TurboA=%d\n", &settings3DS.Turbo[0], 0, 5);
-    config3dsReadWriteInt32("TurboB=%d\n", &settings3DS.Turbo[1], 0, 5);
-    config3dsReadWriteInt32("TurboX=%d\n", &settings3DS.Turbo[2], 0, 5);
-    config3dsReadWriteInt32("TurboY=%d\n", &settings3DS.Turbo[3], 0, 5);
-    config3dsReadWriteInt32("TurboL=%d\n", &settings3DS.Turbo[4], 0, 5);
-    config3dsReadWriteInt32("TurboR=%d\n", &settings3DS.Turbo[5], 0, 5);
+    config3dsReadWriteInt32("TurboA=%d\n", &settings3DS.Turbo[0], 0, 10);
+    config3dsReadWriteInt32("TurboB=%d\n", &settings3DS.Turbo[1], 0, 10);
+    config3dsReadWriteInt32("TurboX=%d\n", &settings3DS.Turbo[2], 0, 10);
+    config3dsReadWriteInt32("TurboY=%d\n", &settings3DS.Turbo[3], 0, 10);
+    config3dsReadWriteInt32("TurboL=%d\n", &settings3DS.Turbo[4], 0, 10);
+    config3dsReadWriteInt32("TurboR=%d\n", &settings3DS.Turbo[5], 0, 10);
     config3dsReadWriteInt32("Vol=%d\n", &settings3DS.Volume, 0, 8);
     config3dsReadWriteInt32("SRAMInterval=%d\n", &settings3DS.SRAMSaveInterval, 0, 4);
     config3dsReadWriteInt32("ButtonMapA=%d\n", &settings3DS.ButtonMapping[0], 0, 0xffff);
@@ -1143,15 +1132,40 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
 
 
 //----------------------------------------------------------------------
-// Copy values from menu to the cheats structure within the emulator,
-// or from the cheats structure in the emulator to the menu, 
-// depending on the copyMenuToCheats parameter.
+// Clears all cheats from the core.
 //
-// This must return return if any of the cheats were changed.
+// This method is called only when cheats are loaded.
+// This only happens after a new ROM is loaded.
 //----------------------------------------------------------------------
-bool impl3dsCopyMenuToCheats(bool copyMenuToCheats)
+void impl3dsClearAllCheats()
 {
-    return false;
+    nes->GenieInitial();
 }
 
 
+//----------------------------------------------------------------------
+// Adds cheats into the emulator core after being loaded up from 
+// the .CHX file.
+//
+// This method is called only when cheats are loaded.
+// This only happens after a new ROM is loaded.
+//
+// This method must return true if the cheat code format is valid,
+// and the cheat is added successfully into the core.
+//----------------------------------------------------------------------
+bool impl3dsAddCheat(bool cheatEnabled, char *name, char *code)
+{
+    return nes->GenieAdd(cheatEnabled, code);    
+}
+
+
+//----------------------------------------------------------------------
+// Enable/disables a cheat in the emulator core.
+// 
+// This method will be triggered when the user enables/disables
+// cheats in the cheat menu.
+//----------------------------------------------------------------------
+void impl3dsSetCheatEnabledFlag(int cheatIdx, bool enabled)
+{
+    nes->GenieSet(cheatIdx, enabled);
+}
