@@ -219,6 +219,8 @@ public:
 
 	// For Genie
 	void	GenieInitial();
+	bool	GenieAdd( bool enabled, char *buf );
+	void	GenieSet(int index, bool enabled);
 	void	GenieLoad( char* fname );
 	void	GenieCodeProcess();
 

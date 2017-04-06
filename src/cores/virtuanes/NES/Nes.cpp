@@ -375,11 +375,11 @@ has_error:
 
 NES::~NES()
 {
-	MovieStop();
+	//MovieStop();
 
 	SaveSRAM();
 	SaveDISK();
-	SaveTurboFile();
+	//SaveTurboFile();
 
 	DEBUGOUT( "Free NES..." );
 
@@ -589,6 +589,8 @@ void	NES::EmulateFrame( BOOL bDraw )
 
 	// Cheat
 	CheatCodeProcess();
+	GenieCodeProcess();
+	
 	//
 	NES_scanline = scanline;
 
@@ -1017,7 +1019,7 @@ void	NES::Write( WORD addr, BYTE data )
 		case	0x07:	// $E000-$FFFF
 			mapper->Write( addr, data );
 
-			GenieCodeProcess();
+			//GenieCodeProcess();
 			break;
 	}
 }
@@ -1211,6 +1213,11 @@ has_error:
 
 void	NES::SaveSRAM()
 {
+	// Fixes the crashing problem if a previous ROM could not be
+	// loaded.
+	if (!rom)
+		return;
+
 	error = NULL;
 	INT	i;
 
@@ -1461,6 +1468,11 @@ has_error:
 
 void	NES::SaveDISK()
 {
+	// Fixes the crashing problem if a previous ROM could not be
+	// loaded.
+	if (!rom)
+		return;
+		
 	error = NULL;
 
 	if( rom->GetMapperNo() != 20 )
@@ -1791,9 +1803,6 @@ has_error:
 	//catch( CHAR* str ) 
 	if (error)
 	{
-
-		printf ("2");
-		
 		DEBUGOUT( "State save error.\n" );
 		FCLOSE( fp );
 		//throw	str;
@@ -3698,6 +3707,99 @@ void	NES::GenieInitial()
 	m_GenieCode.clear();
 }
 
+
+bool	NES::GenieAdd( bool enabled, char *buf )
+{
+	GENIECODE	code;
+	BYTE 		codetmp[9];
+
+	if( ::strlen( buf ) < 6 )
+		return;
+
+	code.enabled = enabled;
+	code.address = 0;
+	code.data = 0;
+	code.cmp = 0;
+
+	int no = 0;
+	for( no = 0; isalpha(buf[no]) && no < 8; no++ ) {
+		switch( buf[no] ) {
+			case	'A': codetmp[no] = 0x00; break;
+			case	'P': codetmp[no] = 0x01; break;
+			case	'Z': codetmp[no] = 0x02; break;
+			case	'L': codetmp[no] = 0x03; break;
+			case	'G': codetmp[no] = 0x04; break;
+			case	'I': codetmp[no] = 0x05; break;
+			case	'T': codetmp[no] = 0x06; break;
+			case	'Y': codetmp[no] = 0x07; break;
+			case	'E': codetmp[no] = 0x08; break;
+			case	'O': codetmp[no] = 0x09; break;
+			case	'X': codetmp[no] = 0x0A; break;
+			case	'U': codetmp[no] = 0x0B; break;
+			case	'K': codetmp[no] = 0x0C; break;
+			case	'S': codetmp[no] = 0x0D; break;
+			case	'V': codetmp[no] = 0x0E; break;
+			case	'N': codetmp[no] = 0x0F; break;
+		}
+	}
+
+	if( no == 6 ) {
+		// Address
+		code.address |= (WORD)(codetmp[3] & 0x07)<<12;
+		code.address |= (WORD)(codetmp[4] & 0x08)<< 8;
+		code.address |= (WORD)(codetmp[5] & 0x07)<< 8;
+		code.address |= (WORD)(codetmp[1] & 0x08)<< 4;
+		code.address |= (WORD)(codetmp[2] & 0x07)<< 4;
+		code.address |= (WORD)(codetmp[3] & 0x08);
+		code.address |= (WORD)(codetmp[4] & 0x07);
+		// Data
+		code.data |= (codetmp[0] & 0x08)<<4;
+		code.data |= (codetmp[1] & 0x07)<<4;
+		code.data |= (codetmp[5] & 0x08);
+		code.data |= (codetmp[0] & 0x07);
+
+		m_GenieCode.push_back( code );
+
+		return true;
+	} 
+	else
+	if( no == 8 ) {
+		// Address
+		code.address |= 0x8000;
+		code.address |= (WORD)(codetmp[3] & 0x07)<<12;
+		code.address |= (WORD)(codetmp[4] & 0x08)<< 8;
+		code.address |= (WORD)(codetmp[5] & 0x07)<< 8;
+		code.address |= (WORD)(codetmp[1] & 0x08)<< 4;
+		code.address |= (WORD)(codetmp[2] & 0x07)<< 4;
+		code.address |= (WORD)(codetmp[3] & 0x08);
+		code.address |= (WORD)(codetmp[4] & 0x07);
+		// Data
+		code.data |= (codetmp[0] & 0x08)<<4;
+		code.data |= (codetmp[1] & 0x07)<<4;
+		code.data |= (codetmp[7] & 0x08);
+		code.data |= (codetmp[0] & 0x07);
+		// Data
+		code.cmp  |= (codetmp[6] & 0x08)<<4;
+		code.cmp  |= (codetmp[7] & 0x07)<<4;
+		code.cmp  |= (codetmp[5] & 0x08);
+		code.cmp  |= (codetmp[6] & 0x07);
+
+		m_GenieCode.push_back( code );
+		return true;
+	}
+
+	return false;
+}
+
+
+void NES::GenieSet(int index, bool enabled)
+{
+	if (index >= m_GenieCode.size())
+		return;
+
+	m_GenieCode[index].enabled = enabled;
+}
+
 void	NES::GenieLoad( char* fname )
 {
 FILE*	fp = NULL;
@@ -3796,7 +3898,11 @@ void	NES::GenieCodeProcess()
 {
 	WORD	addr;
 
-	for( INT i = 0; i < m_GenieCode.size(); i++ ) {
+	for( INT i = 0; i < m_GenieCode.size(); i++ ) 
+	{
+		if (!m_GenieCode[i].enabled)
+			continue;
+
 		addr = m_GenieCode[i].address;
 		if( addr & 0x8000 ) {
 		// 8character codes
