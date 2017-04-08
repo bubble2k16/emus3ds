@@ -1,8 +1,8 @@
-## Emus for 3DS
+## Emus for 3DS (VirtuaNES core)
 
-Emus for 3DS currently contains a single core VirtuaNES for 3DS, a high compatibility NES emulator for your old 3DS or 2DS. It runs at full 60 FPS for almost all games, and supports tonnes of mappers: MMC1,3,5,6; VRC1,2,3,4,6,7; and tonnes of others.
+Emus for 3DS currently contains a single core VirtuaNES for 3DS, a high compatibility NES emulator for your old 3DS or 2DS. It's not as accurate as FCEUX or Nestopia, but it runs at full 60 FPS for almost all games, and supports tonnes of mappers: MMC1,3,5,6; VRC1,2,3,4,6,7; and tonnes of other mappers. As a result, the library of games it supports are huge nonetheless. 
 
-It fixes a few bugs from VirtuaNES's MMC5 mappers and even plays Rockman 4 Minus Infinity and Zelda Legend of Link hacks.
+This 3DS version also fixes a few bugs from VirtuaNES's MMC5 mappers and even plays Rockman 4 Minus Infinity and Zelda Legend of Link hacks.
 
 It also runs on your New 3DS as well!
 
@@ -33,7 +33,7 @@ It also runs on your New 3DS as well!
 
 -------------------------------------------------------------------------------------------------------
 
-## Screenshots
+## VirtuaNES Screenshots
 
 ![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/VirtuaNES%20-%20Bionic%20Commando.bmp)
 
@@ -52,6 +52,8 @@ It also runs on your New 3DS as well!
 ## Change History
 
 v0.91
+
+*VirtuaNES:*
 
 - Enabled support of FDS ROMS without the standard FDS headers.
 - Added feature to allow players to switch disks for FDS games.
@@ -98,6 +100,8 @@ Filename: 8 Eyes.CHX
 Y,GXOUSUSE,Most attacks won't damage Orin
 Y,GXNGNOSE,Most attacks won't damage Cutrus
 ```
+
+NOTE: If you enable a cheat, and then disable it, you may need to reset the game for the disabling to take effect.
 
 -------------------------------------------------------------------------------------------------------
 
