@@ -76,6 +76,8 @@ v0.91
 - Fixed problem of a full black screen for right-eye when using a New 3DS.
 - Fixed bug that causes crashing on certain 3DSes.
 
+v0.90
+- First release.
 
 -------------------------------------------------------------------------------------------------------
 
