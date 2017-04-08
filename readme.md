@@ -51,7 +51,7 @@ It also runs on your New 3DS as well!
 
 ## Change History
 
-v0.91
+### v0.91
 
 *VirtuaNES:*
 
@@ -78,12 +78,12 @@ v0.91
 - Fixed problem of a full black screen for right-eye when using a New 3DS.
 - Fixed bug that causes crashing on certain 3DSes.
 
-v0.90
+### v0.90
 - First release.
 
 -------------------------------------------------------------------------------------------------------
 
-##.CHX Cheat File format
+## .CHX Cheat File format
 
 The .CHX is a cheat file format that you can create with any text editor. Each line in the file corresponds to one cheat, and is of the following format:
 
@@ -95,7 +95,7 @@ The .CHX is a cheat file format that you can create with any text editor. Each l
 
 The .CHX must have the same name as your ROM. This is an example of a .CHX file:
 
-Filename: 8x8 Eyes.CHX
+Filename: **8x8 Eyes.CHX**
 ```
 Y,GXOUSUSE,Most attacks won't damage Orin
 Y,GXNGNOSE,Most attacks won't damage Cutrus
@@ -105,11 +105,11 @@ NOTE: If you enable a cheat, and then disable it, you may need to reset the game
 
 -------------------------------------------------------------------------------------------------------
 
-##How to Build
+## How to Build
 
 The current version can be built in two ways:
 
-###libctru v1.0.0
+###  libctru v1.0.0
 
 You will need:
 - devkitARM r45
@@ -120,7 +120,7 @@ Then build by using *make*.
 
 -------------------------------------------------------------------------------------------------------
 
-##Credits
+## Credits
 
 1. Norix team for the fantastic well-optimized VirtuaNES emulator
 2. Authors of the Citra 3DS Emulator team. Without them, this project would have been extremely difficult.
