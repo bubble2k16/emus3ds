@@ -107,6 +107,7 @@ PPU::PPU( NES* parent ) : nes(parent)
 {
 	//lpScreen = NULL;
 	lpColormode = NULL;
+	lpScreen32 = NULL;		// Bug fix.
 
 	bVSMode = FALSE;
 	nVSColorMap = -1;

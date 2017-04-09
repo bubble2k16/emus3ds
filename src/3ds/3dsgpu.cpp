@@ -30,6 +30,8 @@ u8* gfxOldTopRightFramebuffers[2];
 extern "C" void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id);
 extern "C" void gfxWriteFramebufferInfo(gfxScreen_t screen);
 
+bool isNew3DS = false;
+
 /*
 For reference only:
 
@@ -170,8 +172,11 @@ void gpu3dsCheckSlider()
         }
         else if (sliderVal < 0.3)
         {
-            gfxTopRightFramebuffers[0] = gfxOldTopRightFramebuffers[0];
-            gfxTopRightFramebuffers[1] = gfxOldTopRightFramebuffers[1];
+            if (!isNew3DS)
+            {
+                gfxTopRightFramebuffers[0] = gfxOldTopRightFramebuffers[0];
+                gfxTopRightFramebuffers[1] = gfxOldTopRightFramebuffers[1];
+            }
             gpu3dsSetParallaxBarrier(false);
         }
         else if (sliderVal < 0.6)
@@ -1109,6 +1114,10 @@ bool gpu3dsInitialize()
 	GPU_Init(NULL);
 
 	gfxSet3D(true);
+
+    u8 val = 0;
+    APT_CheckNew3DS(&val);
+    isNew3DS = (val != 0);
 
     gfxOldTopRightFramebuffers[0] = gfxTopRightFramebuffers[0];
     gfxOldTopRightFramebuffers[1] = gfxTopRightFramebuffers[1];
