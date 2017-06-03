@@ -222,6 +222,11 @@ void snd3dsStartPlaying()
 {
     if (!snd3DS.isPlaying)
     {
+        // clear the buffers to prevent any left over sound from playing
+        // again.
+        //
+        memset(snd3DS.fullBuffers, 0, sizeof(snd3dsSampleRate * 2 * 2));
+        
         // CSND
         // Fix: Copied libctru's csndPlaySound and modified it so that it will
         // not play immediately upon calling. This seems to solve the left
