@@ -12,6 +12,7 @@
 #include "DebugOut.h"
 
 #include "mmu.h"
+#include "nes.h"
 
 // CPU �������o���N
 LPBYTE	CPU_MEM_BANK[8];	// 8K�P��
@@ -24,12 +25,21 @@ BYTE	PPU_MEM_TYPE[12];
 INT	PPU_MEM_PAGE[12];	// �X�e�[�g�Z�[�u�p
 BYTE	CRAM_USED[16];		// �X�e�[�g�Z�[�u�p
 
+u64		cycles_at_scanline_start;
+u64		cycles_at_exec_start;
+u64		cycles_executed;
+
+u64		PPU_MEM_BANK_CHANGED;
+INT		PPU_MEM_BANK_TILE_PTR = 0;
+LPBYTE	PPU_MEM_BANK_TILE[33][12];	// 1K�P��
+
 // NES������
 BYTE	RAM [  8*1024];		// NES����RAM
 BYTE	WRAM[128*1024];		// ���[�N/�o�b�N�A�b�vRAM
 BYTE	DRAM[ 40*1024];		// �f�B�X�N�V�X�e��RAM
 BYTE	XRAM[  8*1024];		// �_�~�[�o���N
 BYTE	ERAM[ 32*1024];		// �g���@���pRAM
+BYTE	MRAM[128*1024];		//byemu ר��
 
 BYTE	CRAM[ 32*1024];		// �L�����N�^�p�^�[��RAM
 BYTE	VRAM[  4*1024];		// �l�[���e�[�u��/�A�g���r���[�gRAM
@@ -59,6 +69,12 @@ WORD	loopy_x;		// tile x offset
 // ROM�f�[�^�|�C���^
 LPBYTE	PROM;		// PROM ptr
 LPBYTE	VROM;		// VROM ptr
+
+LPBYTE	PROMPTR[16];
+LPBYTE	VROMPTR[16];
+
+INT PPROM_8K_SIZE[16];
+INT PVROM_1K_SIZE[16];
 
 // For dis...
 LPBYTE	PROM_ACCESS = NULL;
@@ -125,6 +141,153 @@ INT	i;
 //	SetVRAM_Mirror( VRAM_MIRROR4 );
 }
 
+
+/*
+void	SetPrg2 ( WORD A, INT bank )
+{
+	bank %= (PROM_8K_SIZE*4);
+	int page = A>>11;
+	CPU_MEM_BANK[page] = PROM+0x800*bank;
+	CPU_MEM_TYPE[page] = BANKTYPE_ROM;
+	CPU_MEM_PAGE[page] = bank;
+
+}
+void	SetPrg4 ( WORD A, INT bank )
+{
+	SetPrg2(A+0x000,bank*2+0);
+	SetPrg2(A+0x800,bank*2+1);
+}
+
+void	SetPrg8 ( WORD A, INT bank )
+{
+	SetPrg2(A+0x0000,bank*4+0);
+	SetPrg2(A+0x0800,bank*4+1);
+	SetPrg2(A+0x1000,bank*4+2);
+	SetPrg2(A+0x1800,bank*4+3);
+}
+
+void	SetPrg16 ( WORD A, INT bank )
+{
+	bank = bank*8;
+	for(int i=0; i<8; i++)
+	{
+		SetPrg2(A,bank+i);
+		A+=0x800;
+	}
+}
+
+void	SetPrg32 ( WORD A, INT bank )
+{
+	bank = bank*16;
+	for(int i=0; i<16; i++)
+	{
+		SetPrg2(A,bank+i);
+		A+=0x800;
+	}
+}
+
+void	SetPrg2r (int r,WORD A, INT bank )
+{
+	bank %= (PROM_8K_SIZE*4);
+	int page = A>>11;
+	CPU_MEM_BANK[page] = PROMPTR[r]+0x800*bank;
+	CPU_MEM_TYPE[page] = BANKTYPE_ROM;
+	CPU_MEM_PAGE[page] = bank;
+
+}
+void	SetPrg4r (int r, WORD A, INT bank )
+{
+	SetPrg2r(r,A+0x000,bank*2+0);
+	SetPrg2r(r,A+0x800,bank*2+1);
+}
+
+void	SetPrg8r (int r, WORD A, INT bank )
+{
+	SetPrg2r(r,A+0x0000,bank*4+0);
+	SetPrg2r(r,A+0x0800,bank*4+1);
+	SetPrg2r(r,A+0x1000,bank*4+2);
+	SetPrg2r(r,A+0x1800,bank*4+3);
+}
+
+void	SetPrg16r (int r, WORD A, INT bank )
+{
+	bank = bank*8;
+	for(int i=0; i<8; i++)
+	{
+		SetPrg2r(r,A,bank+i);
+		A+=0x800;
+	}
+}
+
+void	SetPrg32r (int r, WORD A, INT bank )
+{
+	bank = bank*16;
+	for(int i=0; i<16; i++)
+	{
+		SetPrg2r(r,A,bank+i);
+		A+=0x800;
+	}
+}
+*/
+
+void	SetPrg8 ( WORD A, WORD bank )
+{
+	bank %= PROM_8K_SIZE;
+	int page = A>>13;
+	CPU_MEM_BANK[page] = PROM+0x2000*bank;
+	CPU_MEM_TYPE[page] = BANKTYPE_ROM;
+	CPU_MEM_PAGE[page] = bank;
+}
+
+void	SetPrg16 ( WORD A, WORD bank )
+{
+	bank = bank*2;
+	for(int i=0; i<2; i++)
+	{
+		SetPrg8(A,bank+i);
+		A+=0x2000;
+	}
+}
+
+void	SetPrg32 ( WORD A, WORD bank )
+{
+	bank = bank*4;
+	for(int i=0; i<4; i++)
+	{
+		SetPrg8(A,bank+i);
+		A+=0x2000;
+	}
+}
+
+void	SetPrg8r (int r, WORD A, WORD bank )
+{
+	bank %= PPROM_8K_SIZE[r];
+	int page = A>>13;
+	CPU_MEM_BANK[page] = PROMPTR[r]+0x2000*bank;
+	CPU_MEM_TYPE[page] = BANKTYPE_ROM;
+	CPU_MEM_PAGE[page] = bank;
+}
+
+void	SetPrg16r (int r, WORD A, WORD bank )
+{
+	bank = bank*2;
+	for(int i=0; i<2; i++)
+	{
+		SetPrg8r(r,A,bank+i);
+		A+=0x2000;
+	}
+}
+
+void	SetPrg32r (int r, WORD A, WORD bank )
+{
+	bank = bank*4;
+	for(int i=0; i<4; i++)
+	{
+		SetPrg8r(r,A,bank+i);
+		A+=0x2000;
+	}
+}
+
 // CPU ROM bank
 void	SetPROM_Bank( BYTE page, LPBYTE ptr, BYTE type )
 {
@@ -162,6 +325,7 @@ void	SetPROM_32K_Bank( INT bank0, INT bank1, INT bank2, INT bank3 )
 	SetPROM_8K_Bank( 6, bank2 );
 	SetPROM_8K_Bank( 7, bank3 );
 }
+
 
 // PPU VROM bank
 void	SetVROM_Bank( BYTE page, LPBYTE ptr, BYTE type )
@@ -212,6 +376,39 @@ void	SetVROM_8K_Bank( INT bank0, INT bank1, INT bank2, INT bank3,
 	SetVROM_1K_Bank( 6, bank6 );
 	SetVROM_1K_Bank( 7, bank7 );
 }
+
+void	SetChr1r(int r, WORD A, INT bank)
+{
+	if(PVROM_1K_SIZE[r]==0)
+		return;
+
+	bank %= PVROM_1K_SIZE[r];
+	int page = A>>10;
+	PPU_MEM_BANK[page] = VROMPTR[r]+0x0400*bank;
+	PPU_MEM_TYPE[page] = BANKTYPE_VROM;
+	PPU_MEM_PAGE[page] = bank;
+}
+
+void	SetChr2r(int r, WORD A, INT bank)
+{
+	SetChr1r(r,A+0x0000,bank*2+0);
+	SetChr1r(r,A+0x0400,bank*2+1);
+}
+
+void	SetChr4r(int r, WORD A, INT bank)
+{
+	SetChr1r(r,A+0x0000,bank*4+0);
+	SetChr1r(r,A+0x0400,bank*4+1);
+	SetChr1r(r,A+0x0800,bank*4+2);
+	SetChr1r(r,A+0x0C00,bank*4+3);
+}
+void	SetChr8r(int r, WORD A, INT bank)
+{
+	for( INT i = 0; i < 8; i++ ) {
+		SetChr1r(r, A+0x400*i, bank*8+i );
+	}
+}
+
 
 void	SetCRAM_1K_Bank( BYTE page, INT bank )
 {

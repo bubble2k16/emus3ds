@@ -24,7 +24,7 @@ void	Mapper016::Reset()
 		patch = 1;
 		eeprom_type = 0xFF;
 
-		WRAM[0x0BBC] = 0xFF;	// SRAM‘Îô
+		WRAM[0x0BBC] = 0xFF;	// SRAMï¿½Îï¿½
 	}
 
 	if( crc == 0x1d6f27f7 ) {	// Dragon Ball Z 2(Korean Hack)
@@ -45,12 +45,14 @@ void	Mapper016::Reset()
 		nes->SetIrqType( NES::IRQ_HSYNC );
 	}
 	if( crc == 0xe49fc53e		// Dragon Ball Z 2 - Gekishin Freeza!!(J)
+	 || crc == 0xeec199d4    	// Dragon Ball Z 2 - Gekishin Freeza!!(J) [en]
 	 || crc == 0x1582fee0 ) {	// Dragon Ball Z 2 - Gekishin Freeza!!(J) [alt]
 		nes->SetIrqType( NES::IRQ_HSYNC );
 		eeprom_type = 1;
 	}
-	if( crc == 0x09499f4d ) {	// Dragon Ball Z 3 - Ressen Jinzou Ningen(J)
-		nes->SetIrqType( NES::IRQ_HSYNC );
+	if( crc == 0x09499f4d 		// Dragon Ball Z 3 - Ressen Jinzou Ningen(J)
+	 || crc == 0x7daf7523 ) {	// Dragon Ball Z 3 - Ressen Jinzou Ningen(J) [en]
+		//nes->SetIrqType( NES::IRQ_HSYNC );
 		eeprom_type = 1;
 	}
 	if( crc == 0x2e991109 ) {	// Dragon Ball Z Gaiden - Saiya Jin Zetsumetsu Keikaku (J)
@@ -69,7 +71,7 @@ void	Mapper016::Reset()
 		eeprom_type = 1;
 	}
 
-	// DATACHŒn
+	// DATACHï¿½n
 	if( crc == 0x0be0a328 		// Datach - SD Gundam - Gundam Wars(J)
 	 || crc == 0x19e81461		// Datach - Dragon Ball Z - Gekitou Tenkaichi Budou Kai(J)
 	 || crc == 0x5b457641		// Datach - Ultraman Club - Supokon Fight!(J)

@@ -381,6 +381,7 @@ void	PPU::ScanlineStart()
 		loopy_y = (loopy_v&0x7000)>>12;
 		nes->mapper->PPU_Latch( 0x2000 + (loopy_v & 0x0FFF) );
 	}
+
 	//if (nes->GetScanline() >= 48 && nes->GetScanline() <= 50)
 	//	printf ("  SLSTART: loopy_v = %x, loopy_y = %x @ %d\n", loopy_v, loopy_y, nes->GetScanline());
 }
@@ -414,10 +415,11 @@ void	PPU::ScanlineNext()
 
 u32 bgPalette[16];
 u32 sprPalette[16];
+BYTE	BGwrite[33+1];
+
 
 void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 {
-	BYTE	BGwrite[33+1];
 	//BYTE	BGmono[33+1];
 
 	t3dsStartTiming(30, "Scanline:BG");

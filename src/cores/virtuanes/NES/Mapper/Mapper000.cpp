@@ -14,9 +14,21 @@ void	Mapper000::Reset()
 			break;
 	}
 
+	if(PROM_16K_SIZE>2)
+	{
+		SetPROM_32K_Bank(0,1,PROM_8K_SIZE-2,PROM_8K_SIZE-1);
+	}
+
+	//SetPROM_32K_Bank(0,1,2,3);
+
 	DWORD	crc = nes->rom->GetPROM_CRC();
 	if( crc == 0x4e7db5af ) {	// Circus Charlie(J)
 		nes->SetRenderMethod( NES::POST_RENDER );
+	}
+	if( crc == 0xc3c0ad9b ) {	// VolleyBall
+		//SetPROM_32K_Bank( 0 );
+		SetVROM_8K_Bank(0);
+		SetPROM_8K_Bank(3,3);
 	}
 	if( crc == 0x57970078 ) {	// F-1 Race(J)
 		nes->SetRenderMethod( NES::POST_RENDER );

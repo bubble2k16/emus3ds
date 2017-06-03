@@ -63,7 +63,7 @@ public:
 	virtual	~CPU();
 
 	BYTE	RD6502( WORD addr );
-	void	WR6502( WORD addr, BYTE data );
+	//void	WR6502( WORD addr, BYTE data );
 	WORD	RD6502W( WORD addr );
 
 	void	Reset();
@@ -87,6 +87,7 @@ public:
 	void	GetContext( R6502& r )	{ r = R; }
 
 	void	SetClockProcess( BOOL bEnable ) { m_bClockProcess = bEnable; }
+
 protected:
 	NES*	nes;
 	APU*	apu;

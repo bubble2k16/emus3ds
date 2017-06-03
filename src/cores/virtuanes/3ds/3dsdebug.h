@@ -9,7 +9,7 @@
             uint32 key = hidKeysHeld(); \
             if (key == KEY_L) break; \
             if (key == KEY_TOUCH) break; \
-            if (key == KEY_SELECT) { GPU3DS.enableDebug ^= 1; break; } \
+            if (key == KEY_R) { GPU3DS.enableDebug ^= 1; break; } \
             if (prevkey != 0 && key == 0) \
                 break;  \
             prevkey = key; \

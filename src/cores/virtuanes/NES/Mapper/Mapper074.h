@@ -9,6 +9,8 @@ public:
 	
 	void	Reset();
 	void	Write( WORD addr, BYTE data );
+	void	WriteLow( WORD addr, BYTE data );
+	BYTE	ReadLow( WORD addr );
 
 	void	HSync( INT scanline );
 

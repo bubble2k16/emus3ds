@@ -73,6 +73,7 @@ public:
 	WORD	GetTILEY()	{ return loopy_y; }
 
 	// Scanline base render
+	void	ScanlineUpTo( INT scanline, BOOL bMax, BOOL bLeftClip, INT tile );
 	void	Scanline( INT scanline, BOOL bMax, BOOL bLeftClip );
 	void	DummyScanline( INT scanline );
 

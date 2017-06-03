@@ -30,6 +30,19 @@
 #include "mmu.h"
 
 #include "ips.h"
+#include "3dsdbg.h"
+
+struct CHINF {
+	u32 crc32;
+	s32 mapper;
+	s32 mirror;
+};
+
+static struct CHINF moo[] =
+{
+	#include "ines-correct.h"
+};
+
 
 //
 // �R���X�g���N�^

@@ -261,7 +261,7 @@ char *impl3dsTitleImage = "./virtuanes_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "VirtuaNES for 3DS v0.91";
+char *impl3dsTitleText = "VirtuaNES for 3DS v0.92b";
 
 //---------------------------------------------------------
 // Initializes the emulator core.
@@ -596,7 +596,7 @@ void impl3dsEmulationPollInput()
 
 
 //---------------------------------------------------------
-// The following step1-4 pipeline is used if the 
+// The following pipeline is used if the 
 // emulation engine does software rendering.
 //
 // You can potentially 'hide' the wait latencies by
@@ -701,7 +701,6 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
 	{
 		impl3dsEmulationPollInput();
 
-		// Step 4, 0, 1 are all inside Emulate Frame
 		if (skipDrawingFrame)
 		{
 			nes->EmulateFrame(false);

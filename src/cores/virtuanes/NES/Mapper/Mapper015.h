@@ -10,5 +10,8 @@ public:
 	void	Write(WORD addr, BYTE data);
 
 protected:
+	void	Sync (void);
+	uint8 PRG[4];
+	uint8 Mirror;
 private:
 };

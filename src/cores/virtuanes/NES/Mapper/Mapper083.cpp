@@ -19,6 +19,7 @@ void	Mapper083::Reset()
 	}
 
 	chr_bank = 0;
+	dipreg   = 0;
 
 	irq_enable = 0;	// Disable
 	irq_counter = 0;
@@ -29,8 +30,16 @@ void	Mapper083::Reset()
 	}
 }
 
+void	Mapper083::SoftReset()
+{
+	dipreg = dipreg^1;
+}
+
 BYTE	Mapper083::ReadLow( WORD addr )
 {
+	if(addr==0x5000)
+		return dipreg;
+
 	if( (addr&0x5100) == 0x5100 ) {
 		return	reg[2];
 	} else if( addr >= 0x6000 ) {

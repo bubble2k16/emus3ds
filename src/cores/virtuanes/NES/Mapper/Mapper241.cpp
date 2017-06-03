@@ -12,8 +12,18 @@ void    Mapper241::Reset()
 
 void	Mapper241::Write( WORD addr, BYTE data )
 {
-	if( addr == 0x8000 ) {
+	if( addr >= 0x8000 ) {
 		SetPROM_32K_Bank( data );
 	}
 }
 
+
+BYTE	Mapper241::ReadLow ( WORD A )
+{
+	if(A<0x6000)
+	{
+		return 0x50;
+	}
+	else
+		return Mapper::ReadLow(A);
+}

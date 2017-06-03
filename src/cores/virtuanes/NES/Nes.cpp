@@ -594,9 +594,12 @@ void	NES::EmulateFrame( BOOL bDraw )
 	//
 	NES_scanline = scanline;
 
+
 	if( RenderMethod != TILE_RENDER ) {
 		bZapper = FALSE;
 		while( TRUE ) {
+			cycles_at_scanline_start = cpu->GetTotalCycles();
+
 			ppu->SetRenderScanline( scanline );
 
 			if( scanline == 0 ) {
@@ -742,6 +745,8 @@ void	NES::EmulateFrame( BOOL bDraw )
 	} else {
 		bZapper = FALSE;
 		while( TRUE ) {
+
+			cycles_at_scanline_start = cpu->GetTotalCycles();
 			ppu->SetRenderScanline( scanline );
 
 			if( scanline == 0 ) {

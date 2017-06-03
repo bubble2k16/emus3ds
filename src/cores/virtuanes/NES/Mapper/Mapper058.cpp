@@ -4,6 +4,8 @@
 void	Mapper058::Reset()
 {
 	SetPROM_32K_Bank( 0, 1, 0, 1 );
+	if( 0xbd50a90e == nes->rom->GetPROM_CRC() )
+		SetPROM_32K_Bank(0);
 	if( VROM_1K_SIZE ) {
 		SetVROM_8K_Bank( 0 );
 	}

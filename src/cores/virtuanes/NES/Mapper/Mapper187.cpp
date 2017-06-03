@@ -41,7 +41,12 @@ BYTE	Mapper187::ReadLow( WORD addr )
 		case 3:
 			return	0x00;
 	}
-	return 0;
+	
+	if( addr >= 0x5000 && addr <= 0x5FFF ) {
+		return	XRAM[addr-0x4000];
+	}else{
+		return	Mapper::ReadLow( addr );
+	}
 }
 
 void	Mapper187::WriteLow( WORD addr, BYTE data )
@@ -66,6 +71,11 @@ void	Mapper187::WriteLow( WORD addr, BYTE data )
 			prg[3] = PROM_8K_SIZE-1;
 		}
 		SetBank_CPU();
+	}
+	else	if( addr > 0x5000 && addr <= 0x5FFF ) {
+		XRAM[addr-0x4000] = data;
+	} else {
+		Mapper::WriteLow( addr, data );
 	}
 }
 
