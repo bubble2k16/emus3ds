@@ -4,7 +4,11 @@
 class	Mapper090 : public Mapper
 {
 public:
-	Mapper090( NES* parent ) : Mapper(parent) {}
+	Mapper090( NES* parent ) : Mapper(parent) 
+	{ 
+		is_209 = false; 
+		is_211 = false; 
+	}
 
 	void	Reset();
 	BYTE	ReadLow (WORD addr);
@@ -20,11 +24,17 @@ public:
 	void	LoadState( LPBYTE p );
 
 protected:
+	BOOL	is_209;
+	BOOL	is_211;
+	
 	BYTE	patch;
 
 	BYTE	prg_reg[4];
 	BYTE	nth_reg[4], ntl_reg[4];
 	BYTE	chh_reg[8], chl_reg[8];
+
+	BYTE	nt_ram;
+	BYTE	nt_mode;
 
 	BYTE	irq_enable;
 	BYTE	irq_counter;
@@ -45,4 +55,24 @@ private:
 	void	SetBank_CPU();
 	void	SetBank_PPU();
 	void	SetBank_VRAM();
+};
+
+
+class Mapper211 : public Mapper090
+{
+public:
+	Mapper211( NES* parent ) : Mapper090(parent) 
+	{
+		is_211 = true;
+	}
+};
+
+
+class Mapper209 : public Mapper090
+{
+public:
+	Mapper209( NES* parent ) : Mapper090(parent) 
+	{
+		is_209 = true;
+	}
 };

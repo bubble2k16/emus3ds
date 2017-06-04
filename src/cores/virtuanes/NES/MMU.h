@@ -23,10 +23,21 @@ extern	BYTE	PPU_MEM_TYPE[12];
 extern	INT	PPU_MEM_PAGE[12];	// �X�e�[�g�Z�[�u�p
 extern	BYTE	CRAM_USED[16];		// �X�e�[�g�Z�[�u�p
 
-
 extern	u64		cycles_at_scanline_start;
-extern	u64		cycles_at_exec_start;
-extern	u64		cycles_executed;
+extern	u64		cycles_current;
+
+
+#define PPU_UPDATE_QUEUE_SIZE	64
+typedef struct
+{
+	int		TILE_NO;
+	LPBYTE	PPU_MEM_BANK[12];
+	int		PPUREG;
+} TPPU_UPDATE_QUEUE;
+
+extern	INT					PPU_UPDATE_QUEUE_WPTR;
+extern	INT					PPU_UPDATE_QUEUE_RPTR;
+extern	TPPU_UPDATE_QUEUE	PPU_UPDATE_QUEUE[PPU_UPDATE_QUEUE_SIZE];
 
 
 // NES������
@@ -97,6 +108,9 @@ extern	void	SetPROM_8K_Bank ( BYTE page, INT bank );
 extern	void	SetPROM_16K_Bank( BYTE page, INT bank );
 extern	void	SetPROM_32K_Bank( INT bank );
 extern	void	SetPROM_32K_Bank( INT bank0, INT bank1, INT bank2, INT bank3 );
+
+extern	void	ResetPPU_MidScanline ();
+extern	void 	UpdatePPU_MidScanline (int page);
 
 extern	void	SetVROM_Bank( BYTE page, LPBYTE ptr, BYTE type );
 extern	void	SetVROM_1K_Bank( BYTE page, INT bank );

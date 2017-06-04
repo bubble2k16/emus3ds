@@ -261,7 +261,7 @@ char *impl3dsTitleImage = "./virtuanes_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "VirtuaNES for 3DS v0.92b";
+char *impl3dsTitleText = "VirtuaNES for 3DS v0.92b1";
 
 //---------------------------------------------------------
 // Initializes the emulator core.

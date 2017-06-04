@@ -114,6 +114,8 @@ public:
 	void	SetVSSecurity( BYTE data ) { VSSecurityData = data; }
 	void	SetVSColorMap( INT nColorMap ) { nVSColorMap = nColorMap; }
 
+	TPPU_UPDATE_QUEUE *currentQ;
+
 protected:
 	INT		chrLUT1[65536];		
 	INT		chrLUT2[65536];		

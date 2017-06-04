@@ -490,6 +490,8 @@ void	NES::Reset()
 	}
 
 	base_cycles = emul_cycles = 0;
+
+	ResetPPU_MidScanline();
 }
 
 void	NES::SoftReset()
@@ -678,6 +680,8 @@ void	NES::EmulateFrame( BOOL bDraw )
 					EmulationCPU( FETCH_CYCLES*10+nescfg->ScanlineEndCycles );
 				}
 			} else if( scanline == 240 ) {
+				ResetPPU_MidScanline();
+				
 				mapper->VSync();
 				if( RenderMethod < POST_RENDER ) {
 					EmulationCPU( nescfg->ScanlineCycles );
@@ -745,7 +749,6 @@ void	NES::EmulateFrame( BOOL bDraw )
 	} else {
 		bZapper = FALSE;
 		while( TRUE ) {
-
 			cycles_at_scanline_start = cpu->GetTotalCycles();
 			ppu->SetRenderScanline( scanline );
 
@@ -802,6 +805,8 @@ void	NES::EmulateFrame( BOOL bDraw )
 					}
 				}
 			} else if( scanline == 240 ) {
+				ResetPPU_MidScanline();
+				
 			// �_�~�[�X�L�������C�� (Scanline 240)
 				//impl3dsRenderStep1TransferNESScreenToTexture();		
 

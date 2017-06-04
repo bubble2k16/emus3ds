@@ -158,16 +158,17 @@
 	EA = ET + (WORD)R.Y;	\
 }
 
-
-#define WR6502(addr, data)						\
-	if( addr < 0x2000 ) {						\
-	/* RAM (Mirror $0800, $1000, $1800) */ 		\
-		RAM[addr&0x07FF] = data;				\
-	} else {									\
-	/* Others */								\
-		cycles_executed = exec_cycles;			\
-		nes->Write( addr, data );				\
-	}											\
+#define WR6502( addr, data )							\
+{														\
+	if( addr < 0x2000 ) {								\
+	/* RAM (Mirror $0800, $1000, $1800) */				\
+		RAM[addr&0x07FF] = data;						\
+	} else {											\
+	/* Others */										\
+		cycles_current = TOTAL_cycles; 	\
+		nes->Write( addr, data );						\
+	}													\
+}														\
 
 
 // ���������C�g
@@ -1108,8 +1109,6 @@ u64	OLD_cycles = TOTAL_cycles;
 INT	exec_cycles;
 BYTE	nmi_request, irq_request;
 BOOL	bClockProcess = m_bClockProcess;
-
-	cycles_at_exec_start = TOTAL_cycles;
 
 // TEMP
 register WORD	EA;

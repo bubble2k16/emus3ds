@@ -611,6 +611,10 @@ Mapper*	CreateMapper( NES* parent, INT no )
 		case	199:
 			//return new fceuMMC3(parent,199);
 			return new Mapper199(parent);
+		case	209:
+			return new Mapper209(parent);
+		case	211:
+			return new Mapper211(parent);
 		case	220:
 			return new Mapper220(parent);
 		case	222:

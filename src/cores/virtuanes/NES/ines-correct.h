@@ -238,6 +238,7 @@
 	{0xd323b806,	210,		1},	/* Wagyan Land 3 */
 	{0xbd523011,	210,		0},	/* Dream Master */
 	{0x5daae69a,	211,	   -1},	/* Aladdin - Return of Jaffar, The (Unl) [!] */
+	{0x1ba42ce0,	211,	   -1},	/* Donkey Kong Country 4 */
 	{0x1ec1dfeb,	217,	   -1},	/* 255-in-1 (Cut version) [p1] */
 	{0x046d70cc,	217,	   -1},	/* 500-in-1 (Anim Splash, Alt Mapper)[p1][!] */
 	{0x12f86a4d,	217,	   -1},	/* 500-in-1 (Static Splash, Alt Mapper)[p1][!] */
