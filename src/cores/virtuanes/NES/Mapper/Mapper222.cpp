@@ -33,9 +33,9 @@ void	Mapper220::Sync()
 	}
 
   //setprg8(0xA000,0xd);
-  SetPrg8(0xA000,0xD);
+  setprg8(0xA000,0xD);
   //setprg16(0xC000,7);
-  SetPrg16(0xC000,7);
+  setprg16(0xC000,7);
   //setchr8(0);
   SetVRAM_Mirror(mirror);
 }

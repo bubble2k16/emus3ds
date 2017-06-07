@@ -61,8 +61,8 @@ void	Mapper156::Sync()
     //SetChr1r(0,i<<10, chrlo[i]|(chrhi[i] << 8));
  // }
   //setprg8r(0x10,0x6000,0);
-  SetPrg16(0x8000,prg);
-  SetPrg16(0xC000,~0);
+  setprg16(0x8000,prg);
+  setprg16(0xC000,~0);
   if(mirrisused)
     SetVRAM_Mirror(mirr ^ 1);
   else

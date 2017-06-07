@@ -14,7 +14,9 @@
 #include "typedef.h"
 #include "macro.h"
 
+#include "3dsdbg.h"
 #include "nes.h"
+#include "mmu_fceux.h" 
 #include "mmu.h" 
 #include "cpu.h"
 #include "ppu.h"
@@ -27,6 +29,7 @@
 #include "Config.h"
 
 //////////////////////////////////////////////////////////////////////////
+#include "MapperFCEUX.h"
 #include "Mapper000.h"
 #include "Mapper001.h"
 #include "Mapper002.h"
@@ -52,6 +55,7 @@
 #include "Mapper024.h"
 #include "Mapper025.h"
 #include "Mapper026.h"
+#include "Mapper028.h"
 #include "Mapper032.h"
 #include "Mapper033.h"
 #include "Mapper034.h"
@@ -411,6 +415,11 @@ Mapper*	CreateMapper( NES* parent, INT no )
 			return new Mapper025(parent);
 		case	26:
 			return new Mapper026(parent);
+		case	28:
+			return new MapperFCEUX(parent, 
+				fceux_mapper028::M28Power, 
+				fceux_mapper028::M28Reset, 
+				fceux_mapper028::StateRegs);
 		case	32:
 			return new Mapper032(parent);
 		case	33:

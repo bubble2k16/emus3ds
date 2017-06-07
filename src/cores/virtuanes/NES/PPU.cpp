@@ -25,6 +25,7 @@
 #include "rom.h"
 #include "mapper.h"
 
+#include "3dsdbg.h"
 #include "3dsopt.h"
 
 BYTE	PPU::VSColorMap[5][64] = {
@@ -504,14 +505,20 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 				pScnRGBA += (8-loopy_shift);
 
 
-				INT	tileofs = (currentQ->PPUREG & PPU_BGTBL_BIT)<<8;
+				INT	tileofs = (PPUREG[0] & PPU_BGTBL_BIT)<<8;
 				//INT tileofs = 0;
 				INT	ntbladr = 0x2000+(loopy_v&0x0FFF);
 				INT	attradr = 0x23C0+(loopy_v&0x0C00)+((loopy_v&0x0380)>>4);
 				INT	ntbl_x  = ntbladr&0x001F;
 				INT	attrsft = (ntbladr&0x0040)>>4;
 
-				LPBYTE	pNTBL = currentQ->PPU_MEM_BANK[ntbladr>>10];
+				LPBYTE	pNTBL = PPU_MEM_BANK[ntbladr>>10];
+
+				if (nes->GetRenderMethod() == NES::POST_RENDER)
+				{
+					pNTBL = currentQ->PPU_MEM_BANK[ntbladr>>10];
+					tileofs = (currentQ->PPUREG & PPU_BGTBL_BIT)<<8;
+				}
 				//LPBYTE	pNTBL = 0;
 
 				INT	tileadr;
@@ -541,7 +548,7 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 							cache_tile = 0;
 							//if (scanline < 24)
 							//printf ("  R: %3d, %2d / %2d %2d\n", scanline, i, PPU_UPDATE_QUEUE_RPTR, PPU_UPDATE_QUEUE_WPTR);
-
+								
 						}
 					}
 

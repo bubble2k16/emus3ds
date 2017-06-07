@@ -128,15 +128,17 @@ SMenuItem optionMenu[] = {
     MENU_MAKE_CHECKBOX  (15001, "  Hide text in bottom screen", 0),
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("GAME-SPECIFIC SETTINGS"),
-    MENU_MAKE_HEADER2   ("Graphics"),
     MENU_MAKE_PICKER    (10000, "  Frameskip", "Try changing this if the game runs slow. Skipping frames help it run faster but less smooth.", optionsForFrameskip, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (12000, "  Framerate", "Some games run at 50 or 60 FPS by default. Override if required.", optionsForFrameRate, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (19000, "  Flickering Sprites", "Sprites on real hardware flicker. You can disable for better visuals.", optionsForSpriteFlicker, DIALOGCOLOR_CYAN),
     MENU_MAKE_DISABLED  (""),
-    MENU_MAKE_HEADER2   ("Audio"),
+    MENU_MAKE_HEADER1   ("AUDIO"),
+    MENU_MAKE_CHECKBOX  (20002, "  Apply volume to all games", 0),
     MENU_MAKE_GAUGE     (14000, "  Volume Amplification", 0, 8, 4),
     MENU_MAKE_DISABLED  (""),
-    MENU_MAKE_HEADER2   ("3DS Button Config"),
+    MENU_MAKE_HEADER1   ("BUTTON CONFIGURATION"),
+    MENU_MAKE_CHECKBOX  (20000, "  Apply button mappings to all games", 0),
+    MENU_MAKE_CHECKBOX  (20001, "  Apply rapid fire settings to all games", 0),
     MENU_MAKE_PICKER    (13010, "  3DS 'A'", "", optionsForButtons, DIALOGCOLOR_CYAN),
     MENU_MAKE_GAUGE     (13000, "    Rapid-Fire Speed", 0, 10, 0),
     MENU_MAKE_PICKER    (13011, "  3DS 'B'", "", optionsForButtons, DIALOGCOLOR_CYAN),
@@ -261,7 +263,7 @@ char *impl3dsTitleImage = "./virtuanes_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "VirtuaNES for 3DS v0.92b1";
+char *impl3dsTitleText = "VirtuaNES for 3DS v0.92";
 
 //---------------------------------------------------------
 // Initializes the emulator core.
@@ -548,31 +550,39 @@ void impl3dsEmulationPollInput()
     if (keysHeld3ds & KEY_SELECT) consoleJoyPad |= BTNNES_SELECT;
     if (keysHeld3ds & KEY_START) consoleJoyPad |= BTNNES_START;
 
+    int *buttonMapping = settings3DS.ButtonMapping;
+    if (settings3DS.UseGlobalButtonMappings)
+        buttonMapping = settings3DS.GlobalButtonMapping;
+
 	buttons3dsPressed[BTN3DS_L] = (keysHeld3ds & KEY_L);
-	if (keysHeld3ds & KEY_L) consoleJoyPad |= settings3DS.ButtonMapping[BTN3DS_L];
+	if (keysHeld3ds & KEY_L) consoleJoyPad |= buttonMapping[BTN3DS_L];
     
 	buttons3dsPressed[BTN3DS_R] = (keysHeld3ds & KEY_R);
-	if (keysHeld3ds & KEY_R) consoleJoyPad |= settings3DS.ButtonMapping[BTN3DS_R];
+	if (keysHeld3ds & KEY_R) consoleJoyPad |= buttonMapping[BTN3DS_R];
     
 	buttons3dsPressed[BTN3DS_A] = (keysHeld3ds & KEY_A);
-    if (keysHeld3ds & KEY_A) consoleJoyPad |= settings3DS.ButtonMapping[BTN3DS_A];
+    if (keysHeld3ds & KEY_A) consoleJoyPad |= buttonMapping[BTN3DS_A];
     
 	buttons3dsPressed[BTN3DS_B] = (keysHeld3ds & KEY_B);
-    if (keysHeld3ds & KEY_B) consoleJoyPad |= settings3DS.ButtonMapping[BTN3DS_B];
+    if (keysHeld3ds & KEY_B) consoleJoyPad |= buttonMapping[BTN3DS_B];
     
 	buttons3dsPressed[BTN3DS_X] = (keysHeld3ds & KEY_X);
-    if (keysHeld3ds & KEY_X) consoleJoyPad |= settings3DS.ButtonMapping[BTN3DS_X];
+    if (keysHeld3ds & KEY_X) consoleJoyPad |= buttonMapping[BTN3DS_X];
     
 	buttons3dsPressed[BTN3DS_Y] = (keysHeld3ds & KEY_Y);
-    if (keysHeld3ds & KEY_Y) consoleJoyPad |= settings3DS.ButtonMapping[BTN3DS_Y];
+    if (keysHeld3ds & KEY_Y) consoleJoyPad |= buttonMapping[BTN3DS_Y];
 
     // Handle turbo / rapid fire buttons.
     //
+    int *turbo = settings3DS.Turbo;
+    if (settings3DS.UseGlobalTurbo)
+        turbo = settings3DS.GlobalTurbo;
+    
     #define HANDLE_TURBO(i, mask) \
 		if (settings3DS.Turbo[i] && buttons3dsPressed[i]) { \
 			if (!prevConsoleButtonPressed[i]) \
 			{ \
-				prevConsoleButtonPressed[i] = 11 - settings3DS.Turbo[i]; \
+				prevConsoleButtonPressed[i] = 11 - turbo[i]; \
 			} \
 			else \
 			{ \
@@ -581,12 +591,12 @@ void impl3dsEmulationPollInput()
 			} \
 		} \
 
-    HANDLE_TURBO(BTN3DS_L, settings3DS.ButtonMapping[BTN3DS_L]);
-    HANDLE_TURBO(BTN3DS_R, settings3DS.ButtonMapping[BTN3DS_R]);
-    HANDLE_TURBO(BTN3DS_A, settings3DS.ButtonMapping[BTN3DS_A]);
-    HANDLE_TURBO(BTN3DS_B, settings3DS.ButtonMapping[BTN3DS_B]);
-    HANDLE_TURBO(BTN3DS_X, settings3DS.ButtonMapping[BTN3DS_X]);
-    HANDLE_TURBO(BTN3DS_Y, settings3DS.ButtonMapping[BTN3DS_Y]);
+    HANDLE_TURBO(BTN3DS_L, buttonMapping[BTN3DS_L]);
+    HANDLE_TURBO(BTN3DS_R, buttonMapping[BTN3DS_R]);
+    HANDLE_TURBO(BTN3DS_A, buttonMapping[BTN3DS_A]);
+    HANDLE_TURBO(BTN3DS_B, buttonMapping[BTN3DS_B]);
+    HANDLE_TURBO(BTN3DS_X, buttonMapping[BTN3DS_X]);
+    HANDLE_TURBO(BTN3DS_Y, buttonMapping[BTN3DS_Y]);
 
     prevConsoleJoyPad = consoleJoyPad;
 
@@ -714,6 +724,7 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
 		}
 	}
 	t3dsEndTiming(10);
+
 
 	//impl3dsGenerateSoundSamples();
 
@@ -1008,6 +1019,22 @@ bool impl3dsReadWriteSettingsGlobal(bool writeMode)
     config3dsReadWriteInt32("ScreenStretch=%d\n", &settings3DS.ScreenStretch, 0, 7);
     config3dsReadWriteInt32("HideUnnecessaryBottomScrText=%d\n", &settings3DS.HideUnnecessaryBottomScrText, 0, 1);
     config3dsReadWriteInt32("Font=%d\n", &settings3DS.Font, 0, 2);
+    config3dsReadWriteInt32("UseGlobalButtonMappings=%d\n", &settings3DS.UseGlobalButtonMappings, 0, 2);
+    config3dsReadWriteInt32("UseGlobalTurbo=%d\n", &settings3DS.UseGlobalTurbo, 0, 2);
+    config3dsReadWriteInt32("UseGlobalVolume=%d\n", &settings3DS.UseGlobalVolume, 0, 2);
+    config3dsReadWriteInt32("TurboA=%d\n", &settings3DS.GlobalTurbo[0], 0, 10);
+    config3dsReadWriteInt32("TurboB=%d\n", &settings3DS.GlobalTurbo[1], 0, 10);
+    config3dsReadWriteInt32("TurboX=%d\n", &settings3DS.GlobalTurbo[2], 0, 10);
+    config3dsReadWriteInt32("TurboY=%d\n", &settings3DS.GlobalTurbo[3], 0, 10);
+    config3dsReadWriteInt32("TurboL=%d\n", &settings3DS.GlobalTurbo[4], 0, 10);
+    config3dsReadWriteInt32("TurboR=%d\n", &settings3DS.GlobalTurbo[5], 0, 10);
+    config3dsReadWriteInt32("Vol=%d\n", &settings3DS.GlobalVolume, 0, 8);
+    config3dsReadWriteInt32("ButtonMapA=%d\n", &settings3DS.GlobalButtonMapping[0], 0, 0xffff);
+    config3dsReadWriteInt32("ButtonMapB=%d\n", &settings3DS.GlobalButtonMapping[1], 0, 0xffff);
+    config3dsReadWriteInt32("ButtonMapX=%d\n", &settings3DS.GlobalButtonMapping[2], 0, 0xffff);
+    config3dsReadWriteInt32("ButtonMapY=%d\n", &settings3DS.GlobalButtonMapping[3], 0, 0xffff);
+    config3dsReadWriteInt32("ButtonMapL=%d\n", &settings3DS.GlobalButtonMapping[4], 0, 0xffff);
+    config3dsReadWriteInt32("ButtonMapR=%d\n", &settings3DS.GlobalButtonMapping[5], 0, 0xffff);
 
     // Fixes the bug where we have spaces in the directory name
     config3dsReadWriteString("Dir=%s\n", "Dir=%1000[^\n]s\n", file3dsGetCurrentDir());
@@ -1076,7 +1103,12 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
             settings3DS.Volume = 0;
         if (settings3DS.Volume > 8)
             settings3DS.Volume = 8;
-        Config.sound.nVolume[0] = 100 + settings3DS.Volume * 100 / 4;
+        
+        int vol[9] = { 100, 125, 150, 175, 200, 250, 300, 350, 400 };
+        Config.sound.nVolume[0] = vol[settings3DS.Volume];
+        if (settings3DS.UseGlobalVolume)
+            Config.sound.nVolume[0] = vol[settings3DS.GlobalVolume];
+            
 
         Config.graphics.bAllSprite = settings3DS.OtherOptions[SETTINGS_ALLSPRITES];
     }
@@ -1111,19 +1143,54 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
     UPDATE_SETTINGS(settings3DS.HideUnnecessaryBottomScrText, 1, 15001);
     UPDATE_SETTINGS(settings3DS.MaxFrameSkips, 1, 10000);
     UPDATE_SETTINGS(settings3DS.ForceFrameRate, 1, 12000);
-    UPDATE_SETTINGS(settings3DS.Turbo[0], 1, 13000);
-    UPDATE_SETTINGS(settings3DS.Turbo[1], 1, 13001);
-    UPDATE_SETTINGS(settings3DS.Turbo[2], 1, 13002);
-    UPDATE_SETTINGS(settings3DS.Turbo[3], 1, 13003);
-    UPDATE_SETTINGS(settings3DS.Turbo[4], 1, 13004);
-    UPDATE_SETTINGS(settings3DS.Turbo[5], 1, 13005);
-    UPDATE_SETTINGS(settings3DS.ButtonMapping[0], 1, 13010);
-    UPDATE_SETTINGS(settings3DS.ButtonMapping[1], 1, 13011);
-    UPDATE_SETTINGS(settings3DS.ButtonMapping[2], 1, 13012);
-    UPDATE_SETTINGS(settings3DS.ButtonMapping[3], 1, 13013);
-    UPDATE_SETTINGS(settings3DS.ButtonMapping[4], 1, 13014);
-    UPDATE_SETTINGS(settings3DS.ButtonMapping[5], 1, 13015);
-    UPDATE_SETTINGS(settings3DS.Volume, 1, 14000);
+    UPDATE_SETTINGS(settings3DS.UseGlobalButtonMappings, 1, 20000);
+    UPDATE_SETTINGS(settings3DS.UseGlobalTurbo, 1, 20001);
+    UPDATE_SETTINGS(settings3DS.UseGlobalVolume, 1, 20002);
+    if (settings3DS.UseGlobalButtonMappings)
+    {
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[0], 1, 13010);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[1], 1, 13011);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[2], 1, 13012);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[3], 1, 13013);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[4], 1, 13014);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[5], 1, 13015);
+    }
+    else
+    {
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[0], 1, 13010);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[1], 1, 13011);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[2], 1, 13012);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[3], 1, 13013);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[4], 1, 13014);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[5], 1, 13015);
+    }
+    if (settings3DS.UseGlobalTurbo)
+    {
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[0], 1, 13000);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[1], 1, 13001);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[2], 1, 13002);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[3], 1, 13003);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[4], 1, 13004);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[5], 1, 13005);
+    }
+    else
+    {
+        UPDATE_SETTINGS(settings3DS.Turbo[0], 1, 13000);
+        UPDATE_SETTINGS(settings3DS.Turbo[1], 1, 13001);
+        UPDATE_SETTINGS(settings3DS.Turbo[2], 1, 13002);
+        UPDATE_SETTINGS(settings3DS.Turbo[3], 1, 13003);
+        UPDATE_SETTINGS(settings3DS.Turbo[4], 1, 13004);
+        UPDATE_SETTINGS(settings3DS.Turbo[5], 1, 13005);
+    }
+    if (settings3DS.UseGlobalVolume)
+    {
+        UPDATE_SETTINGS(settings3DS.GlobalVolume, 1, 14000);
+    }
+    else
+    {
+        UPDATE_SETTINGS(settings3DS.Volume, 1, 14000);
+    }
+    
     UPDATE_SETTINGS(settings3DS.PaletteFix, 1, 16000);
     UPDATE_SETTINGS(settings3DS.SRAMSaveInterval, 1, 17000);
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_ALLSPRITES], 1, 19000);     // sprite flicker

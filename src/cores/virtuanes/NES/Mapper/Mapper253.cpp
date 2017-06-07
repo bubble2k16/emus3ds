@@ -52,10 +52,10 @@ void	Mapper253::Sync(void)
 {
   uint8 i;
   //setprg8r(0x10,0x6000,0);
-  SetPrg8(0x8000,prg[0]);
-  SetPrg8(0xa000,prg[1]);
-  SetPrg8(0xc000,PROM_8K_SIZE-2);
-  SetPrg8(0xe000,PROM_8K_SIZE-1);
+  setprg8(0x8000,prg[0]);
+  setprg8(0xa000,prg[1]);
+  setprg8(0xc000,PROM_8K_SIZE-2);
+  setprg8(0xe000,PROM_8K_SIZE-1);
   for(i=0; i<8; i++)
   {
     uint32 chr = chrlo[i]|(chrhi[i]<<8);

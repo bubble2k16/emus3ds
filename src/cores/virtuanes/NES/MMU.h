@@ -99,10 +99,6 @@ extern	INT	VROM_1K_SIZE, VROM_2K_SIZE, VROM_4K_SIZE,  VROM_8K_SIZE;
 // �֐�
 extern	void	NesSub_MemoryInitial();
 
-extern	void	SetPrg8 ( WORD A, WORD bank );
-extern	void	SetPrg16( WORD A, WORD bank );
-extern	void	SetPrg32( WORD A, WORD bank );
-
 extern	void	SetPROM_Bank( BYTE page, LPBYTE ptr, BYTE type );
 extern	void	SetPROM_8K_Bank ( BYTE page, INT bank );
 extern	void	SetPROM_16K_Bank( BYTE page, INT bank );
@@ -112,6 +108,13 @@ extern	void	SetPROM_32K_Bank( INT bank0, INT bank1, INT bank2, INT bank3 );
 extern	void	ResetPPU_MidScanline ();
 extern	void 	UpdatePPU_MidScanline (int page);
 
+#define CHANGE_PPU_MEM_BANK(v)  						\
+	if (PPU_MEM_BANK[page] != (v)) 						\	
+	{ 													\
+	 	PPU_MEM_BANK[page] = (v); 						\
+		UpdatePPU_MidScanline(page); 					\
+	}													\
+
 extern	void	SetVROM_Bank( BYTE page, LPBYTE ptr, BYTE type );
 extern	void	SetVROM_1K_Bank( BYTE page, INT bank );
 extern	void	SetVROM_2K_Bank( BYTE page, INT bank );
@@ -119,15 +122,6 @@ extern	void	SetVROM_4K_Bank( BYTE page, INT bank );
 extern	void	SetVROM_8K_Bank( INT bank );
 extern	void	SetVROM_8K_Bank( INT bank0, INT bank1, INT bank2, INT bank3,
 				 INT bank4, INT bank5, INT bank6, INT bank7 );
-
-extern	void	SetChr1( WORD A, INT bank );
-extern	void	SetChr2( WORD A, INT bank );
-extern	void	SetChr4( WORD A, INT bank );
-extern	void	SetChr8( WORD A, INT bank );
-extern	void	SetChr1r(int r, WORD A, INT bank);
-extern	void	SetChr2r(int r, WORD A, INT bank);
-extern	void	SetChr4r(int r, WORD A, INT bank);
-extern	void	SetChr8r(int r, WORD A, INT bank);
 
 extern	void	SetCRAM_1K_Bank( BYTE page, INT bank );
 extern	void	SetCRAM_2K_Bank( BYTE page, INT bank );
@@ -138,7 +132,6 @@ extern	void	SetVRAM_1K_Bank( BYTE page, INT bank );
 extern	void	SetVRAM_Bank( INT bank0, INT bank1, INT bank2, INT bank3 );
 extern	void	SetVRAM_Mirror( INT type );
 extern	void	SetVRAM_Mirror( INT bank0, INT bank1, INT bank2, INT bank3 );
-
 
 // �������^�C�v
 // For PROM (CPU)
@@ -157,6 +150,7 @@ extern	void	SetVRAM_Mirror( INT bank0, INT bank1, INT bank2, INT bank3 );
 #define	VRAM_MIRROR4	0x02	// All screen
 #define	VRAM_MIRROR4L	0x03	// PA10 L�Œ� $2000-$23FF�̃~���[
 #define	VRAM_MIRROR4H	0x04	// PA10 H�Œ� $2400-$27FF�̃~���[
+
 
 #endif	// !__MMU_INCLUDED__
 

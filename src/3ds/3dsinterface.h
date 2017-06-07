@@ -26,6 +26,26 @@ typedef struct
                                             // Feature: add new option to disable unnecessary bottom screen text.
                                             // 0 - Default show FPS and "Touch screen for menu" text, 1 - Hide those text.
 
+    int     UseGlobalButtonMappings = 0;    // Use global button mappings for all games
+                                            // 0 - no, 1 - yes
+
+    int     UseGlobalTurbo = 0;             // Use global button mappings for all games
+                                            // 0 - no, 1 - yes
+
+    int     UseGlobalVolume = 0;            // Use global button mappings for all games
+                                            // 0 - no, 1 - yes
+
+    int     GlobalButtonMapping[6] = {0, 0, 0, 0, 0, 0};  
+                                            // Button Mapping using 3DS buttons: 0 - A, 1 - B, 2 - X, 3 - Y, 4 - L, 5 - R, 6 - ZL, 7 - ZR
+                                            // Values: Specific to each core.
+
+    int     GlobalTurbo[6] = {0, 0, 0, 0, 0, 0};  
+                                            // Turbo buttons: 0 - No turbo, 1 - Release/Press every alt frame.
+                                            // Indexes for 3DS buttons: 0 - A, 1 - B, 2 - X, 3 - Y, 4 - L, 5 - R
+
+    int     GlobalVolume = 4;               // 0: 100%, 4: 200%, 8: 400%
+
+
     // Game-Specific Settings
     //-----------------------------------------------
 

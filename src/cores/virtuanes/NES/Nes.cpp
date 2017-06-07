@@ -24,6 +24,7 @@
 #include "Crclib.h"
 
 #include "nes.h"
+#include "mmu_fceux.h"
 #include "mmu.h"
 #include "cpu.h"
 #include "ppu.h"
@@ -31,6 +32,7 @@
 #include "pad.h"
 #include "rom.h"
 #include "mapper.h"
+#include "3dsdbg.h"
 
 //#include "DirectDraw.h"
 //#include "DirectSound.h"
@@ -265,6 +267,9 @@ NES::NES( const char* fname )
 		DEBUGOUT( " PRG SIZE     : %4dK\n", 16*(INT)rom->GetPROM_SIZE() );
 		DEBUGOUT( " CHR SIZE     : %4dK\n",  8*(INT)rom->GetVROM_SIZE() );
 
+		// For FCEUX mapper compatibility
+		PRGsize[0] = 16*(INT)rom->GetPROM_SIZE()*1024;
+
 		DEBUGOUT( " V MIRROR     : " );
 		if( rom->IsVMIRROR() ) DEBUGOUT( "Yes\n" );
 		else		       DEBUGOUT( "No\n" );
@@ -337,7 +342,7 @@ NES::NES( const char* fname )
 		} else {
 			GameOption.Load( rom->GetGameID(), rom->GetMakerID() );
 		}
-		SetRenderMethod( (RENDERMETHOD)GameOption.nRenderMethod );
+		SetRenderMethod( RENDERMETHOD::POST_RENDER );
 		SetIrqType     ( GameOption.nIRQtype );
 		SetFrameIRQmode( GameOption.bFrameIRQ );
 		SetVideoMode   ( GameOption.bVideoMode );

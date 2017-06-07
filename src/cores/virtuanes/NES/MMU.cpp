@@ -143,151 +143,6 @@ INT	i;
 }
 
 
-/*
-void	SetPrg2 ( WORD A, INT bank )
-{
-	bank %= (PROM_8K_SIZE*4);
-	int page = A>>11;
-	CPU_MEM_BANK[page] = PROM+0x800*bank;
-	CPU_MEM_TYPE[page] = BANKTYPE_ROM;
-	CPU_MEM_PAGE[page] = bank;
-
-}
-void	SetPrg4 ( WORD A, INT bank )
-{
-	SetPrg2(A+0x000,bank*2+0);
-	SetPrg2(A+0x800,bank*2+1);
-}
-
-void	SetPrg8 ( WORD A, INT bank )
-{
-	SetPrg2(A+0x0000,bank*4+0);
-	SetPrg2(A+0x0800,bank*4+1);
-	SetPrg2(A+0x1000,bank*4+2);
-	SetPrg2(A+0x1800,bank*4+3);
-}
-
-void	SetPrg16 ( WORD A, INT bank )
-{
-	bank = bank*8;
-	for(int i=0; i<8; i++)
-	{
-		SetPrg2(A,bank+i);
-		A+=0x800;
-	}
-}
-
-void	SetPrg32 ( WORD A, INT bank )
-{
-	bank = bank*16;
-	for(int i=0; i<16; i++)
-	{
-		SetPrg2(A,bank+i);
-		A+=0x800;
-	}
-}
-
-void	SetPrg2r (int r,WORD A, INT bank )
-{
-	bank %= (PROM_8K_SIZE*4);
-	int page = A>>11;
-	CPU_MEM_BANK[page] = PROMPTR[r]+0x800*bank;
-	CPU_MEM_TYPE[page] = BANKTYPE_ROM;
-	CPU_MEM_PAGE[page] = bank;
-
-}
-void	SetPrg4r (int r, WORD A, INT bank )
-{
-	SetPrg2r(r,A+0x000,bank*2+0);
-	SetPrg2r(r,A+0x800,bank*2+1);
-}
-
-void	SetPrg8r (int r, WORD A, INT bank )
-{
-	SetPrg2r(r,A+0x0000,bank*4+0);
-	SetPrg2r(r,A+0x0800,bank*4+1);
-	SetPrg2r(r,A+0x1000,bank*4+2);
-	SetPrg2r(r,A+0x1800,bank*4+3);
-}
-
-void	SetPrg16r (int r, WORD A, INT bank )
-{
-	bank = bank*8;
-	for(int i=0; i<8; i++)
-	{
-		SetPrg2r(r,A,bank+i);
-		A+=0x800;
-	}
-}
-
-void	SetPrg32r (int r, WORD A, INT bank )
-{
-	bank = bank*16;
-	for(int i=0; i<16; i++)
-	{
-		SetPrg2r(r,A,bank+i);
-		A+=0x800;
-	}
-}
-*/
-
-void	SetPrg8 ( WORD A, WORD bank )
-{
-	bank %= PROM_8K_SIZE;
-	int page = A>>13;
-	CPU_MEM_BANK[page] = PROM+0x2000*bank;
-	CPU_MEM_TYPE[page] = BANKTYPE_ROM;
-	CPU_MEM_PAGE[page] = bank;
-}
-
-void	SetPrg16 ( WORD A, WORD bank )
-{
-	bank = bank*2;
-	for(int i=0; i<2; i++)
-	{
-		SetPrg8(A,bank+i);
-		A+=0x2000;
-	}
-}
-
-void	SetPrg32 ( WORD A, WORD bank )
-{
-	bank = bank*4;
-	for(int i=0; i<4; i++)
-	{
-		SetPrg8(A,bank+i);
-		A+=0x2000;
-	}
-}
-
-void	SetPrg8r (int r, WORD A, WORD bank )
-{
-	bank %= PPROM_8K_SIZE[r];
-	int page = A>>13;
-	CPU_MEM_BANK[page] = PROMPTR[r]+0x2000*bank;
-	CPU_MEM_TYPE[page] = BANKTYPE_ROM;
-	CPU_MEM_PAGE[page] = bank;
-}
-
-void	SetPrg16r (int r, WORD A, WORD bank )
-{
-	bank = bank*2;
-	for(int i=0; i<2; i++)
-	{
-		SetPrg8r(r,A,bank+i);
-		A+=0x2000;
-	}
-}
-
-void	SetPrg32r (int r, WORD A, WORD bank )
-{
-	bank = bank*4;
-	for(int i=0; i<4; i++)
-	{
-		SetPrg8r(r,A,bank+i);
-		A+=0x2000;
-	}
-}
 
 // CPU ROM bank
 void	SetPROM_Bank( BYTE page, LPBYTE ptr, BYTE type )
@@ -353,16 +208,9 @@ void	ResetPPU_MidScanline ()
 
 	wq->PPUREG = PPUREG[0];	
 
-	nes->ppu->currentQ = wq;
-
+	if (nes != NULL && nes->ppu != NULL)
+		nes->ppu->currentQ = wq;
 }
-
-#define CHANGE_PPU_MEM_BANK(v)  						\
-	if (PPU_MEM_BANK[page] != (v)) 						\	
-	{ 													\
-	 	PPU_MEM_BANK[page] = (v); 						\
-		UpdatePPU_MidScanline(page); 					\
-	}													\
 
 // This is for games that do bank-switching and change of the nametable
 // mid-scanline. This way we can reduce graphical glitches in some games
@@ -378,22 +226,13 @@ void 	UpdatePPU_MidScanline (int page)
 
 	if (tile > 32)
 		tile = 0;
+	if (nes == NULL)
+		return;
+	
 	int scanline = nes->GetScanline();
 	if (scanline == 0 || scanline >= 240)
 		tile = 0;
 
-/*
-	if (page >= 0)
-	{
-		int s = nes->GetScanline();
-
-		if ((s >= 64 && s <= 71) || s == 192 || s == 193)
-		{
-			printf ("%3d %3d (%2d) %2d = ", nes->GetScanline(), pixel, (int)tile, page);
-			printf ("%8x\n", PPU_MEM_BANK[page] - VROM);
-		}
-	}
-*/
 	int prev_ptr = (PPU_UPDATE_QUEUE_WPTR - 1) & (PPU_UPDATE_QUEUE_SIZE - 1);
 	int cur_pur = PPU_UPDATE_QUEUE_WPTR;
 
@@ -428,24 +267,13 @@ void 	UpdatePPU_MidScanline (int page)
 
 		if (PPU_UPDATE_QUEUE_WPTR == PPU_UPDATE_QUEUE_RPTR)
 		{
-			printf ("Oops!\n");
+			//printf ("Oops!\n");
 		}
 	}
 	if (page >= 0)
 		wq->PPU_MEM_BANK[page] = PPU_MEM_BANK[page];
 	wq->PPUREG = PPUREG[0];
 	
-	/*
-	if (scanline < 24)
-	{
-	printf (" (%3d,%3d) t=%2d pg=%2d < ", nes->GetScanline(), pixel, (int)tile, page);
-	if (page == -1)
-		printf ("%02x|", PPUREG[0]);
-	else
-		printf ("%5x|", PPU_MEM_BANK[page] - VROM);
-	printf ("%2d %2d\n", PPU_UPDATE_QUEUE_RPTR, PPU_UPDATE_QUEUE_WPTR);
-	}
-	*/
 }
 
 
@@ -502,40 +330,7 @@ void	SetVROM_8K_Bank( INT bank0, INT bank1, INT bank2, INT bank3,
 	SetVROM_1K_Bank( 7, bank7 );
 }
 
-void	SetChr1r(int r, WORD A, INT bank)
-{
-	if(PVROM_1K_SIZE[r]==0)
-		return;
 
-	bank %= PVROM_1K_SIZE[r];
-	int page = A>>10;
-	
-	//PPU_MEM_BANK[page] = VROMPTR[r]+0x0400*bank;
-	CHANGE_PPU_MEM_BANK(VROMPTR[r]+0x0400*bank);
-
-	PPU_MEM_TYPE[page] = BANKTYPE_VROM;
-	PPU_MEM_PAGE[page] = bank;
-}
-
-void	SetChr2r(int r, WORD A, INT bank)
-{
-	SetChr1r(r,A+0x0000,bank*2+0);
-	SetChr1r(r,A+0x0400,bank*2+1);
-}
-
-void	SetChr4r(int r, WORD A, INT bank)
-{
-	SetChr1r(r,A+0x0000,bank*4+0);
-	SetChr1r(r,A+0x0400,bank*4+1);
-	SetChr1r(r,A+0x0800,bank*4+2);
-	SetChr1r(r,A+0x0C00,bank*4+3);
-}
-void	SetChr8r(int r, WORD A, INT bank)
-{
-	for( INT i = 0; i < 8; i++ ) {
-		SetChr1r(r, A+0x400*i, bank*8+i );
-	}
-}
 
 
 void	SetCRAM_1K_Bank( BYTE page, INT bank )
