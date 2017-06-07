@@ -59,6 +59,7 @@
 #include "Mapper032.h"
 #include "Mapper033.h"
 #include "Mapper034.h"
+#include "Mapper036.h"
 #include "Mapper040.h"
 #include "Mapper041.h"
 #include "Mapper042.h"
@@ -419,6 +420,7 @@ Mapper*	CreateMapper( NES* parent, INT no )
 			return new MapperFCEUX(parent, 
 				fceux_mapper028::M28Power, 
 				fceux_mapper028::M28Reset, 
+				fceux_mapper028::StateRestore,
 				fceux_mapper028::StateRegs);
 		case	32:
 			return new Mapper032(parent);
@@ -428,6 +430,12 @@ Mapper*	CreateMapper( NES* parent, INT no )
 			return new Mapper034(parent);
 		case	35:
 			return new Mapper035(parent);
+		case	36:
+			return new MapperFCEUX(parent, 
+				fceux_mapper036::M36Power, 
+				NULL, 
+				fceux_mapper036::M36Restore,
+				fceux_mapper036::StateRegs);
 		case	40:
 			return new Mapper040(parent);
 		case	41:

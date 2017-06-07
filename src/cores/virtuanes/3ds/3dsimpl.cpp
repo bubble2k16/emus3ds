@@ -24,6 +24,7 @@
 #include "3dsimpl.h"
 #include "3dsopt.h"
 #include "3dsconfig.h"
+#include "3dsdbg.h"
 
 //---------------------------------------------------------
 // All other codes that you need here.
@@ -413,6 +414,9 @@ bool impl3dsLoadROM(char *romFilePath)
 	if (nes)
 		delete nes;
 
+    //CLEAR_BOTTOM_SCREEN
+    //CLEAR_BOTTOM_SCREEN
+
 	nes = new NES(romFilePath);
 	if (nes->error)
 		return false;
@@ -460,6 +464,7 @@ bool impl3dsLoadROM(char *romFilePath)
         optionsForDisk[i].Type = (fdsDiskNo >= i) ? MENUITEM_ACTION : MENUITEM_DISABLED;
 
 
+	//svcSleepThread((long)10000000000);
 
 	return true;
 }

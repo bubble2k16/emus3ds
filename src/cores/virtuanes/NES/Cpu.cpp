@@ -1160,8 +1160,10 @@ register BYTE	DT;
 			int opsz = opsize[opcode];
 			BYTE *opcodefull = &CPU_MEM_BANK[addr>>13][addr&0x1FFF];
 
-			FILE *fp = fopen("cpudbg.txt", "a");
-			fprintf (fp, "$%04X:%-54s A:%02X X:%02X Y:%02X S:%02X P:%s%s%s%s%s%s%s%s \n", 
+			//FILE *fp = fopen("cpudbg.txt", "a");
+			//fprintf (fp, 
+			printf(
+				"$%04X:%-54s A:%02X X:%02X Y:%02X S:%02X P:%s%s%s%s%s%s%s%s \n", 
 				R.PC - 1,
 				Disassemble(R.PC + opsz - 1, opcodefull), R.A, R.X, R.Y, R.S,
 				(R.P & N_FLAG) ? "N" : "n",
@@ -1173,8 +1175,8 @@ register BYTE	DT;
 				(R.P & Z_FLAG) ? "Z" : "z",
 				(R.P & C_FLAG) ? "C" : "c"
 				 );
-			fclose(fp);
-			//DEBUG_WAIT_L_KEY
+			//fclose(fp);
+			DEBUG_WAIT_L_KEY
 		}
 		*/
 

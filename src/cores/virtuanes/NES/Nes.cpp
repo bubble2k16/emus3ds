@@ -251,6 +251,9 @@ NES::NES( const char* fname )
 			goto has_error;
 		}
 
+		PROM = rom->GetPROM();
+		VROM = rom->GetVROM();
+
 		if( !(mapper = CreateMapper(this, rom->GetMapperNo())) ) {
 			// ���T�|�[�g�̃}�b�p�[�ł�
 			LPCSTR	szErrStr = CApp::GetErrorString( IDS_ERROR_UNSUPPORTMAPPER );

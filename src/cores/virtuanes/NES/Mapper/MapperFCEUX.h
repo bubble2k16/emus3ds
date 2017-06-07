@@ -9,22 +9,24 @@ protected:
     SFORMAT *_stateRegs;
 	void (*_power)(void);
 	void (*_reset)(void);
+	void (*_restore)(int);
 
 public:
-	MapperFCEUX( NES* parent, void (*power)(void), void (*reset)(void), SFORMAT *stateRegs ) : Mapper(parent) 
+	MapperFCEUX( NES* parent, void (*power)(void), void (*reset)(void), void (*restore)(int), SFORMAT *stateRegs ) : Mapper(parent) 
     {
         SetReadHandler(0x0000, 0xFFFF, ANull);
         SetWriteHandler(0x0000, 0xFFFF, BNull);
         
         _power = power;
         _reset = reset;
+        _restore = restore;
         _stateRegs = stateRegs;
 
-        if (_power) _power();
     }
 
     void    Reset(void)
     {
+        if (_power) _power();
         if (_reset) _reset();
     }
 
@@ -98,6 +100,7 @@ public:
                 bptr ++;
             }
         }
+        if (_restore) _restore(0);
     }
 
 private:
