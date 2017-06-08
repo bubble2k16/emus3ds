@@ -102,7 +102,11 @@ bool emulatorLoadRom()
 
     emulatorSettingsSave(false, false);
     snprintf(romFileNameFullPath, _MAX_PATH, "%s%s", file3dsGetCurrentDir(), romFileName);
-    if (!impl3dsLoadROM(romFileNameFullPath))
+
+    char romFileNameFullPath2[_MAX_PATH];
+    strncpy(romFileNameFullPath2, romFileNameFullPath, _MAX_PATH - 1);
+    
+    if (!impl3dsLoadROM(romFileNameFullPath2))
     {
         menu3dsHideDialog();
         return false;
@@ -421,6 +425,12 @@ void menuPause()
             {
                 strncpy(romFileNameLastSelected, romFileName, _MAX_PATH);
 
+                // Save settings and cheats, before loading
+                // your new ROM.
+                //
+                if (impl3dsCopyMenuToOrFromSettings(true))
+                    emulatorSettingsSave(true, true);
+                
                 if (!emulatorLoadRom())
                 {
                     menu3dsShowDialog("Load ROM", "Hmm... unable to load ROM.", DIALOGCOLOR_RED, optionsForOk);
@@ -832,7 +842,7 @@ void emulatorLoop()
         // the rendering for the next frame if we are too slow.
         //
 #ifndef EMU_RELEASE
-        if (emulator.isReal3DS)
+        //if (emulator.isReal3DS)
 #endif
         {
 

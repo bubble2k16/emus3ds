@@ -24,6 +24,7 @@
 #include "Crclib.h"
 
 #include "nes.h"
+#include "mmu_fceux.h"
 #include "mmu.h"
 #include "cpu.h"
 #include "ppu.h"
@@ -31,6 +32,7 @@
 #include "pad.h"
 #include "rom.h"
 #include "mapper.h"
+#include "3dsdbg.h"
 
 //#include "DirectDraw.h"
 //#include "DirectSound.h"
@@ -249,6 +251,9 @@ NES::NES( const char* fname )
 			goto has_error;
 		}
 
+		PROM = rom->GetPROM();
+		VROM = rom->GetVROM();
+
 		if( !(mapper = CreateMapper(this, rom->GetMapperNo())) ) {
 			// ���T�|�[�g�̃}�b�p�[�ł�
 			LPCSTR	szErrStr = CApp::GetErrorString( IDS_ERROR_UNSUPPORTMAPPER );
@@ -264,6 +269,9 @@ NES::NES( const char* fname )
 		DEBUGOUT( " Mapper       : %03d\n", rom->GetMapperNo() );
 		DEBUGOUT( " PRG SIZE     : %4dK\n", 16*(INT)rom->GetPROM_SIZE() );
 		DEBUGOUT( " CHR SIZE     : %4dK\n",  8*(INT)rom->GetVROM_SIZE() );
+
+		// For FCEUX mapper compatibility
+		PRGsize[0] = 16*(INT)rom->GetPROM_SIZE()*1024;
 
 		DEBUGOUT( " V MIRROR     : " );
 		if( rom->IsVMIRROR() ) DEBUGOUT( "Yes\n" );
@@ -337,7 +345,7 @@ NES::NES( const char* fname )
 		} else {
 			GameOption.Load( rom->GetGameID(), rom->GetMakerID() );
 		}
-		SetRenderMethod( (RENDERMETHOD)GameOption.nRenderMethod );
+		SetRenderMethod( RENDERMETHOD::POST_RENDER );
 		SetIrqType     ( GameOption.nIRQtype );
 		SetFrameIRQmode( GameOption.bFrameIRQ );
 		SetVideoMode   ( GameOption.bVideoMode );
@@ -490,6 +498,8 @@ void	NES::Reset()
 	}
 
 	base_cycles = emul_cycles = 0;
+
+	ResetPPU_MidScanline();
 }
 
 void	NES::SoftReset()
@@ -594,9 +604,12 @@ void	NES::EmulateFrame( BOOL bDraw )
 	//
 	NES_scanline = scanline;
 
+
 	if( RenderMethod != TILE_RENDER ) {
 		bZapper = FALSE;
 		while( TRUE ) {
+			cycles_at_scanline_start = cpu->GetTotalCycles();
+
 			ppu->SetRenderScanline( scanline );
 
 			if( scanline == 0 ) {
@@ -675,6 +688,8 @@ void	NES::EmulateFrame( BOOL bDraw )
 					EmulationCPU( FETCH_CYCLES*10+nescfg->ScanlineEndCycles );
 				}
 			} else if( scanline == 240 ) {
+				ResetPPU_MidScanline();
+				
 				mapper->VSync();
 				if( RenderMethod < POST_RENDER ) {
 					EmulationCPU( nescfg->ScanlineCycles );
@@ -742,6 +757,7 @@ void	NES::EmulateFrame( BOOL bDraw )
 	} else {
 		bZapper = FALSE;
 		while( TRUE ) {
+			cycles_at_scanline_start = cpu->GetTotalCycles();
 			ppu->SetRenderScanline( scanline );
 
 			if( scanline == 0 ) {
@@ -797,6 +813,8 @@ void	NES::EmulateFrame( BOOL bDraw )
 					}
 				}
 			} else if( scanline == 240 ) {
+				ResetPPU_MidScanline();
+				
 			// �_�~�[�X�L�������C�� (Scanline 240)
 				//impl3dsRenderStep1TransferNESScreenToTexture();		
 

@@ -415,7 +415,7 @@ void gpu3dsDrawVertexList(SVertexList *list, GPU_Primitive_t type, bool repeatLa
     {
         if (list->Count > 0)
         {
-            //printf ("  DVL         : %8x count=%d\n", list->List, list->Count);
+            //printf ("DVL : %8x count=%d\n", list->List, list->Count);
             gpu3dsSetAttributeBuffers(
                 list->TotalAttributes,          // number of attributes
                 (u32*)list->List,
@@ -723,24 +723,50 @@ void gpu3dsLoadShader(int shaderIndex, u32 *shaderBinary,
 	GPU3DS.shaders[shaderIndex].dvlb = DVLB_ParseFile((u32 *)shaderBinary, size);
 #ifndef EMU_RELEASE
     printf ("Load DVLB %x size=%d shader=%d\n", GPU3DS.shaders[shaderIndex].dvlb, size, shaderIndex);
+	printf ("     DVLP codesize = %d\n", GPU3DS.shaders[shaderIndex].dvlb->DVLP.codeSize);
+	printf ("     DVLE count = %d\n", GPU3DS.shaders[shaderIndex].dvlb->numDVLE);
+	for (int i = 0; i < GPU3DS.shaders[shaderIndex].dvlb->numDVLE; i++)
+	{
+		printf ("     DVLE[%d] type %x\n", i, GPU3DS.shaders[shaderIndex].dvlb->DVLE[i].type);
+	}
 #endif
 
 	shaderProgramInit(&GPU3DS.shaders[shaderIndex].shaderProgram);
-	shaderProgramSetVsh(&GPU3DS.shaders[shaderIndex].shaderProgram,
-        &GPU3DS.shaders[shaderIndex].dvlb->DVLE[0]);
+	
+    // This fixes an important bug in the loading of shaders.
+    // The DVLEs are not necessarily arranged such that
+    // DVLE[0] is the vertex shader and DVLE[1] is the 
+    // geometry shader. We have to inspect the DVLE[i].type
+    // to determine what type of shader it is before using the
+    // appropriate method (shaderProgramSetVsh, shaderProgramSetGsh) 
+    // to load it up.
+    // 
+	for (int i = 0; i < GPU3DS.shaders[shaderIndex].dvlb->numDVLE; i++)
+	{
+		if (GPU3DS.shaders[shaderIndex].dvlb->DVLE[i].type == 0)
+		{
+			shaderProgramSetVsh(&GPU3DS.shaders[shaderIndex].shaderProgram,
+				&GPU3DS.shaders[shaderIndex].dvlb->DVLE[i]);
 #ifndef EMU_RELEASE
-    printf ("  Vertex shader loaded: %x\n", GPU3DS.shaders[shaderIndex].shaderProgram.vertexShader);
+			printf ("  Vertex shader loaded: %x\n", GPU3DS.shaders[shaderIndex].shaderProgram.vertexShader);
 #endif
-
-	if (geometryShaderStride)
-    {
-		shaderProgramSetGsh(&GPU3DS.shaders[shaderIndex].shaderProgram,
-			&GPU3DS.shaders[shaderIndex].dvlb->DVLE[1], geometryShaderStride);
+		}
+		if (GPU3DS.shaders[shaderIndex].dvlb->DVLE[i].type == 1)
+		{
+			if (geometryShaderStride)
+			{
+				shaderProgramSetGsh(&GPU3DS.shaders[shaderIndex].shaderProgram,
+					&GPU3DS.shaders[shaderIndex].dvlb->DVLE[i], geometryShaderStride);
 #ifndef EMU_RELEASE
-        printf ("  Geometry shader loaded: %x\n", GPU3DS.shaders[shaderIndex].shaderProgram.geometryShader);
+				printf ("  Geometry shader loaded: %x\n", GPU3DS.shaders[shaderIndex].shaderProgram.geometryShader);
 #endif
-    }
+			}
+            else
+				printf ("Geometry stride not specified when the shader contains a geometry shader!\n");
+		}
+	}
 }
+
 
 void gpu3dsEnableAlphaBlending()
 {
@@ -904,6 +930,11 @@ void gpu3dsSetRenderTargetToTopFrameBuffer()
 
 void gpu3dsSetRenderTargetToTexture(SGPUTexture *texture, SGPUTexture *depthTexture)
 {
+    if (texture->Memory == 0)
+    {
+        printf ("Error: Render to Target Texture must be allocated in VRAM.\n");
+    }
+
     if (GPU3DS.currentRenderTarget != texture || GPU3DS.currentRenderTargetDepth != depthTexture)
     {
         // Upload saved uniform

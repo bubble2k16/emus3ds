@@ -9,6 +9,9 @@ void	Mapper065::Reset()
 	if( nes->rom->GetPROM_CRC() == 0xe30b7f64 ) {
 		patch = 1;
 	}
+	if( nes->rom->GetPROM_CRC() == 0x1CE227A3 ) {
+		patch = 1;
+	}
 
 	SetPROM_32K_Bank( 0, 1, PROM_8K_SIZE-2, PROM_8K_SIZE-1 );
 

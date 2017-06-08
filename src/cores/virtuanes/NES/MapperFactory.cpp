@@ -14,7 +14,9 @@
 #include "typedef.h"
 #include "macro.h"
 
+#include "3dsdbg.h"
 #include "nes.h"
+#include "mmu_fceux.h" 
 #include "mmu.h" 
 #include "cpu.h"
 #include "ppu.h"
@@ -27,6 +29,7 @@
 #include "Config.h"
 
 //////////////////////////////////////////////////////////////////////////
+#include "MapperFCEUX.h"
 #include "Mapper000.h"
 #include "Mapper001.h"
 #include "Mapper002.h"
@@ -52,9 +55,11 @@
 #include "Mapper024.h"
 #include "Mapper025.h"
 #include "Mapper026.h"
+#include "Mapper028.h"
 #include "Mapper032.h"
 #include "Mapper033.h"
 #include "Mapper034.h"
+#include "Mapper036.h"
 #include "Mapper040.h"
 #include "Mapper041.h"
 #include "Mapper042.h"
@@ -94,10 +99,12 @@
 #include "Mapper100.h"
 #include "Mapper101.h"
 #include "Mapper107.h"
+#include "Mapper111.h"
 #include "Mapper113.h"
 #include "Mapper118.h"
 #include "Mapper119.h"
 #include "Mapper122.h"
+#include "Mapper175.h"
 #include "Mapper180.h"
 #include "Mapper181.h"
 #include "Mapper185.h"
@@ -134,6 +141,7 @@
 #include "Mapper140.h"
 #include "Mapper142.h"
 #include "Mapper160.h"
+#include "Mapper162.h"
 #include "Mapper182.h"
 #include "Mapper183.h"
 #include "Mapper190.h"
@@ -141,6 +149,7 @@
 #include "Mapper193.h"
 #include "Mapper194.h"
 #include "Mapper198.h"
+#include "Mapper199.h"
 #include "Mapper222.h"
 #include "Mapper225.h"
 #include "Mapper226.h"
@@ -164,6 +173,7 @@
 #include "Mapper249.h"
 #include "Mapper251.h"
 #include "Mapper252.h"
+#include "Mapper253.h"
 #include "Mapper254.h"
 #include "Mapper255.h"
 
@@ -180,6 +190,7 @@
 
 #include "Mapper027.h"
 
+#include "Mapper163.h"
 #include "Mapper164.h"
 #include "Mapper165.h"
 #include "Mapper167.h"
@@ -191,6 +202,7 @@
 #include "Mapper002.cpp"
 #include "Mapper003.cpp"
 #include "Mapper004.cpp"
+#include "Mapper163.cpp"
 #include "Mapper005.cpp"
 #include "Mapper006.cpp"
 #include "Mapper007.cpp"
@@ -253,10 +265,12 @@
 #include "Mapper100.cpp"
 #include "Mapper101.cpp"
 #include "Mapper107.cpp"
+#include "Mapper111.cpp"
 #include "Mapper113.cpp"
 #include "Mapper118.cpp"
 #include "Mapper119.cpp"
 #include "Mapper122.cpp"
+#include "Mapper175.cpp"
 #include "Mapper180.cpp"
 #include "Mapper181.cpp"
 #include "Mapper185.cpp"
@@ -293,6 +307,7 @@
 #include "Mapper140.cpp"
 #include "Mapper142.cpp"
 #include "Mapper160.cpp"
+#include "Mapper162.cpp"
 #include "Mapper182.cpp"
 #include "Mapper183.cpp"
 #include "Mapper190.cpp"
@@ -300,6 +315,7 @@
 #include "Mapper193.cpp"
 #include "Mapper194.cpp"
 #include "Mapper198.cpp"
+#include "Mapper199.cpp"
 #include "Mapper222.cpp"
 #include "Mapper225.cpp"
 #include "Mapper226.cpp"
@@ -323,6 +339,7 @@
 #include "Mapper249.cpp"
 #include "Mapper251.cpp"
 #include "Mapper252.cpp"
+#include "Mapper253.cpp"
 #include "Mapper254.cpp"
 #include "Mapper255.cpp"
 
@@ -399,12 +416,26 @@ Mapper*	CreateMapper( NES* parent, INT no )
 			return new Mapper025(parent);
 		case	26:
 			return new Mapper026(parent);
+		case	28:
+			return new MapperFCEUX(parent, 
+				fceux_mapper028::M28Power, 
+				fceux_mapper028::M28Reset, 
+				fceux_mapper028::StateRestore,
+				fceux_mapper028::StateRegs);
 		case	32:
 			return new Mapper032(parent);
 		case	33:
 			return new Mapper033(parent);
 		case	34:
 			return new Mapper034(parent);
+		case	35:
+			return new Mapper035(parent);
+		case	36:
+			return new MapperFCEUX(parent, 
+				fceux_mapper036::M36Power, 
+				NULL, 
+				fceux_mapper036::M36Restore,
+				fceux_mapper036::StateRegs);
 		case	40:
 			return new Mapper040(parent);
 		case	41:
@@ -483,6 +514,8 @@ Mapper*	CreateMapper( NES* parent, INT no )
 			return new Mapper101(parent);
 		case	107:
 			return new Mapper107(parent);
+		case	111:
+			return new Mapper111(parent);
 		case	113:
 			return new Mapper113(parent);
 		case	118:
@@ -492,6 +525,14 @@ Mapper*	CreateMapper( NES* parent, INT no )
 		case	122:
 		case	184:
 			return new Mapper122(parent);
+		case	175:
+			return new Mapper175(parent);
+		//case	176:
+		//	return new Mapper176(parent);
+		case	177:
+			return new Mapper177(parent);
+		case	178:
+			return new Mapper178(parent);		
 		case	180:
 			return new Mapper180(parent);
 		case	181:
@@ -504,6 +545,8 @@ Mapper*	CreateMapper( NES* parent, INT no )
 			return new Mapper188(parent);
 		case	189:
 			return new Mapper189(parent);
+		case	216:
+			return new Mapper216(parent);
 		case	243:
 			return new Mapper243(parent);
 		case	0x100:
@@ -561,6 +604,8 @@ Mapper*	CreateMapper( NES* parent, INT no )
 			return new Mapper142(parent);
 		case	160:
 			return new Mapper160(parent);
+		case	162:
+			return new Mapper162(parent);
 		case	182:
 			return new Mapper182(parent);
 		case	183:
@@ -569,12 +614,26 @@ Mapper*	CreateMapper( NES* parent, INT no )
 			return new Mapper190(parent);
 		case	191:
 			return new Mapper191(parent);
+		case	192:
+			return new Mapper192(parent);
 		case	193:
 			return new Mapper193(parent);
 		case	194:
 			return new Mapper194(parent);
+		case	195:
+			return new Mapper195(parent);
 		case	198:
 			return new Mapper198(parent);
+			//return new fceuMMC3(parent,198);
+		case	199:
+			//return new fceuMMC3(parent,199);
+			return new Mapper199(parent);
+		case	209:
+			return new Mapper209(parent);
+		case	211:
+			return new Mapper211(parent);
+		case	220:
+			return new Mapper220(parent);
 		case	222:
 			return new Mapper222(parent);
 		case	225:
@@ -621,6 +680,8 @@ Mapper*	CreateMapper( NES* parent, INT no )
 			return new Mapper251(parent);
 		case	252:
 			return new Mapper252(parent);
+		case	253:
+			return new Mapper253(parent);
 		case	254:
 			return new Mapper254(parent);
 		case	255:
@@ -630,6 +691,8 @@ Mapper*	CreateMapper( NES* parent, INT no )
 			return new Mapper099(parent);
 		case	151:
 			return new Mapper151(parent);
+		case	156:
+			return new Mapper156(parent);
 
 		case	12:
 			return new Mapper012(parent);
@@ -647,6 +710,8 @@ Mapper*	CreateMapper( NES* parent, INT no )
 		case	27:
 			return new Mapper027(parent);
 
+		case	163:
+			return new Mapper163(parent);
 		case	164:
 			return new Mapper164(parent);
 		case	165:

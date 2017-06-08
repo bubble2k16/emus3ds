@@ -12,6 +12,9 @@
 #include "DebugOut.h"
 
 #include "mmu.h"
+#include "nes.h"
+#include "ppu.h"
+#include "cpu.h"
 
 // CPU �������o���N
 LPBYTE	CPU_MEM_BANK[8];	// 8K�P��
@@ -24,12 +27,20 @@ BYTE	PPU_MEM_TYPE[12];
 INT	PPU_MEM_PAGE[12];	// �X�e�[�g�Z�[�u�p
 BYTE	CRAM_USED[16];		// �X�e�[�g�Z�[�u�p
 
+u64		cycles_at_scanline_start;
+u64		cycles_current;
+
+int					PPU_UPDATE_QUEUE_WPTR;
+int					PPU_UPDATE_QUEUE_RPTR;
+TPPU_UPDATE_QUEUE	PPU_UPDATE_QUEUE[PPU_UPDATE_QUEUE_SIZE];
+
 // NES������
 BYTE	RAM [  8*1024];		// NES����RAM
 BYTE	WRAM[128*1024];		// ���[�N/�o�b�N�A�b�vRAM
 BYTE	DRAM[ 40*1024];		// �f�B�X�N�V�X�e��RAM
 BYTE	XRAM[  8*1024];		// �_�~�[�o���N
 BYTE	ERAM[ 32*1024];		// �g���@���pRAM
+BYTE	MRAM[128*1024];		//byemu ר��
 
 BYTE	CRAM[ 32*1024];		// �L�����N�^�p�^�[��RAM
 BYTE	VRAM[  4*1024];		// �l�[���e�[�u��/�A�g���r���[�gRAM
@@ -59,6 +70,12 @@ WORD	loopy_x;		// tile x offset
 // ROM�f�[�^�|�C���^
 LPBYTE	PROM;		// PROM ptr
 LPBYTE	VROM;		// VROM ptr
+
+LPBYTE	PROMPTR[16];
+LPBYTE	VROMPTR[16];
+
+INT PPROM_8K_SIZE[16];
+INT PVROM_1K_SIZE[16];
 
 // For dis...
 LPBYTE	PROM_ACCESS = NULL;
@@ -125,6 +142,8 @@ INT	i;
 //	SetVRAM_Mirror( VRAM_MIRROR4 );
 }
 
+
+
 // CPU ROM bank
 void	SetPROM_Bank( BYTE page, LPBYTE ptr, BYTE type )
 {
@@ -163,10 +182,106 @@ void	SetPROM_32K_Bank( INT bank0, INT bank1, INT bank2, INT bank3 )
 	SetPROM_8K_Bank( 7, bank3 );
 }
 
+
+extern NES *nes;
+
+void	ResetPPU_MidScanline ()
+{
+	PPU_UPDATE_QUEUE_RPTR = 1;
+	PPU_UPDATE_QUEUE_WPTR = 1;
+
+	TPPU_UPDATE_QUEUE *wq = &PPU_UPDATE_QUEUE[0];
+	
+	wq->TILE_NO = 0;
+	wq->PPU_MEM_BANK[0] = PPU_MEM_BANK[0];
+	wq->PPU_MEM_BANK[1] = PPU_MEM_BANK[1];
+	wq->PPU_MEM_BANK[2] = PPU_MEM_BANK[2];
+	wq->PPU_MEM_BANK[3] = PPU_MEM_BANK[3];
+	wq->PPU_MEM_BANK[4] = PPU_MEM_BANK[4];
+	wq->PPU_MEM_BANK[5] = PPU_MEM_BANK[5];
+	wq->PPU_MEM_BANK[6] = PPU_MEM_BANK[6];
+	wq->PPU_MEM_BANK[7] = PPU_MEM_BANK[7];
+	wq->PPU_MEM_BANK[8] = PPU_MEM_BANK[8];
+	wq->PPU_MEM_BANK[9] = PPU_MEM_BANK[9];
+	wq->PPU_MEM_BANK[10] = PPU_MEM_BANK[10];
+	wq->PPU_MEM_BANK[11] = PPU_MEM_BANK[11];
+
+	wq->PPUREG = PPUREG[0];	
+
+	if (nes != NULL && nes->ppu != NULL)
+		nes->ppu->currentQ = wq;
+}
+
+// This is for games that do bank-switching and change of the nametable
+// mid-scanline. This way we can reduce graphical glitches in some games
+// (eg. Marble Madness and Mother (Japan)) without resorting to using
+// TILE_RENDER, which is very slow.
+//
+void 	UpdatePPU_MidScanline (int page)
+{
+	u64 cycles_diff = 
+		cycles_current - cycles_at_scanline_start;
+	int pixel = cycles_diff * 3; 
+	int tile = pixel / 8 + 1;
+
+	if (tile > 32)
+		tile = 0;
+	if (nes == NULL)
+		return;
+	
+	int scanline = nes->GetScanline();
+	if (scanline == 0 || scanline >= 240)
+		tile = 0;
+
+	int prev_ptr = (PPU_UPDATE_QUEUE_WPTR - 1) & (PPU_UPDATE_QUEUE_SIZE - 1);
+	int cur_pur = PPU_UPDATE_QUEUE_WPTR;
+
+	TPPU_UPDATE_QUEUE *pq = &PPU_UPDATE_QUEUE[prev_ptr];
+	TPPU_UPDATE_QUEUE *wq = &PPU_UPDATE_QUEUE[cur_pur];
+
+	if (PPU_UPDATE_QUEUE_WPTR != PPU_UPDATE_QUEUE_RPTR &&
+		pq->TILE_NO == tile)
+	{
+		//printf (" (%d,%d) ", PPU_UPDATE_QUEUE_RPTR, PPU_UPDATE_QUEUE_WPTR);
+		//printf (" ");
+		wq = pq;
+	}
+	else
+	{
+		//printf ("*");
+		wq->TILE_NO = tile;
+		wq->PPU_MEM_BANK[0] = PPU_MEM_BANK[0];
+		wq->PPU_MEM_BANK[1] = PPU_MEM_BANK[1];
+		wq->PPU_MEM_BANK[2] = PPU_MEM_BANK[2];
+		wq->PPU_MEM_BANK[3] = PPU_MEM_BANK[3];
+		wq->PPU_MEM_BANK[4] = PPU_MEM_BANK[4];
+		wq->PPU_MEM_BANK[5] = PPU_MEM_BANK[5];
+		wq->PPU_MEM_BANK[6] = PPU_MEM_BANK[6];
+		wq->PPU_MEM_BANK[7] = PPU_MEM_BANK[7];
+		wq->PPU_MEM_BANK[8] = PPU_MEM_BANK[8];
+		wq->PPU_MEM_BANK[9] = PPU_MEM_BANK[9];
+		wq->PPU_MEM_BANK[10] = PPU_MEM_BANK[10];
+		wq->PPU_MEM_BANK[11] = PPU_MEM_BANK[11];
+
+		PPU_UPDATE_QUEUE_WPTR = (PPU_UPDATE_QUEUE_WPTR + 1) & (PPU_UPDATE_QUEUE_SIZE - 1);
+
+		if (PPU_UPDATE_QUEUE_WPTR == PPU_UPDATE_QUEUE_RPTR)
+		{
+			//printf ("Oops!\n");
+		}
+	}
+	if (page >= 0)
+		wq->PPU_MEM_BANK[page] = PPU_MEM_BANK[page];
+	wq->PPUREG = PPUREG[0];
+	
+}
+
+
 // PPU VROM bank
 void	SetVROM_Bank( BYTE page, LPBYTE ptr, BYTE type )
 {
-	PPU_MEM_BANK[page] = ptr;
+	//PPU_MEM_BANK[page] = ptr;
+	CHANGE_PPU_MEM_BANK(ptr);
 	PPU_MEM_TYPE[page] = type;
 	PPU_MEM_PAGE[page] = 0;
 }
@@ -174,7 +289,9 @@ void	SetVROM_Bank( BYTE page, LPBYTE ptr, BYTE type )
 void	SetVROM_1K_Bank( BYTE page, INT bank )
 {
 	bank %= VROM_1K_SIZE;
-	PPU_MEM_BANK[page] = VROM+0x0400*bank;
+	//PPU_MEM_BANK[page] = VROM+0x0400*bank;
+	CHANGE_PPU_MEM_BANK(VROM+0x0400*bank);
+	
 	PPU_MEM_TYPE[page] = BANKTYPE_VROM;
 	PPU_MEM_PAGE[page] = bank;
 }
@@ -213,13 +330,18 @@ void	SetVROM_8K_Bank( INT bank0, INT bank1, INT bank2, INT bank3,
 	SetVROM_1K_Bank( 7, bank7 );
 }
 
+
+
+
 void	SetCRAM_1K_Bank( BYTE page, INT bank )
 {
 	bank &= 0x1F;
 	if (VROM == NULL)
 		bank &= 0x7;
 
-	PPU_MEM_BANK[page] = CRAM+0x0400*bank;
+	//PPU_MEM_BANK[page] = CRAM+0x0400*bank;
+	CHANGE_PPU_MEM_BANK(CRAM+0x0400*bank);
+
 	PPU_MEM_TYPE[page] = BANKTYPE_CRAM;
 	PPU_MEM_PAGE[page] = bank;
 
@@ -250,7 +372,9 @@ void	SetCRAM_8K_Bank( INT bank )
 void	SetVRAM_1K_Bank( BYTE page, INT bank )
 {
 	bank &= 3;
-	PPU_MEM_BANK[page] = VRAM+0x0400*bank;
+	//PPU_MEM_BANK[page] = VRAM+0x0400*bank;
+	CHANGE_PPU_MEM_BANK(VRAM+0x0400*bank);
+
 	PPU_MEM_TYPE[page] = BANKTYPE_VRAM;
 	PPU_MEM_PAGE[page] = bank;
 }

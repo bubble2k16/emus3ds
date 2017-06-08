@@ -9,8 +9,8 @@ public:
 	void	Reset();
 	void	Write( WORD addr, BYTE data );
 
-	void	Clock( INT cycles );
-
+	//void	Clock( INT cycles );
+	void	HSync(int scanline);
 	// For state save
 	BOOL	IsStateSave() { return TRUE; }
 	void	SaveState( LPBYTE p );
@@ -23,6 +23,7 @@ protected:
 	BYTE	irq_occur;
 	BYTE	irq_counter;
 	INT	irq_clock;
+	BYTE    patch;
 
 private:
 	void	SetBank_CPU();

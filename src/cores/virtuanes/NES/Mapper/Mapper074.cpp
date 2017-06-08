@@ -33,6 +33,25 @@ void	Mapper074::Reset()
 	}
 }
 
+
+BYTE	Mapper074::ReadLow( WORD addr )
+{
+	if( addr >= 0x5000 && addr <= 0x5FFF ) {
+		return	XRAM[addr-0x4000];
+	}else{
+		return	Mapper::ReadLow( addr );
+	}
+}
+
+void	Mapper074::WriteLow( WORD addr, BYTE data )
+{
+	if( addr >= 0x5000 && addr <= 0x5FFF ) {
+		XRAM[addr-0x4000] = data;
+	} else {
+		Mapper::WriteLow( addr, data );
+	}
+}
+
 void	Mapper074::Write( WORD addr, BYTE data )
 {
 //DEBUGOUT( "MPRWR A=%04X D=%02X L=%3d CYC=%d\n", addr&0xFFFF, data&0xFF, nes->GetScanline(), nes->cpu->GetTotalCycles() );

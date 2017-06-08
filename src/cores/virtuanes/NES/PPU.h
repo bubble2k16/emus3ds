@@ -73,6 +73,7 @@ public:
 	WORD	GetTILEY()	{ return loopy_y; }
 
 	// Scanline base render
+	void	ScanlineUpTo( INT scanline, BOOL bMax, BOOL bLeftClip, INT tile );
 	void	Scanline( INT scanline, BOOL bMax, BOOL bLeftClip );
 	void	DummyScanline( INT scanline );
 
@@ -112,6 +113,8 @@ public:
 	void	SetVSMode( BOOL bMode ) { bVSMode = bMode; }
 	void	SetVSSecurity( BYTE data ) { VSSecurityData = data; }
 	void	SetVSColorMap( INT nColorMap ) { nVSColorMap = nColorMap; }
+
+	TPPU_UPDATE_QUEUE *currentQ;
 
 protected:
 	INT		chrLUT1[65536];		

@@ -14,8 +14,9 @@ void	Mapper193::WriteLow( WORD addr, BYTE data )
 {
 	switch( addr ) {
 		case	0x6000:
-			SetVROM_2K_Bank( 0, ((data>>1)&0x7e)+0 );
-			SetVROM_2K_Bank( 2, ((data>>1)&0x7e)+1 );
+			//SetVROM_2K_Bank( 0, ((data>>1)&0x7e)+0 );
+			//SetVROM_2K_Bank( 2, ((data>>1)&0x7e)+1 );
+			SetVROM_4K_Bank(0,data>>2);
 			break;
 		case	0x6001:
 			SetVROM_2K_Bank( 4, data>>1 );
@@ -24,7 +25,8 @@ void	Mapper193::WriteLow( WORD addr, BYTE data )
 			SetVROM_2K_Bank( 6, data>>1 );
 			break;
 		case	0x6003:
-			SetPROM_32K_Bank( data );
+			//SetPROM_32K_Bank( data );
+			SetPROM_8K_Bank(4,data );
 			break;
 	}
 }

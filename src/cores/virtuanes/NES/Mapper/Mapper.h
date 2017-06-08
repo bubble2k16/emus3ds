@@ -89,4 +89,7 @@ private:
 // Create class instance
 extern	Mapper*	CreateMapper( NES* parent, INT no );
 
+#define DECLFW(f) void f (u32 A, u8 V)
+#define DECLFR(f) u8 f (u32 A)
+
 #endif

@@ -7,7 +7,7 @@ void	Mapper025::Reset()
 		reg[i] = 0;
 	}
 	reg[9] = PROM_8K_SIZE-2;
-
+	patch = 0;
 	irq_enable = 0;
 	irq_counter = 0;
 	irq_latch = 0;
@@ -31,6 +31,9 @@ void	Mapper025::Reset()
 		nes->SetRenderMethod( NES::TILE_RENDER );
 	}
 	if( crc == 0x5f82cb7d ) {	// For Teenage Mutant Ninja Turtles 2(J)
+		//nes->SetRenderMethod(NES::PRE_ALL_RENDER);
+		//nes->ppu->SetRenderScanline(1);
+		patch = 1;
 	}
 	if( crc == 0x0bbd85ff ) {	// For Bio Miracle Bokutte Upa(J)
 		nes->SetRenderMethod( NES::PRE_ALL_RENDER );
@@ -56,7 +59,7 @@ void	Mapper025::Write( WORD addr, BYTE data )
 			SetPROM_8K_Bank( 5, data );
 			break;
 	}
-
+	//(i & 0xF000) | (i << a & 0x0200) | (i << b & 0x0100)
 	switch( addr & 0xF00F ) {
 		case	0x9000:
 			data &= 0x03;
@@ -178,8 +181,12 @@ void	Mapper025::Write( WORD addr, BYTE data )
 		case 0xF004:
 			irq_enable = data & 0x03;
 //			irq_counter = 0x100 - irq_latch;
-			irq_counter = irq_latch;
-			irq_clock = 0;
+			//irq_counter = irq_latch;
+			//irq_clock = 0;
+			if (irq_enable & 0x02)
+			{
+				irq_counter = irq_latch;
+			}
 			nes->cpu->ClrIRQ( IRQ_MAPPER );
 			break;
 
@@ -191,20 +198,69 @@ void	Mapper025::Write( WORD addr, BYTE data )
 	}
 }
 
-void	Mapper025::Clock( INT cycles )
+void	Mapper025::HSync(int scanline)
 {
-	if( irq_enable & 0x02 ) {
-		irq_clock += cycles*3;
-		while( irq_clock >= 341 ) {
+	/*if (irq_enable & 0x02) {
+		irq_clock += cycles * 3;
+		while (irq_clock >= 341) {
 			irq_clock -= 341;
 			irq_counter++;
-			if( irq_counter == 0 ) {
+			if (irq_counter & 0x100) {
 				irq_counter = irq_latch;
-				nes->cpu->SetIRQ( IRQ_MAPPER );
+				nes->cpu->SetIRQ(IRQ_MAPPER);
 			}
+		}
+	}*/
+	if (irq_enable & 0x02)
+	{
+		if (!patch && irq_counter == 0xFF)
+		{
+			irq_counter = irq_latch;
+			nes->cpu->SetIRQ(IRQ_MAPPER);
+		}
+		else if (patch && irq_counter == 0x00)
+		{
+			irq_counter = irq_latch;
+			nes->cpu->SetIRQ(IRQ_MAPPER);
+		}
+		else
+		{
+			irq_counter++;
 		}
 	}
 }
+
+//void	Mapper025::Clock( INT cycles )
+//{
+//	if (irq_enable & 0x02) {
+//		irq_clock += cycles * 3;
+//		while (irq_clock >= 341) {
+//			irq_clock -= 341;
+//			irq_counter++;
+//			if (irq_counter ==0) {
+//				irq_counter = irq_latch;
+//				nes->cpu->SetIRQ(IRQ_MAPPER);
+//			}
+//		}
+//	}
+//	//if (irq_enable & 0x02)
+//	//{
+//	//	if (!patch && irq_counter == 0xFF)
+//	//	{
+//	//		irq_counter = irq_latch;
+//	//		nes->cpu->SetIRQ(IRQ_MAPPER);
+//	//	}
+//	//	else if (patch && irq_counter == 0x00)
+//	//	{
+//	//		irq_counter = irq_latch;
+//	//		nes->cpu->SetIRQ(IRQ_MAPPER);
+//	//	}
+//	//	else
+//	//	{
+//	//		irq_counter++;
+//	//	}
+//	//}
+//}
 
 void	Mapper025::SaveState( LPBYTE p )
 {

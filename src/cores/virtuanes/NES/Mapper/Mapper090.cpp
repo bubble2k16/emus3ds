@@ -31,6 +31,9 @@ void	Mapper090::Reset()
 	mir_mode = 0;
 	mir_type = 0;
 
+	nt_ram = 0;
+	nt_mode = 0;
+
 	key_val = 0;
 	mul_val1 = mul_val2 = 0;
 
@@ -172,13 +175,20 @@ void	Mapper090::Write( WORD addr, BYTE data )
 			prg_size = data & 0x03;
 			chr_size = (data & 0x18)>>3;
 			mir_mode = data & 0x20;
+			nt_mode = data & 0x40;
 			SetBank_CPU();
 			SetBank_PPU();
 			SetBank_VRAM();
+
 			break;
 
 		case	0xD001:
 			mir_type = data & 0x03;
+			SetBank_VRAM();
+			break;
+
+		case	0xD002:
+			nt_ram = data & 0x80;
 			SetBank_VRAM();
 			break;
 
@@ -264,34 +274,57 @@ INT	bank[8];
 
 void	Mapper090::SetBank_VRAM()
 {
-INT	bank[4];
+	INT	bank[4];
 
 	for( INT i = 0; i < 4; i++ ) {
 		bank[i] = ((INT)nth_reg[i]<<8)|((INT)ntl_reg[i]);
 	}
 
-	if( !patch && mir_mode ) {
-		for( INT i = 0; i < 4; i++ ) {
-			if( !nth_reg[i] && (ntl_reg[i] == (BYTE)i) ) {
-				mir_mode = 0;
-			}
-		}
+	bool advance_nt_control = 0;
 
-		if( mir_mode ) {
+	if (is_211)
+		advance_nt_control = true;
+	else if (is_209)
+		advance_nt_control = (mir_mode != 0);
+	else
+		advance_nt_control = false;
+
+	// Having a proper implemented for this fixes:
+	//		Donkey Kong Country 4
+	//		Shin Samurai Fighters 2
+	//		And generally, all mapper 90/209/211 games.
+	//
+	if ( advance_nt_control ) 
+	{
+		if (nt_mode != 0)
+		{
 			SetVROM_1K_Bank(  8, bank[0] );
 			SetVROM_1K_Bank(  9, bank[1] );
 			SetVROM_1K_Bank( 10, bank[2] );
 			SetVROM_1K_Bank( 11, bank[3] );
 		}
-	} else {
-		if( mir_type == 0 ) {
-			SetVRAM_Mirror( VRAM_VMIRROR );
-		} else
-		if( mir_type == 1 ) {
-			SetVRAM_Mirror( VRAM_HMIRROR );
-		} else {
-			SetVRAM_Mirror( VRAM_MIRROR4L );
+		else
+		{
+			for (int i = 0; i < 4; i ++)
+			{	
+				if ((bank[i] & 0x80) == (nt_ram & 0x80))
+					SetVRAM_1K_Bank( 8 + i, bank[i] & 1 );
+				else
+					SetVROM_1K_Bank( 8 + i, bank[i] );
+			}
 		}
+
+	}
+	else
+	{
+		if( mir_type == 0 ) 
+			SetVRAM_Mirror( VRAM_VMIRROR );
+		else if( mir_type == 1 ) 
+			SetVRAM_Mirror( VRAM_HMIRROR );
+		else if( mir_type == 2 ) 
+			SetVRAM_Mirror( VRAM_MIRROR4L );
+		else
+			SetVRAM_Mirror( VRAM_MIRROR4H );
 	}
 }
 
@@ -329,6 +362,8 @@ INT	i;
 	p[40] = irq_occur;
 	p[41] = irq_preset;
 	p[42] = irq_offset;
+	p[43] = nt_mode;
+	p[44] = nt_ram;
 }
 
 void	Mapper090::LoadState( LPBYTE p )
@@ -365,4 +400,6 @@ INT	i;
 	irq_occur   = p[40];
 	irq_preset  = p[41];
 	irq_offset  = p[42];
+	nt_mode		= p[43];
+	nt_ram		= p[44];
 }

@@ -158,6 +158,19 @@
 	EA = ET + (WORD)R.Y;	\
 }
 
+#define WR6502( addr, data )							\
+{														\
+	if( addr < 0x2000 ) {								\
+	/* RAM (Mirror $0800, $1000, $1800) */				\
+		RAM[addr&0x07FF] = data;						\
+	} else {											\
+	/* Others */										\
+		cycles_current = TOTAL_cycles; 	\
+		nes->Write( addr, data );						\
+	}													\
+}														\
+
+
 // ���������C�g
 #define	MW_ZP()		ZPWR(EA,DT)
 #define	MW_EA()		WR6502(EA,DT)
@@ -664,6 +677,7 @@ inline	WORD	CPU::RD6502W( WORD addr )
 #endif
 }
 
+/*
 // ���������C�g
 inline	void	CPU::WR6502( WORD addr, BYTE data )
 {
@@ -675,6 +689,7 @@ inline	void	CPU::WR6502( WORD addr, BYTE data )
 		nes->Write( addr, data );
 	}
 }
+*/
 
 //
 // ���Z�b�g
@@ -1145,8 +1160,10 @@ register BYTE	DT;
 			int opsz = opsize[opcode];
 			BYTE *opcodefull = &CPU_MEM_BANK[addr>>13][addr&0x1FFF];
 
-			FILE *fp = fopen("cpudbg.txt", "a");
-			fprintf (fp, "$%04X:%-54s A:%02X X:%02X Y:%02X S:%02X P:%s%s%s%s%s%s%s%s \n", 
+			//FILE *fp = fopen("cpudbg.txt", "a");
+			//fprintf (fp, 
+			printf(
+				"$%04X:%-54s A:%02X X:%02X Y:%02X S:%02X P:%s%s%s%s%s%s%s%s \n", 
 				R.PC - 1,
 				Disassemble(R.PC + opsz - 1, opcodefull), R.A, R.X, R.Y, R.S,
 				(R.P & N_FLAG) ? "N" : "n",
@@ -1158,8 +1175,8 @@ register BYTE	DT;
 				(R.P & Z_FLAG) ? "Z" : "z",
 				(R.P & C_FLAG) ? "C" : "c"
 				 );
-			fclose(fp);
-			//DEBUG_WAIT_L_KEY
+			//fclose(fp);
+			DEBUG_WAIT_L_KEY
 		}
 		*/
 

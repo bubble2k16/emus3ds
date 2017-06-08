@@ -25,6 +25,7 @@
 #include "rom.h"
 #include "mapper.h"
 
+#include "3dsdbg.h"
 #include "3dsopt.h"
 
 BYTE	PPU::VSColorMap[5][64] = {
@@ -164,6 +165,7 @@ void	PPU::Reset()
 
 	if( lpColormode )
 		::memset( lpColormode, 0, SCREEN_HEIGHT*sizeof(BYTE) );
+
 }
 
 BYTE	PPU::Read( WORD addr )
@@ -236,7 +238,11 @@ void	PPU::Write( WORD addr, BYTE data )
 			}
 //DEBUGOUT( "W2000 %02X O:%02X S:%02X L:%3d C:%8d\n", data, PPUREG[0], PPUREG[2], ScanlineNo, nes->cpu->GetTotalCycles() );
 
-			PPUREG[0] = data;
+			if (PPUREG[0] != data)
+			{
+				PPUREG[0] = data;
+				UpdatePPU_MidScanline (-1);
+			}
 			break;
 		case	0x2001: // PPU Control Register #2(W)
 //DEBUGOUT( "W2001 %02X L:%3d C:%8d\n", data, ScanlineNo, nes->cpu->GetTotalCycles() );
@@ -381,6 +387,12 @@ void	PPU::ScanlineStart()
 		loopy_y = (loopy_v&0x7000)>>12;
 		nes->mapper->PPU_Latch( 0x2000 + (loopy_v & 0x0FFF) );
 	}
+
+	int ptr = (PPU_UPDATE_QUEUE_WPTR - 1) & (PPU_UPDATE_QUEUE_SIZE - 1);
+	currentQ = &PPU_UPDATE_QUEUE[ptr];
+	PPU_UPDATE_QUEUE_RPTR = PPU_UPDATE_QUEUE_WPTR;
+	//printf ("SLSTART: %d %d\n", PPU_UPDATE_QUEUE_RPTR, PPU_UPDATE_QUEUE_WPTR);
+
 	//if (nes->GetScanline() >= 48 && nes->GetScanline() <= 50)
 	//	printf ("  SLSTART: loopy_v = %x, loopy_y = %x @ %d\n", loopy_v, loopy_y, nes->GetScanline());
 }
@@ -414,10 +426,11 @@ void	PPU::ScanlineNext()
 
 u32 bgPalette[16];
 u32 sprPalette[16];
+BYTE	BGwrite[33+1];
+
 
 void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 {
-	BYTE	BGwrite[33+1];
 	//BYTE	BGmono[33+1];
 
 	t3dsStartTiming(30, "Scanline:BG");
@@ -482,6 +495,7 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 		if( nes->GetRenderMethod() == NES::TILE_RENDER ) {
 			nes->EmulationCPU( FETCH_CYCLES*4*32 );
 		}
+
 	} else {
 		if( nes->GetRenderMethod() != NES::TILE_RENDER ) {
 			if( !bExtLatch ) {
@@ -490,12 +504,22 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 				LPBYTE	pBGw = BGwrite;
 				pScnRGBA += (8-loopy_shift);
 
-				INT	tileofs = (PPUREG[0]&PPU_BGTBL_BIT)<<8;
+
+				INT	tileofs = (PPUREG[0] & PPU_BGTBL_BIT)<<8;
+				//INT tileofs = 0;
 				INT	ntbladr = 0x2000+(loopy_v&0x0FFF);
 				INT	attradr = 0x23C0+(loopy_v&0x0C00)+((loopy_v&0x0380)>>4);
 				INT	ntbl_x  = ntbladr&0x001F;
 				INT	attrsft = (ntbladr&0x0040)>>4;
+
 				LPBYTE	pNTBL = PPU_MEM_BANK[ntbladr>>10];
+
+				if (nes->GetRenderMethod() == NES::POST_RENDER)
+				{
+					pNTBL = currentQ->PPU_MEM_BANK[ntbladr>>10];
+					tileofs = (currentQ->PPUREG & PPU_BGTBL_BIT)<<8;
+				}
+				//LPBYTE	pNTBL = 0;
 
 				INT	tileadr;
 				INT	cache_tile = 0xFFFF0000;
@@ -505,7 +529,29 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 
 				attradr &= 0x3FF;
 
-				for( INT i = 0; i < 33; i++ ) {
+				for( INT i = 0; i < 33; i++ ) 
+				{
+					// This allows mid-scanline CHR bank switching
+					//
+					if (nes->GetRenderMethod() == NES::POST_RENDER)
+					{
+						TPPU_UPDATE_QUEUE *nextQ = &PPU_UPDATE_QUEUE[PPU_UPDATE_QUEUE_RPTR];
+						
+						if (PPU_UPDATE_QUEUE_RPTR != PPU_UPDATE_QUEUE_WPTR && 
+							nextQ->TILE_NO == i)
+						{
+							currentQ = nextQ;
+							PPU_UPDATE_QUEUE_RPTR = (PPU_UPDATE_QUEUE_RPTR + 1) & (PPU_UPDATE_QUEUE_SIZE - 1);
+
+							tileofs = (currentQ->PPUREG & PPU_BGTBL_BIT)<<8;
+							pNTBL = currentQ->PPU_MEM_BANK[ntbladr>>10];
+							cache_tile = 0;
+							//if (scanline < 24)
+							//printf ("  R: %3d, %2d / %2d %2d\n", scanline, i, PPU_UPDATE_QUEUE_RPTR, PPU_UPDATE_QUEUE_WPTR);
+								
+						}
+					}
+
 					tileadr = tileofs+pNTBL[ntbladr&0x03FF]*0x10+loopy_y;
 					attr = ((pNTBL[attradr+(ntbl_x>>2)]>>((ntbl_x&2)+attrsft))&3)<<2;
 
@@ -515,8 +561,8 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 					} else {
 						cache_tile = tileadr;
 						cache_attr = attr;
-						chr_l = PPU_MEM_BANK[tileadr>>10][ tileadr&0x03FF   ];
-						chr_h = PPU_MEM_BANK[tileadr>>10][(tileadr&0x03FF)+8];
+						chr_l = currentQ->PPU_MEM_BANK[tileadr>>10][ tileadr&0x03FF   ];
+						chr_h = currentQ->PPU_MEM_BANK[tileadr>>10][(tileadr&0x03FF)+8];
 						*pBGw = chr_h|chr_l;
 
 						LPBYTE	pBGPAL = &BGPAL[attr];
@@ -537,7 +583,7 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 						ntbl_x = 0;
 						ntbladr ^= 0x41F;
 						attradr = 0x03C0+((ntbladr&0x0380)>>4);
-						pNTBL = PPU_MEM_BANK[ntbladr>>10];
+						pNTBL = currentQ->PPU_MEM_BANK[ntbladr>>10];
 					} else {
 						ntbladr++;
 					}

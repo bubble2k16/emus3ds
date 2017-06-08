@@ -2,6 +2,7 @@
 #define _3DSDBG_H_
 
 #include "3ds.h"
+#include "3dsmain.h"
 #include "3dsemu.h"
 #include "stdio.h"
 #include "cstdarg"
