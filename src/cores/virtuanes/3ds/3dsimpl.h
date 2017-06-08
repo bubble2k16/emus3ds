@@ -21,6 +21,15 @@
 #define BTNNES_LEFT 		0x40
 #define BTNNES_RIGHT 		0x80
 
+#define BTNNES_2A 			0x0100
+#define BTNNES_2B 			0x0200
+#define BTNNES_2SELECT 		0x0400
+#define BTNNES_2START 		0x0800
+#define BTNNES_2UP 			0x1000
+#define BTNNES_2DOWN 		0x2000
+#define BTNNES_2LEFT 		0x4000
+#define BTNNES_2RIGHT 		0x8000
+
 extern SGPUTexture *snesMainScreenTarget;
 extern SGPUTexture *snesTileCacheTexture;
 extern SGPUTexture *snesDepthForScreens;
