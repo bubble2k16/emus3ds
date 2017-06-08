@@ -1,2 +1,5 @@
 build/*
 releases/*
+*.3dsx
+*.cia
+*.elf
