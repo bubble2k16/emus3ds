@@ -103,7 +103,9 @@
 #include "Mapper113.h"
 #include "Mapper118.h"
 #include "Mapper119.h"
+#include "Mapper120.h"
 #include "Mapper122.h"
+#include "Mapper170.h"
 #include "Mapper175.h"
 #include "Mapper180.h"
 #include "Mapper181.h"
@@ -111,6 +113,7 @@
 #include "Mapper187.h"
 #include "Mapper188.h"
 #include "Mapper189.h"
+#include "Mapper206.h"
 #include "Mapper243.h"
 
 #include "MapperNSF.h"
@@ -421,6 +424,7 @@ Mapper*	CreateMapper( NES* parent, INT no )
 				fceux_mapper028::M28Power, 
 				fceux_mapper028::M28Reset, 
 				fceux_mapper028::StateRestore,
+				NULL,
 				fceux_mapper028::StateRegs);
 		case	32:
 			return new Mapper032(parent);
@@ -435,6 +439,7 @@ Mapper*	CreateMapper( NES* parent, INT no )
 				fceux_mapper036::M36Power, 
 				NULL, 
 				fceux_mapper036::M36Restore,
+				NULL,
 				fceux_mapper036::StateRegs);
 		case	40:
 			return new Mapper040(parent);
@@ -525,10 +530,17 @@ Mapper*	CreateMapper( NES* parent, INT no )
 		case	122:
 		case	184:
 			return new Mapper122(parent);
+		case	170:
+			return new MapperFCEUX(parent, 
+				fceux_mapper170::M170Power, 
+				NULL, 
+				fceux_mapper170::StateRestore,
+				NULL,
+				fceux_mapper170::StateRegs);
 		case	175:
 			return new Mapper175(parent);
-		//case	176:
-		//	return new Mapper176(parent);
+		case	176:
+			return new Mapper176(parent);
 		case	177:
 			return new Mapper177(parent);
 		case	178:
@@ -592,6 +604,13 @@ Mapper*	CreateMapper( NES* parent, INT no )
 			return new Mapper116(parent);
 		case	117:
 			return new Mapper117(parent);
+		case	120:
+			return new MapperFCEUX(parent, 
+				fceux_mapper120::M120Power, 
+				NULL, 
+				fceux_mapper120::StateRestore,
+				NULL,
+				fceux_mapper120::StateRegs);
 		case	133:
 			return new Mapper133(parent);
 		case	134:
@@ -703,6 +722,14 @@ Mapper*	CreateMapper( NES* parent, INT no )
 			return new Mapper201(parent);
 		case	202:
 			return new Mapper202(parent);
+
+		case	206:
+			return new MapperFCEUX(parent, 
+				fceux_mapper206::M206Power, 
+				NULL, 
+				fceux_mapper206::StateRestore,
+				NULL,
+				fceux_mapper206::StateRegs);
 
 		case	61:
 			return new Mapper061(parent);
