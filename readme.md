@@ -51,9 +51,25 @@ It also runs on your New 3DS as well!
 
 ## Change History
 
-### v0.91
-
 *VirtuaNES:*
+
+### v0.92
+
+- Migrated some mappers from VirtuaNES Up (thank you dragon2snow, and authors of VirtualNES Plus)
+- The following mappers are fixed: 0, 15, 16, 25, 27, 58, 62, 74, 83, 111, 163, 187, 193, 194, 199, 241
+- Added Mapper 28, 35, 36, 120, 156, 162, 170, 175, 206, 209, 211, 216, 220, 253
+- Fixed rendering problem with Mother (J) and Marble Madness
+- Detect and auto-patch correct header numbers for certain ROMs (database of wrongly mapped ROMs taken from FCEUX)
+- Games that are now working on this version:
+  > Final Fantasy VII Demake (both English / Chinese versions)
+  > DBZ RPG 2/3 (English)
+  > Donkey Kong Country 4
+  > Super Contra 3
+  > Super Samurai Spirits 2
+  > Action 53
+  > Probably a few others.
+
+### v0.91
 
 - Enabled support of FDS ROMS without the standard FDS headers.
 - Added feature to allow players to switch disks for FDS games.
