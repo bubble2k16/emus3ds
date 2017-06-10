@@ -506,7 +506,6 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 
 
 				INT	tileofs = (PPUREG[0] & PPU_BGTBL_BIT)<<8;
-				//INT tileofs = 0;
 				INT	ntbladr = 0x2000+(loopy_v&0x0FFF);
 				INT	attradr = 0x23C0+(loopy_v&0x0C00)+((loopy_v&0x0380)>>4);
 				INT	ntbl_x  = ntbladr&0x001F;
@@ -514,12 +513,11 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 
 				LPBYTE	pNTBL = PPU_MEM_BANK[ntbladr>>10];
 
-				if (nes->GetRenderMethod() == NES::POST_RENDER)
+				if (nes->GetRenderMethod() == NES::POST_RENDER && !bChrLatch)
 				{
 					pNTBL = currentQ->PPU_MEM_BANK[ntbladr>>10];
 					tileofs = (currentQ->PPUREG & PPU_BGTBL_BIT)<<8;
 				}
-				//LPBYTE	pNTBL = 0;
 
 				INT	tileadr;
 				INT	cache_tile = 0xFFFF0000;
@@ -529,64 +527,101 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 
 				attradr &= 0x3FF;
 
-				for( INT i = 0; i < 33; i++ ) 
+				if (!bChrLatch)
 				{
-					// This allows mid-scanline CHR bank switching
-					//
-					if (nes->GetRenderMethod() == NES::POST_RENDER)
+					for( INT i = 0; i < 33; i++ ) 
 					{
-						TPPU_UPDATE_QUEUE *nextQ = &PPU_UPDATE_QUEUE[PPU_UPDATE_QUEUE_RPTR];
-						
-						if (PPU_UPDATE_QUEUE_RPTR != PPU_UPDATE_QUEUE_WPTR && 
-							nextQ->TILE_NO == i)
+						// This allows mid-scanline CHR bank switching
+						//
+						if (nes->GetRenderMethod() == NES::POST_RENDER)
 						{
-							currentQ = nextQ;
-							PPU_UPDATE_QUEUE_RPTR = (PPU_UPDATE_QUEUE_RPTR + 1) & (PPU_UPDATE_QUEUE_SIZE - 1);
+							TPPU_UPDATE_QUEUE *nextQ = &PPU_UPDATE_QUEUE[PPU_UPDATE_QUEUE_RPTR];
+							
+							if (PPU_UPDATE_QUEUE_RPTR != PPU_UPDATE_QUEUE_WPTR && 
+								nextQ->TILE_NO == i)
+							{
+								currentQ = nextQ;
+								PPU_UPDATE_QUEUE_RPTR = (PPU_UPDATE_QUEUE_RPTR + 1) & (PPU_UPDATE_QUEUE_SIZE - 1);
 
-							tileofs = (currentQ->PPUREG & PPU_BGTBL_BIT)<<8;
+								tileofs = (currentQ->PPUREG & PPU_BGTBL_BIT)<<8;
+								pNTBL = currentQ->PPU_MEM_BANK[ntbladr>>10];
+								cache_tile = 0xFFFF0000;
+								//if (scanline < 24)
+								//printf ("  R: %3d, %2d / %2d %2d\n", scanline, i, PPU_UPDATE_QUEUE_RPTR, PPU_UPDATE_QUEUE_WPTR);
+									
+							}
+						}
+
+						tileadr = tileofs+pNTBL[ntbladr&0x03FF]*0x10+loopy_y;
+						attr = ((pNTBL[attradr+(ntbl_x>>2)]>>((ntbl_x&2)+attrsft))&3)<<2;
+
+						if( cache_tile == tileadr && cache_attr == attr ) {
+							COPY_BG_TILES
+							*(pBGw+0) = *(pBGw-1);
+						} else {
+							cache_tile = tileadr;
+							cache_attr = attr;
+							chr_l = currentQ->PPU_MEM_BANK[tileadr>>10][ tileadr&0x03FF   ];
+							chr_h = currentQ->PPU_MEM_BANK[tileadr>>10][(tileadr&0x03FF)+8];
+							*pBGw = chr_h|chr_l;
+
+							LPBYTE	pBGPAL = &BGPAL[attr];
+							{
+								RENDER_BG_TILES
+							}
+						}
+						//pScn+=8;
+						pScnRGBA+=8;
+						pBGw++;
+
+						if( ++ntbl_x == 32 ) {
+							ntbl_x = 0;
+							ntbladr ^= 0x41F;
+							attradr = 0x03C0+((ntbladr&0x0380)>>4);
 							pNTBL = currentQ->PPU_MEM_BANK[ntbladr>>10];
-							cache_tile = 0;
-							//if (scanline < 24)
-							//printf ("  R: %3d, %2d / %2d %2d\n", scanline, i, PPU_UPDATE_QUEUE_RPTR, PPU_UPDATE_QUEUE_WPTR);
-								
+						} else {
+							ntbladr++;
 						}
 					}
+				}
+				else
+				{
+					for( INT i = 0; i < 33; i++ ) 
+					{
+						tileadr = tileofs+pNTBL[ntbladr&0x03FF]*0x10+loopy_y;
+						attr = ((pNTBL[attradr+(ntbl_x>>2)]>>((ntbl_x&2)+attrsft))&3)<<2;
 
-					tileadr = tileofs+pNTBL[ntbladr&0x03FF]*0x10+loopy_y;
-					attr = ((pNTBL[attradr+(ntbl_x>>2)]>>((ntbl_x&2)+attrsft))&3)<<2;
+						if( cache_tile == tileadr && cache_attr == attr ) {
+							COPY_BG_TILES
+							*(pBGw+0) = *(pBGw-1);
+						} else {
+							cache_tile = tileadr;
+							cache_attr = attr;
+							chr_l = PPU_MEM_BANK[tileadr>>10][ tileadr&0x03FF   ];
+							chr_h = PPU_MEM_BANK[tileadr>>10][(tileadr&0x03FF)+8];
+							*pBGw = chr_h|chr_l;
 
-					if( cache_tile == tileadr && cache_attr == attr ) {
-						COPY_BG_TILES
-						*(pBGw+0) = *(pBGw-1);
-					} else {
-						cache_tile = tileadr;
-						cache_attr = attr;
-						chr_l = currentQ->PPU_MEM_BANK[tileadr>>10][ tileadr&0x03FF   ];
-						chr_h = currentQ->PPU_MEM_BANK[tileadr>>10][(tileadr&0x03FF)+8];
-						*pBGw = chr_h|chr_l;
-
-						LPBYTE	pBGPAL = &BGPAL[attr];
-						{
-							RENDER_BG_TILES
+							LPBYTE	pBGPAL = &BGPAL[attr];
+							{
+								RENDER_BG_TILES
+							}
 						}
-					}
-					//pScn+=8;
-					pScnRGBA+=8;
-					pBGw++;
+						//pScn+=8;
+						pScnRGBA+=8;
+						pBGw++;
 
-					// Character latch(For MMC2/MMC4)
-					if( bChrLatch ) {
+						// Character latch(For MMC2/MMC4)
 						nes->mapper->PPU_ChrLatch( tileadr );
-					}
 
-					if( ++ntbl_x == 32 ) {
-						ntbl_x = 0;
-						ntbladr ^= 0x41F;
-						attradr = 0x03C0+((ntbladr&0x0380)>>4);
-						pNTBL = currentQ->PPU_MEM_BANK[ntbladr>>10];
-					} else {
-						ntbladr++;
-					}
+						if( ++ntbl_x == 32 ) {
+							ntbl_x = 0;
+							ntbladr ^= 0x41F;
+							attradr = 0x03C0+((ntbladr&0x0380)>>4);
+							pNTBL = PPU_MEM_BANK[ntbladr>>10];
+						} else {
+							ntbladr++;
+						}
+					}					
 				}
 			} else {
 				// With Extension Latch(For MMC5)

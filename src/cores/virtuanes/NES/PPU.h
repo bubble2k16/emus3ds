@@ -80,6 +80,7 @@ public:
 	// For mapper
 	void	SetExtLatchMode( BOOL bMode )	{ bExtLatch = bMode; }
 	void	SetChrLatchMode( BOOL bMode )	{ bChrLatch = bMode; }
+	BOOL	GetChrLatchMode()				{ return bChrLatch; }
 	void	SetExtNameTableMode( BOOL bMode ) { bExtNameTable = bMode; }
 	void	SetExtMonoMode( BOOL bMode )	{ bExtMono = bMode; }
 	BOOL	GetExtMonoMode()	{ return bExtMono; }

@@ -219,6 +219,10 @@ void	ResetPPU_MidScanline ()
 //
 void 	UpdatePPU_MidScanline (int page)
 {
+	if (nes != NULL && nes->ppu != NULL)
+		if (nes->ppu->GetChrLatchMode())
+			return;
+
 	u64 cycles_diff = 
 		cycles_current - cycles_at_scanline_start;
 	int pixel = cycles_diff * 3; 
@@ -270,6 +274,13 @@ void 	UpdatePPU_MidScanline (int page)
 			//printf ("Oops!\n");
 		}
 	}
+
+	/*
+	if (page == -1)
+		printf ("UP_MS: Y=%03d tile=%2d PPUREG = %d\n", nes->GetScanline(), tile, PPUREG[0]);
+	else
+		printf ("UP_MS: Y=%03d tile=%2d [%d] = %x\n", nes->GetScanline(), tile, page, PPU_MEM_BANK[page]);
+	*/
 	if (page >= 0)
 		wq->PPU_MEM_BANK[page] = PPU_MEM_BANK[page];
 	wq->PPUREG = PPUREG[0];

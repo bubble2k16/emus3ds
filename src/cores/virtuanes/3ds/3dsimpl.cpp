@@ -1151,7 +1151,7 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
     UPDATE_SETTINGS(settings3DS.UseGlobalButtonMappings, 1, 20000);
     UPDATE_SETTINGS(settings3DS.UseGlobalTurbo, 1, 20001);
     UPDATE_SETTINGS(settings3DS.UseGlobalVolume, 1, 20002);
-    if (settings3DS.UseGlobalButtonMappings)
+    if (settings3DS.UseGlobalButtonMappings || copyMenuToSettings)
     {
         UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[0], 1, 13010);
         UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[1], 1, 13011);
@@ -1160,7 +1160,7 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
         UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[4], 1, 13014);
         UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[5], 1, 13015);
     }
-    else
+    if (!settings3DS.UseGlobalButtonMappings || copyMenuToSettings)
     {
         UPDATE_SETTINGS(settings3DS.ButtonMapping[0], 1, 13010);
         UPDATE_SETTINGS(settings3DS.ButtonMapping[1], 1, 13011);
@@ -1169,7 +1169,7 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
         UPDATE_SETTINGS(settings3DS.ButtonMapping[4], 1, 13014);
         UPDATE_SETTINGS(settings3DS.ButtonMapping[5], 1, 13015);
     }
-    if (settings3DS.UseGlobalTurbo)
+    if (settings3DS.UseGlobalTurbo || copyMenuToSettings)
     {
         UPDATE_SETTINGS(settings3DS.GlobalTurbo[0], 1, 13000);
         UPDATE_SETTINGS(settings3DS.GlobalTurbo[1], 1, 13001);
@@ -1178,7 +1178,7 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
         UPDATE_SETTINGS(settings3DS.GlobalTurbo[4], 1, 13004);
         UPDATE_SETTINGS(settings3DS.GlobalTurbo[5], 1, 13005);
     }
-    else
+    if (!settings3DS.UseGlobalTurbo || copyMenuToSettings) 
     {
         UPDATE_SETTINGS(settings3DS.Turbo[0], 1, 13000);
         UPDATE_SETTINGS(settings3DS.Turbo[1], 1, 13001);
@@ -1187,11 +1187,11 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
         UPDATE_SETTINGS(settings3DS.Turbo[4], 1, 13004);
         UPDATE_SETTINGS(settings3DS.Turbo[5], 1, 13005);
     }
-    if (settings3DS.UseGlobalVolume)
+    if (settings3DS.UseGlobalVolume || copyMenuToSettings)
     {
         UPDATE_SETTINGS(settings3DS.GlobalVolume, 1, 14000);
     }
-    else
+    if (!settings3DS.UseGlobalVolume || copyMenuToSettings)
     {
         UPDATE_SETTINGS(settings3DS.Volume, 1, 14000);
     }

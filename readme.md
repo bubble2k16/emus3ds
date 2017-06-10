@@ -68,6 +68,7 @@ It also runs on your New 3DS as well!
   > Super Samurai Spirits 2
   > Action 53
   > Probably a few others.
+- Added settings to allow players to switch between global/local config for audio, button mapping and rapid fire.
 
 ### v0.91
 
