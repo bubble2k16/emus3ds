@@ -23,6 +23,15 @@ typedef struct
     int     prev_spr;
     int     cur_spr;
 
+    int     prev_hdw;
+    int     cur_hdw;
+
+    int     prev_hds;
+    int     cur_hds;
+
+    int     prev_hsw;
+    int     cur_hsw;
+
     int     start_render_line;
 
 } vdc_hw_struct;

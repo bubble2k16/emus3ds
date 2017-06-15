@@ -145,18 +145,17 @@ SMenuItem optionMenu[] = {
     MENU_MAKE_CHECKBOX  (15001, "  Hide text in bottom screen", 0),
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("GAME-SPECIFIC SETTINGS"),
-    MENU_MAKE_HEADER2   ("Speed Hack"),
     MENU_MAKE_PICKER    (20000, "  Idle Loop Patching", "You must reload the ROM after changing this.", optionsForIdleLoopPatch, DIALOGCOLOR_CYAN),
-    MENU_MAKE_DISABLED  (""),
-    MENU_MAKE_HEADER2   ("Graphics"),
     MENU_MAKE_PICKER    (10000, "  Frameskip", "Try changing this if the game runs slow. Skipping frames help it run faster but less smooth.", optionsForFrameskip, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (12000, "  Framerate", "Some games run at 50 or 60 FPS by default. Override if required.", optionsForFrameRate, DIALOGCOLOR_CYAN),
-    MENU_MAKE_PICKER    (19000, "  Rendering", "Hardware rendering improves speed.", optionsForRendering, DIALOGCOLOR_CYAN),
     MENU_MAKE_DISABLED  (""),
-    MENU_MAKE_HEADER2   ("Audio"),
+    MENU_MAKE_HEADER1   ("AUDIO"),
+    MENU_MAKE_CHECKBOX  (50002, "  Apply volume to all games", 0),
     MENU_MAKE_GAUGE     (14000, "  Volume Amplification", 0, 8, 4),
     MENU_MAKE_DISABLED  (""),
-    MENU_MAKE_HEADER2   ("3DS Button Config"),
+    MENU_MAKE_HEADER1   ("BUTTON CONFIGURATION"),
+    MENU_MAKE_CHECKBOX  (50000, "  Apply button mappings to all games", 0),
+    MENU_MAKE_CHECKBOX  (50001, "  Apply rapid fire settings to all games", 0),
     MENU_MAKE_PICKER    (13010, "  3DS 'A'", "", optionsForButtons, DIALOGCOLOR_CYAN),
     MENU_MAKE_GAUGE     (13000, "    Rapid-Fire Speed", 0, 10, 0),
     MENU_MAKE_PICKER    (13011, "  3DS 'B'", "", optionsForButtons, DIALOGCOLOR_CYAN),
@@ -288,16 +287,18 @@ int soundSamplesPerGeneration = 0;
 int soundSamplesPerSecond = 0;
 short soundSamples[1000];
 
+int audioFrame = 0;
+int emulatorFrame = 0;
 
 //---------------------------------------------------------
 // Initializes the emulator core.
 //---------------------------------------------------------
 bool impl3dsInitializeCore()
 {
-	// compute a sample rate closes to 32000 kHz.
+	// compute a sample rate closes to 44100 kHz.
 	//
-    int numberOfGenerationsPerSecond = 60 * 2;
-    soundSamplesPerGeneration = 32000 / numberOfGenerationsPerSecond;
+    int numberOfGenerationsPerSecond = 60 * 1;
+    soundSamplesPerGeneration = 44100 / numberOfGenerationsPerSecond;
 	soundSamplesPerSecond = soundSamplesPerGeneration * numberOfGenerationsPerSecond;
     audio.output_frequency = soundSamplesPerSecond;
 
@@ -459,8 +460,12 @@ void impl3dsOutputSoundSamples(short *leftSamples, short *rightSamples)
             sample = -32768;
         rightSamples[i] = sample;
     }
+    audioFrame++;
 }
 
+extern VerticalSections screenWidthVerticalSection;
+
+char bramSaveFilepath[_MAX_PATH] = "";
 
 //---------------------------------------------------------
 // This is called when a ROM needs to be loaded and the
@@ -470,8 +475,11 @@ bool impl3dsLoadROM(char *romFilePath)
 {
     //config.patch_idle_loops = 0;
 
+    strncpy(bramSaveFilepath, file3dsReplaceFilenameExtension(romFileNameFullPath, ".sav"), _MAX_PATH - 1);
+
     if (load_rom(romFilePath) == -1)
         return false;
+    
     
     impl3dsResetConsole();
 
@@ -550,6 +558,9 @@ SGPUTexture 	*screenTexture = 0;
 //---------------------------------------------------------
 void impl3dsEmulationBegin()
 {
+    audioFrame = 0;
+    emulatorFrame = 0;
+    
 	bufferToTransfer = 0;
 	screenTexture = 0;
 	skipDrawingPreviousFrame = true;
@@ -661,7 +672,6 @@ void impl3dsRenderTransferSoftRenderedScreenToTexture(u32 *buffer, int textureIn
 	t3dsEndTiming(12);
 }
 
-extern VerticalSections screenWidthVerticalSection;
 
 void impl3dsRenderDrawTextureToTopFrameBuffer(SGPUTexture *texture, int tx_offset, int ty_offset)
 {
@@ -735,8 +745,8 @@ void impl3dsRenderDrawTextureToTopFrameBuffer(SGPUTexture *texture, int tx_offse
 
     int sideBorderWidth = (400 - scrWidth) / 2;
     gpu3dsSetTextureEnvironmentReplaceColor();
-    gpu3dsDrawRectangle(0, 0, sideBorderWidth, 240, 0, 0x0000ffff);
-    gpu3dsDrawRectangle(400 - sideBorderWidth, 0, 400, 240, 0, 0x0000ffff);
+    gpu3dsDrawRectangle(0, 0, sideBorderWidth, 240, 0, 0x000000ff);
+    gpu3dsDrawRectangle(400 - sideBorderWidth, 0, 400, 240, 0, 0x000000ff);
 
     gpu3dsUseShader(0);
     gpu3dsSetTextureEnvironmentReplaceTexture0();
@@ -751,25 +761,28 @@ void impl3dsRenderDrawTextureToTopFrameBuffer(SGPUTexture *texture, int tx_offse
 */
 
     // Hardware rendering:
-    vsectCommit(&screenWidthVerticalSection, vce.frame_counter - 14);
-
     for (int i = 0; i < screenWidthVerticalSection.Count; i++)
     {
         int startY = screenWidthVerticalSection.Section[i].StartY;
         int endY = screenWidthVerticalSection.Section[i].EndY;
         int pceWidth = screenWidthVerticalSection.Section[i].Value;
+        int hds = screenWidthVerticalSection.Section[i].Value2;
+        int hsw = screenWidthVerticalSection.Section[i].Value4;
 
-        //printf ("width sect: %d (w:%3d) %3d to %3d\n", i, pceWidth, startY, endY);
+        //printf ("width sect: %d (w:%3d s:%3d e:%3d) %3d to %3d\n", i, pceWidth, hds, hsw, startY, endY);
 
+        int xOffset = 0;
         if (pceWidth == 0)
             continue;
+        if (pceWidth < 256)
+            xOffset = (256 - pceWidth) / 2;
+
         if (startY > endY)
             continue;
-        if (pceWidth == 320)
-            pceWidth = 344;
 
-        float tx0 = 0, ty0 = startY;
-        float tx1 = pceWidth, ty1 = endY + 1;
+        float tx0 = 0;
+        float ty0 = startY;
+        float tx1 = tx0 + pceWidth, ty1 = endY + 1;
         if (cropped)
         {
             tx0 += 8; ty0 += 8;
@@ -782,14 +795,13 @@ void impl3dsRenderDrawTextureToTopFrameBuffer(SGPUTexture *texture, int tx_offse
         }
 
         gpu3dsAddQuadVertexes(
-            sideBorderWidth, startY, 400 - sideBorderWidth, endY + 1, 
+            sideBorderWidth + xOffset, startY, 400 - sideBorderWidth - xOffset, endY + 1, 
             tx0 + tx_offset, ty0 + ty_offset, 
             tx1 + tx_offset, ty1 + ty_offset, 0);
     }
+    vsectReset(&screenWidthVerticalSection);
 
     gpu3dsDrawVertexes();
-
-    vsectReset(&screenWidthVerticalSection, 0, 0);
 
     //gpu3dsSetTextureEnvironmentReplaceTexture0();
     //gpu3dsBindTextureMainScreen(emuTileCacheTexture, GPU_TEXUNIT0);
@@ -826,6 +838,9 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
         gpu3dsUseShader(1);
         gpu3dsSetRenderTargetToTexture(emuMainScreenHWTarget, emuDepthForScreens);
 		update_frame(skipDrawingFrame);
+        if (config.cd_loaded)
+            update_cdda();
+        emulatorFrame++;
         gpu3dsDrawVertexes();
 
 
@@ -1035,17 +1050,27 @@ void impl3dsInitializeDefaultSettings()
 	settings3DS.MaxFrameSkips = 1;
 	settings3DS.ForceFrameRate = 0;
 	settings3DS.Volume = 4;
+	settings3DS.GlobalVolume = 4;
 
 	for (int i = 0; i < 6; i++)     // and clear all turbo buttons.
+    {
 		settings3DS.Turbo[i] = 0;
+		settings3DS.GlobalTurbo[i] = 0;
+    }
 	settings3DS.ButtonMapping[0] = IO_BUTTON_I;
 	settings3DS.ButtonMapping[1] = IO_BUTTON_II;
 	settings3DS.ButtonMapping[2] = IO_BUTTON_III;
 	settings3DS.ButtonMapping[3] = IO_BUTTON_IV;
 	settings3DS.ButtonMapping[4] = IO_BUTTON_V;
 	settings3DS.ButtonMapping[5] = IO_BUTTON_VI;
+	settings3DS.GlobalButtonMapping[0] = IO_BUTTON_I;
+	settings3DS.GlobalButtonMapping[1] = IO_BUTTON_II;
+	settings3DS.GlobalButtonMapping[2] = IO_BUTTON_III;
+	settings3DS.GlobalButtonMapping[3] = IO_BUTTON_IV;
+	settings3DS.GlobalButtonMapping[4] = IO_BUTTON_V;
+	settings3DS.GlobalButtonMapping[5] = IO_BUTTON_VI;
 
-    settings3DS.OtherOptions[SETTINGS_IDLELOOPPATCH] = 1;	
+    settings3DS.OtherOptions[SETTINGS_IDLELOOPPATCH] = 0;	
     settings3DS.OtherOptions[SETTINGS_SOFTWARERENDERING] = 0;	
 }
 
@@ -1226,19 +1251,55 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
     UPDATE_SETTINGS(settings3DS.HideUnnecessaryBottomScrText, 1, 15001);
     UPDATE_SETTINGS(settings3DS.MaxFrameSkips, 1, 10000);
     UPDATE_SETTINGS(settings3DS.ForceFrameRate, 1, 12000);
-    UPDATE_SETTINGS(settings3DS.Turbo[0], 1, 13000);
-    UPDATE_SETTINGS(settings3DS.Turbo[1], 1, 13001);
-    UPDATE_SETTINGS(settings3DS.Turbo[2], 1, 13002);
-    UPDATE_SETTINGS(settings3DS.Turbo[3], 1, 13003);
-    UPDATE_SETTINGS(settings3DS.Turbo[4], 1, 13004);
-    UPDATE_SETTINGS(settings3DS.Turbo[5], 1, 13005);
-    UPDATE_SETTINGS(settings3DS.ButtonMapping[0], 1, 13010);
-    UPDATE_SETTINGS(settings3DS.ButtonMapping[1], 1, 13011);
-    UPDATE_SETTINGS(settings3DS.ButtonMapping[2], 1, 13012);
-    UPDATE_SETTINGS(settings3DS.ButtonMapping[3], 1, 13013);
-    UPDATE_SETTINGS(settings3DS.ButtonMapping[4], 1, 13014);
-    UPDATE_SETTINGS(settings3DS.ButtonMapping[5], 1, 13015);
-    UPDATE_SETTINGS(settings3DS.Volume, 1, 14000);
+
+    UPDATE_SETTINGS(settings3DS.UseGlobalButtonMappings, 1, 50000);
+    UPDATE_SETTINGS(settings3DS.UseGlobalTurbo, 1, 50001);
+    UPDATE_SETTINGS(settings3DS.UseGlobalVolume, 1, 50002);
+    if (settings3DS.UseGlobalButtonMappings || copyMenuToSettings)
+    {
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[0], 1, 13010);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[1], 1, 13011);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[2], 1, 13012);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[3], 1, 13013);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[4], 1, 13014);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[5], 1, 13015);
+    }
+    if (!settings3DS.UseGlobalButtonMappings || copyMenuToSettings)
+    {
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[0], 1, 13010);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[1], 1, 13011);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[2], 1, 13012);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[3], 1, 13013);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[4], 1, 13014);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[5], 1, 13015);
+    }
+    if (settings3DS.UseGlobalTurbo || copyMenuToSettings)
+    {
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[0], 1, 13000);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[1], 1, 13001);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[2], 1, 13002);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[3], 1, 13003);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[4], 1, 13004);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[5], 1, 13005);
+    }
+    if (!settings3DS.UseGlobalTurbo || copyMenuToSettings) 
+    {
+        UPDATE_SETTINGS(settings3DS.Turbo[0], 1, 13000);
+        UPDATE_SETTINGS(settings3DS.Turbo[1], 1, 13001);
+        UPDATE_SETTINGS(settings3DS.Turbo[2], 1, 13002);
+        UPDATE_SETTINGS(settings3DS.Turbo[3], 1, 13003);
+        UPDATE_SETTINGS(settings3DS.Turbo[4], 1, 13004);
+        UPDATE_SETTINGS(settings3DS.Turbo[5], 1, 13005);
+    }
+    if (settings3DS.UseGlobalVolume || copyMenuToSettings)
+    {
+        UPDATE_SETTINGS(settings3DS.GlobalVolume, 1, 14000);
+    }
+    if (!settings3DS.UseGlobalVolume || copyMenuToSettings)
+    {
+        UPDATE_SETTINGS(settings3DS.Volume, 1, 14000);
+    }
+
     UPDATE_SETTINGS(settings3DS.PaletteFix, 1, 16000);
     UPDATE_SETTINGS(settings3DS.SRAMSaveInterval, 1, 17000);
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_SOFTWARERENDERING], 1, 19000);

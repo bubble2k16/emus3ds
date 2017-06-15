@@ -2978,9 +2978,9 @@ void update_frame_execute(u32 skip)
 
     if(!skip)
     {
-      if (config.software_rendering)
-        render_line();
-      else
+      //if (config.software_rendering)
+      //  render_line();
+      //else
         render_line_hw();
     }
 

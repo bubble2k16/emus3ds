@@ -140,6 +140,7 @@ r0_y_lt_zero:
 	; outcol = RGBA8_TO_FLOAT4(in.color)
 	mul 	outcol, RGBA8_TO_FLOAT4.xxxx, r11
 
+	nop
 	end
 
 do_not_draw:
@@ -147,6 +148,7 @@ do_not_draw:
 	mov		outtex, ZERO
 	mov		outcol, ZERO
 	
+	nop
 	end
 
 .end

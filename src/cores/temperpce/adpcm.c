@@ -386,6 +386,8 @@ void update_adpcm()
         audio_buffer[audio_buffer_index] += dest_sample;
         audio_buffer[audio_buffer_index + 1] += dest_sample;
 
+        //printf ("adpcm: %04x %04x\n", dest_sample, dest_sample);
+
         sample_index_fractional += frequency_step;
         audio_buffer_index =
          (audio_buffer_index + 2) % AUDIO_BUFFER_SIZE;

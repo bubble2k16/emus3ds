@@ -250,7 +250,7 @@ void scsi_command_set_audio_start_pos()
   // Bug fix: Why was this not here?
   // Without this, all games that play CD audio freezes entirely.
   //
-  cd_set_status(SCSI_STATUS_MESSAGE_GOOD);
+  //cd_set_status(SCSI_STATUS_MESSAGE_GOOD);
 }
 
 void scsi_command_set_audio_end_pos()
@@ -1010,7 +1010,7 @@ void update_cd_read()
 
 void update_cdda()
 {
-  s32 clock_delta =
+  s64 clock_delta =
    (cpu.global_cycles << step_fractional_bits_clock) - cd.last_cdda_cycles;
   cd.last_cdda_cycles += clock_delta;
 
@@ -1117,7 +1117,7 @@ void update_cdda()
 void save_bram(char *path)
 {
   FILE *bram_file = fopen(path, "wb");
-  printf("saving bram %s...\n", path);
+  //printf("saving bram %s...\n", path);
   fwrite(cd.bram, 1024 * 8, 1, bram_file);
   fclose(bram_file);
 }
@@ -1125,7 +1125,7 @@ void save_bram(char *path)
 void load_bram(char *path)
 {
   FILE *bram_file = fopen(path, "rb");
-  printf("loading bram %s\n", path);
+  //printf("loading bram %s\n", path);
   fread(cd.bram, 1024 * 8, 1, bram_file);
   fclose(bram_file);
 }

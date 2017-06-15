@@ -946,15 +946,25 @@ void impl3dsInitializeDefaultSettings()
 	settings3DS.MaxFrameSkips = 1;
 	settings3DS.ForceFrameRate = 0;
 	settings3DS.Volume = 4;
+	settings3DS.GlobalVolume = 4;
 
 	for (int i = 0; i < 6; i++)     // and clear all turbo buttons.
+    {
 		settings3DS.Turbo[i] = 0;
+		settings3DS.GlobalTurbo[i] = 0;
+    }
 	settings3DS.ButtonMapping[0] = BTNNES_A;
 	settings3DS.ButtonMapping[1] = BTNNES_B;
 	settings3DS.ButtonMapping[2] = BTNNES_A;
 	settings3DS.ButtonMapping[3] = BTNNES_B;
 	settings3DS.ButtonMapping[4] = 0;
 	settings3DS.ButtonMapping[5] = 0;	
+	settings3DS.GlobalButtonMapping[0] = BTNNES_A;
+	settings3DS.GlobalButtonMapping[1] = BTNNES_B;
+	settings3DS.GlobalButtonMapping[2] = BTNNES_A;
+	settings3DS.GlobalButtonMapping[3] = BTNNES_B;
+	settings3DS.GlobalButtonMapping[4] = 0;
+	settings3DS.GlobalButtonMapping[5] = 0;	
 }
 
 

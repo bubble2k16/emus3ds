@@ -60,6 +60,7 @@
 	mov		outcol,		v2
 	emit 
 
+	nop
 	end
 	nop
 

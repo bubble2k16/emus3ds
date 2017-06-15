@@ -365,7 +365,7 @@ void setup_io_tables()
   io_write_function_ptr *current_io_write_function =
    memory.io_write_functions;
 
-  printf("Initializing I/O tables.\n");
+  //printf("Initializing I/O tables.\n");
   // VDC section: 0x0000 to 0x03FF
   if(config.sgx_mode)
   {
@@ -1168,7 +1168,7 @@ void setup_hucard_map()
   if(memory.sf2_region == -1)
   {
     // Write protect ROM by redirecting writes to null space
-    printf("nulling ROM writes\n");
+    //printf("nulling ROM writes\n");
     memory_remap_write_null(0x0, 0x80);
 
     for(i = 0x1FF0; i < 0x2000; i++)
@@ -1211,13 +1211,13 @@ void setup_hucard_map()
     }
     else
     {
-      printf("unmap ACD\n");
+      //printf("unmap ACD\n");
       unmap_arcade_card();
     }
   }
   else
   {
-    printf("unmap ACD\n");
+    //printf("unmap ACD\n");
     unmap_arcade_card();
   }
 
@@ -1343,10 +1343,13 @@ s32 load_syscard()
   return 0;
 }
 
+
+extern char bramSaveFilepath[MAX_PATH];
 void get_bram_path(char *path)
 {
-  sprintf(path, "%s%c%s.sav", config.main_path,
-    DIR_SEPARATOR_CHAR, config.rom_filename);
+  strncpy(path, bramSaveFilepath, MAX_PATH - 1);
+  //sprintf(path, "%s%c%s.sav", config.main_path,
+  //  DIR_SEPARATOR_CHAR, config.rom_filename);
   /*if(config.per_game_bram)
   {
     sprintf(path, "%s%cbram%c%s.sav", config.main_path,
@@ -1445,8 +1448,8 @@ s32 load_rom(char *path)
   }
 
   getcwd(config.rom_directory, MAX_PATH);
-  printf("got ROM dir %s, name %s\n", config.rom_directory,
-   config.rom_filename);
+  //printf("got ROM dir %s, name %s\n", config.rom_directory,
+  // config.rom_filename);
 
   if(!config.cd_loaded)
   {

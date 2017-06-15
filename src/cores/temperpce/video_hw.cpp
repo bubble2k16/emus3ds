@@ -45,68 +45,10 @@ void update_palette_frame(int pal)
     GPU3DSExt.PaletteFrame[pal]++;
 }
 
-void copy_line_data(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
+int get_horizontal_width(vdc_struct *vdc)
 {
-    vdc_hw->prev_spr = vdc_hw->cur_spr;
-    vdc_hw->prev_bg  = vdc_hw->cur_bg;
-
-    u32 scanline_line = vce.frame_counter - 14;
-
-    if (scanline_line >= 0 && scanline_line < 256)
-    {
-        if((vdc->display_counter >= vdc->start_line) &&
-            (vdc->display_counter < vdc->vblank_line) &&
-            (vdc->burst_mode == 0))
-        {
-            int y_scroll = vdc->effective_byr;
-            int x_scroll = vdc->bxr + vdc->scroll_shift;
-
-            vdc_hw->x_scroll[scanline_line] = x_scroll;
-            vdc_hw->y_scroll[scanline_line] = y_scroll;
-
-            vdc_hw->screen_width[scanline_line] = vdc->screen_width;
-
-            vdc_hw->cur_spr = (vdc->cr & 0x40) > 0;
-            vdc_hw->cur_bg = (vdc->cr & 0x80) > 0;
-        }
-        else
-        {
-            vdc_hw->cur_spr = 0;
-            vdc_hw->cur_bg = 0;
-        }
-
-        //printf ("%d hd s:%d e:%d %d\n", vce.screen_width, vdc->hds, vdc->hde, vdc->hdw);
-
-        int clock_width = vce.screen_width;
-        int hwidth = (vdc->hdw + 1) * 8;
-
-        // maxwidth is just the physical width of the TV.
-        // (See Charles MacDonald's documentation)
-        // The real console probably can't output more than that
-        // anyway, so we use it to clamp hwidth.
-        //
-        int maxwidth = 256;         
-        if (clock_width == 256)
-            maxwidth = 280;
-        else if (clock_width == 320)
-            maxwidth = 376;
-        else if (clock_width == 512)
-            maxwidth = 536;
-
-        if (hwidth > maxwidth)
-            hwidth = maxwidth;
-
-        vsectUpdateValue(&screenWidthVerticalSection, 
-            scanline_line, hwidth);
-    }
-    
-    
-    /*
-    if (vdc_hw->x_scroll[scanline_line] != vdc_hw->x_scroll[scanline_line-1] ||
-        vdc_hw->y_scroll[scanline_line] != vdc_hw->y_scroll[scanline_line-1] + 1 ||
-        vdc_hw->screen_width[scanline_line] != vdc_hw->screen_width[scanline_line-1])
-    printf ("%3d: %d %d %d\n", scscanline_lineanline, vdc->screen_width, x_scroll, y_scroll);
-    */
+    int hwidth = (vdc->hdw + 1) * 8;
+    return hwidth;
 }
 
 
@@ -208,6 +150,8 @@ inline void render_bg_tile (
 
 void render_bg_block(int start_y, int end_y, int offset_y, vdc_struct *vdc, vdc_hw_struct *vdc_hw)
 {
+    s32 bg_offset[4] = { 32, 64, 104, 104 };
+    
     u16 *bat_offset;
 
     u32 *screen_ptr = get_screen_ptr();
@@ -215,7 +159,20 @@ void render_bg_block(int start_y, int end_y, int offset_y, vdc_struct *vdc, vdc_
     u32 bg_width = (vdc->mwr >> 4) & 0x3;
     u32 bg_height = (vdc->mwr >> 6) & 0x1;
     
-    u32 screen_width = vdc->screen_width;
+    u32 screen_width = (vdc->hdw + 1) * 8;
+    s32 scroll_shift = 0;
+    
+    s32 scanline_offset = ((vdc->hsw + vdc->hds) * 8) - vce.screen_overdraw_offset;
+    if (scanline_offset > 0)
+    {
+        scanline_offset = 0;
+    }
+    else
+    {
+        scroll_shift = scanline_offset;
+        scanline_offset = 0;
+    }
+    //s32 scanline_offset = 8;
     
     if(bg_width == 2)
         bg_width = 3;
@@ -223,9 +180,10 @@ void render_bg_block(int start_y, int end_y, int offset_y, vdc_struct *vdc, vdc_
     bg_height = ((bg_height + 1) * 32);
 
     //printf ("----------------- (%d, %d)\n", start_y, end_y);
+    //printf ("scanline_offset: %d %d %d\n", scanline_offset, vce.screen_overdraw_offset, screen_width);
     for (int y = start_y; y <= end_y; )
     {
-        int x_scroll = vdc_hw->x_scroll[y];
+        int x_scroll = vdc_hw->x_scroll[y] + scroll_shift;
         int y_scroll = vdc_hw->y_scroll[y];
 
         //printf ("line:%d scroll:%d,%d blank:%d\n", y, x_scroll, y_scroll, vdc_hw->blank_line[y]);
@@ -255,13 +213,13 @@ void render_bg_block(int start_y, int end_y, int offset_y, vdc_struct *vdc, vdc_
 
         bat_offset = vdc->vram + (y_tile_offset * bg_width);
                                             
-        u32 current_x = 32 - x_pixel_offset;
+        u32 current_x = 32 - x_pixel_offset - scanline_offset;
 
         // Loop through each tile in this horizontal block and
         // render them to the screen.
         //
-        u32 screen_width_tiles = screen_width / 8;
-        if(x_pixel_offset)
+        u32 screen_width_tiles = (screen_width / 8) + 1;
+        //if(x_pixel_offset)
             screen_width_tiles++;
 
         while (screen_width_tiles)
@@ -549,6 +507,11 @@ int spr_y4[4][2] = {
 
 void render_spr_block(int start_y, int end_y, int offset_y, vdc_struct *vdc, vdc_hw_struct *vdc_hw)
 {
+    u32 bg_offset[4] = { -16, -32, -88, -88 };
+    u32 spr_offset[4] = { 0, -8, -16, -16 };
+    //s32 scanline_offset = bg_offset[vce.control & 0x3] + (vdc->hds * 8);;
+    s32 scanline_offset = 0;
+    
     u32 *screen_ptr = get_screen_ptr();
     u32 screen_width = vdc->screen_width;
 
@@ -559,7 +522,7 @@ void render_spr_block(int start_y, int end_y, int offset_y, vdc_struct *vdc, vdc
     {
         current_sprite = &satb_location[4 * i];
         int y = (current_sprite[0] & 0x3FF) - 64 + offset_y;
-        int x = (current_sprite[1] & 0x3FF);
+        int x = (current_sprite[1] & 0x3FF) + scanline_offset;
         int attributes = current_sprite[3] & 0xB98F;
         int cgx = ((attributes >> 8) & 0x1);
         int cgy = ((attributes >> 12) & 0x3);
@@ -695,22 +658,13 @@ void render_flush(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
     // For debugging only - Tells us where is the last scanline
     // of this refresh.
     //
-    gpu3dsDisableAlphaTest();
+    /*gpu3dsDisableAlphaTest();
     gpu3dsDisableDepthTest();
     gpu3dsSetTextureEnvironmentReplaceColor();
     gpu3dsDrawRectangle(0, scanline_line, 200, scanline_line + 1, 0, 0xffffffff);
+    */
     
     vdc_hw->start_render_line = scanline_line + 1;
-}
-
-
-void render_flush_on_state_changed(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
-{
-    if ((vdc_hw->cur_spr != vdc_hw->prev_spr) ||
-        (vdc_hw->cur_bg != vdc_hw->prev_bg))
-    {
-        render_flush(vdc, vdc_hw);
-    }
 }
 
 
@@ -928,27 +882,77 @@ void vdc_check_line_hw(vdc_struct *vdc)
     } 
 }
 
+void copy_line_data(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
+{
+    vdc_hw->prev_hdw = vdc_hw->cur_hdw;
+    vdc_hw->prev_hds = vdc_hw->cur_hds;
+    vdc_hw->prev_hsw = vdc_hw->cur_hsw;
+    vdc_hw->prev_spr = vdc_hw->cur_spr;
+    vdc_hw->prev_bg  = vdc_hw->cur_bg;
+
+    u32 scanline_line = vce.frame_counter - 14;
+
+    //if (scanline_line >= 0 && scanline_line <= 240)
+    {
+        if((vdc->display_counter >= vdc->start_line) &&
+            (vdc->display_counter < vdc->vblank_line) &&
+            (vdc->burst_mode == 0))
+        {
+            int y_scroll = vdc->effective_byr;
+            int x_scroll = vdc->bxr + vdc->scroll_shift;
+
+            vdc_hw->x_scroll[scanline_line] = x_scroll;
+            vdc_hw->y_scroll[scanline_line] = y_scroll;
+
+            vdc_hw->screen_width[scanline_line] = vdc->screen_width;
+
+            vdc_hw->cur_spr = (vdc->cr & 0x40) > 0;
+            vdc_hw->cur_bg = (vdc->cr & 0x80) > 0;
+            vdc_hw->cur_hdw = vdc->hdw;
+            vdc_hw->cur_hds = vdc->hds;
+            vdc_hw->cur_hsw = vdc->hsw;
+        }
+        else
+        {
+            vdc_hw->cur_spr = 0;
+            vdc_hw->cur_bg = 0;
+        }
+
+        if ((vdc_hw->prev_bg != vdc_hw->cur_bg) ||
+            (vdc_hw->prev_spr != vdc_hw->cur_spr) ||
+            (vdc_hw->prev_hdw != vdc_hw->cur_hdw) ||
+            (vdc_hw->prev_hds != vdc_hw->cur_hds) ||
+            (vdc_hw->prev_hsw != vdc_hw->cur_hsw) ||
+            scanline_line == RESOLUTION_HEIGHT - 1)
+        {
+            vsectCommit(&screenWidthVerticalSection, scanline_line);
+            vsectUpdateValue(&screenWidthVerticalSection, scanline_line + 1, get_horizontal_width(vdc), vdc->hds, vdc->hsw);
+
+            render_flush(vdc, vdc_hw);
+        }
+            
+    }
+    
+}
+
 void render_line_hw(void)
 {
-    //printf ("%3d: %3d %3d %02x\n", vce.frame_counter, vdc_a.raster_line, vdc_a.start_line, vdc_a.cr);
     if (vce.frame_counter == 0)
     {
         vdc_hw_a.start_render_line = 0; 
+    }
 
+    if (vce.frame_counter == 13)
+    {
+        vsectUpdateValue(&screenWidthVerticalSection, 0, get_horizontal_width(&vdc_a), vdc_a.hds, vdc_a.hsw);
     }
 
     if ((vce.frame_counter >= 14) &&
         (vce.frame_counter < (14 + RESOLUTION_HEIGHT)))
     {
         copy_line_data(&vdc_a, &vdc_hw_a);
-        render_flush_on_state_changed(&vdc_a, &vdc_hw_a);
         vdc_check_line_hw (&vdc_a);
     }
 
-    if (vce.frame_counter == (14 + RESOLUTION_HEIGHT))
-    {
-        vsectCommit(&screenWidthVerticalSection, RESOLUTION_HEIGHT);
-        render_flush(&vdc_a, &vdc_hw_a);
-    }
 
 }
