@@ -100,22 +100,37 @@ bool emulatorLoadRom()
 {
     menu3dsShowDialog("Load ROM", "Loading... this may take a while.", DIALOGCOLOR_CYAN, NULL);
 
+    char romFileNameFullPathOriginal[_MAX_PATH];
+    strncpy(romFileNameFullPathOriginal, romFileNameFullPath, _MAX_PATH - 1);
+
     emulatorSettingsSave(false, false);
     snprintf(romFileNameFullPath, _MAX_PATH, "%s%s", file3dsGetCurrentDir(), romFileName);
 
     char romFileNameFullPath2[_MAX_PATH];
     strncpy(romFileNameFullPath2, romFileNameFullPath, _MAX_PATH - 1);
+
+    // Load up the new ROM settings first.
+    //
+    emulatorSettingsLoad(true, false);
+    impl3dsApplyAllSettings();
     
     if (!impl3dsLoadROM(romFileNameFullPath2))
     {
+        // If the ROM loading fails:
+        // 1. Restore the original ROM file path.
+        strncpy(romFileNameFullPath, romFileNameFullPathOriginal, _MAX_PATH - 1);
+        
+        // 2. Reload original settings
+        emulatorSettingsLoad(true, false);
+        impl3dsApplyAllSettings();
+        
         menu3dsHideDialog();
+
         return false;
     }
 
     emulator.emulatorState = EMUSTATE_EMULATE;
 
-    emulatorSettingsLoad(true, false);
-    impl3dsApplyAllSettings();
     cheat3dsLoadCheatTextFile(file3dsReplaceFilenameExtension(romFileNameFullPath, ".chx"));
     menu3dsHideDialog();
 

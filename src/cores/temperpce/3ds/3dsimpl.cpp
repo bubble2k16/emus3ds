@@ -48,6 +48,7 @@ SSettings3DS settings3DS;
 
 #define SETTINGS_SOFTWARERENDERING      0
 #define SETTINGS_IDLELOOPPATCH          1
+#define SETTINGS_BIOS                   2
 
 //----------------------------------------------------------------------
 // Menu options
@@ -138,6 +139,17 @@ SMenuItem optionsForRendering[] =
     MENU_MAKE_LASTITEM  ()  
 };
 
+SMenuItem optionsForBIOS[] =
+{
+    MENU_MAKE_DIALOG_ACTION (2, "CD-ROM v1",             "/3ds/syscards/syscard1.pce"),
+    MENU_MAKE_DIALOG_ACTION (1, "CD-ROM v2",             "/3ds/syscards/syscard2.pce"),
+    MENU_MAKE_DIALOG_ACTION (0, "CD-ROM v3",             "/3ds/syscards/syscard3.pce"),
+    MENU_MAKE_DIALOG_ACTION (3, "Arcade CD",             "/3ds/syscards/syscard3.pce"),
+    MENU_MAKE_DIALOG_ACTION (4, "Games Express",         "/3ds/syscards/games_express.pce"),
+    MENU_MAKE_LASTITEM  ()  
+};
+
+
 SMenuItem optionMenu[] = {
     MENU_MAKE_HEADER1   ("GLOBAL SETTINGS"),
     MENU_MAKE_PICKER    (11000, "  Screen Stretch", "How would you like the final screen to appear?", optionsForStretch, DIALOGCOLOR_CYAN),
@@ -147,7 +159,7 @@ SMenuItem optionMenu[] = {
     MENU_MAKE_HEADER1   ("GAME-SPECIFIC SETTINGS"),
     MENU_MAKE_PICKER    (20000, "  Idle Loop Patching", "You must reload the ROM after changing this.", optionsForIdleLoopPatch, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (10000, "  Frameskip", "Try changing this if the game runs slow. Skipping frames help it run faster but less smooth.", optionsForFrameskip, DIALOGCOLOR_CYAN),
-    MENU_MAKE_PICKER    (12000, "  Framerate", "Some games run at 50 or 60 FPS by default. Override if required.", optionsForFrameRate, DIALOGCOLOR_CYAN),
+    MENU_MAKE_PICKER    (21000, "  BIOS", "The BIOS must be in your /3ds/syscards folder. Re-load ROM after changing.", optionsForBIOS, DIALOGCOLOR_CYAN),
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("AUDIO"),
     MENU_MAKE_CHECKBOX  (50002, "  Apply volume to all games", 0),
@@ -544,6 +556,15 @@ bool impl3dsLoadROM(char *romFilePath)
 
     if (load_rom(romFilePath) == -1)
         return false;
+
+    SMenuItem *menuItem = menu3dsGetMenuItemByID(1, 21000);
+    if (menuItem != NULL)
+    {
+        if (config.cd_loaded)
+            menuItem->Type = MENUITEM_PICKER;
+        else
+            menuItem->Type = MENUITEM_DISABLED;
+    }
     
     impl3dsResetConsole();
 
@@ -1180,6 +1201,7 @@ void impl3dsInitializeDefaultSettings()
 
     settings3DS.OtherOptions[SETTINGS_IDLELOOPPATCH] = 0;	
     settings3DS.OtherOptions[SETTINGS_SOFTWARERENDERING] = 0;	
+    settings3DS.OtherOptions[SETTINGS_BIOS] = 0;
 }
 
 
@@ -1215,13 +1237,13 @@ bool impl3dsReadWriteSettingsByGame(bool writeMode)
     config3dsReadWriteInt32("TurboL=%d\n", &settings3DS.Turbo[4], 0, 10);
     config3dsReadWriteInt32("TurboR=%d\n", &settings3DS.Turbo[5], 0, 10);
     config3dsReadWriteInt32("Vol=%d\n", &settings3DS.Volume, 0, 8);
-    config3dsReadWriteInt32("SRAMInterval=%d\n", &settings3DS.SRAMSaveInterval, 0, 4);
     config3dsReadWriteInt32("ButtonMapA=%d\n", &settings3DS.ButtonMapping[0], 0, 0xffff);
     config3dsReadWriteInt32("ButtonMapB=%d\n", &settings3DS.ButtonMapping[1], 0, 0xffff);
     config3dsReadWriteInt32("ButtonMapX=%d\n", &settings3DS.ButtonMapping[2], 0, 0xffff);
     config3dsReadWriteInt32("ButtonMapY=%d\n", &settings3DS.ButtonMapping[3], 0, 0xffff);
     config3dsReadWriteInt32("ButtonMapL=%d\n", &settings3DS.ButtonMapping[4], 0, 0xffff);
     config3dsReadWriteInt32("ButtonMapR=%d\n", &settings3DS.ButtonMapping[5], 0, 0xffff);
+    config3dsReadWriteInt32("BIOS=%d\n", &settings3DS.OtherOptions[SETTINGS_BIOS], 0, 4);
 
     // All new options should come here!
 
@@ -1254,6 +1276,19 @@ bool impl3dsReadWriteSettingsGlobal(bool writeMode)
     config3dsReadWriteString("ROM=%s\n", "ROM=%1000[^\n]s\n", romFileNameLastSelected);
 
     // All new options should come here!
+    config3dsReadWriteInt32("TurboA=%d\n", &settings3DS.GlobalTurbo[0], 0, 10);
+    config3dsReadWriteInt32("TurboB=%d\n", &settings3DS.GlobalTurbo[1], 0, 10);
+    config3dsReadWriteInt32("TurboX=%d\n", &settings3DS.GlobalTurbo[2], 0, 10);
+    config3dsReadWriteInt32("TurboY=%d\n", &settings3DS.GlobalTurbo[3], 0, 10);
+    config3dsReadWriteInt32("TurboL=%d\n", &settings3DS.GlobalTurbo[4], 0, 10);
+    config3dsReadWriteInt32("TurboR=%d\n", &settings3DS.GlobalTurbo[5], 0, 10);
+    config3dsReadWriteInt32("Vol=%d\n", &settings3DS.GlobalVolume, 0, 8);
+    config3dsReadWriteInt32("ButtonMapA=%d\n", &settings3DS.GlobalButtonMapping[0], 0, 0xffff);
+    config3dsReadWriteInt32("ButtonMapB=%d\n", &settings3DS.GlobalButtonMapping[1], 0, 0xffff);
+    config3dsReadWriteInt32("ButtonMapX=%d\n", &settings3DS.GlobalButtonMapping[2], 0, 0xffff);
+    config3dsReadWriteInt32("ButtonMapY=%d\n", &settings3DS.GlobalButtonMapping[3], 0, 0xffff);
+    config3dsReadWriteInt32("ButtonMapL=%d\n", &settings3DS.GlobalButtonMapping[4], 0, 0xffff);
+    config3dsReadWriteInt32("ButtonMapR=%d\n", &settings3DS.GlobalButtonMapping[5], 0, 0xffff);
 
     config3dsCloseFile();
     return true;
@@ -1326,7 +1361,18 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
             config.patch_idle_loops = 1;
         else
             config.patch_idle_loops = 0;
-        
+
+        if (settings3DS.OtherOptions[SETTINGS_BIOS] == 0)
+            config.cd_system_type = CD_SYSTEM_TYPE_V3;
+        else if (settings3DS.OtherOptions[SETTINGS_BIOS] == 1)
+            config.cd_system_type = CD_SYSTEM_TYPE_V2;
+        else if (settings3DS.OtherOptions[SETTINGS_BIOS] == 2)
+            config.cd_system_type = CD_SYSTEM_TYPE_V1;
+        else if (settings3DS.OtherOptions[SETTINGS_BIOS] == 3)
+            config.cd_system_type = CD_SYSTEM_TYPE_ACD;
+        else if (settings3DS.OtherOptions[SETTINGS_BIOS] == 4)
+            config.cd_system_type = CD_SYSTEM_TYPE_GECD;
+
     }
 
     return settingsChanged;
@@ -1412,6 +1458,7 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
     UPDATE_SETTINGS(settings3DS.SRAMSaveInterval, 1, 17000);
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_SOFTWARERENDERING], 1, 19000);
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_IDLELOOPPATCH], 1, 20000);
+    UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_BIOS], 1, 21000);
 
     return settingsUpdated;
 	

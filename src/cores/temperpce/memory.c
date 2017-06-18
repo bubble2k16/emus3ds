@@ -1304,7 +1304,7 @@ s32 load_syscard()
       break;
   }
 
-  printf("loading syscard %s\n", syscard_name);
+  //printf("loading syscard %s\n", syscard_name);
 
   //sprintf(syscard_path, "%s%csyscards%c%s.bin", config.main_path,
   // DIR_SEPARATOR_CHAR, DIR_SEPARATOR_CHAR, syscard_name);

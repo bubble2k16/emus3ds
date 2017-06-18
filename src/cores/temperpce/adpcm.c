@@ -419,7 +419,7 @@ void update_adpcm()
 
         sample_index_fractional += frequency_step;
         audio_buffer_index =
-         (audio_buffer_index + 2) % AUDIO_BUFFER_SIZE;
+         (audio_buffer_index + 2) % ADPCM_AUDIO_BUFFER_SIZE;
 
         clocks_remaining -= psg.clock_step;
       }
