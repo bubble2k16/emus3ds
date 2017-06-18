@@ -436,31 +436,96 @@ void impl3dsGenerateSoundSamples()
 //---------------------------------------------------------
 void impl3dsOutputSoundSamples(short *leftSamples, short *rightSamples)
 {
-    int volume = 16;
-    if (settings3DS.Volume <= 4)
-        volume = 16 + settings3DS.Volume * 4;
-    else if (settings3DS.Volume <= 8)
-        volume = 16 + (settings3DS.Volume - 4) * 8;
+    static int volumeMul[] = { 16, 20, 24, 28, 32, 40, 48, 56, 64 };
+    int volume = volumeMul[settings3DS.Volume];
+    int cd_write_index = cd.cdda_audio_buffer_index;
+    int cd_read_index = cd.cdda_audio_read_buffer_index;
+    int cd_write_index_diff = cd_write_index - cd_read_index;
+    if (cd_write_index_diff > soundSamplesPerGeneration * 2)
+        cd_write_index_diff = soundSamplesPerGeneration * 2;
+    if (cd_write_index_diff < 0)
+        cd_write_index_diff += CD_AUDIO_BUFFER_SIZE;
+    cd_write_index_diff /= 2;
+    int cd_read_ctr = 0;
+
+    int adpcm_write_index = adpcm.audio_buffer_index;
+    int adpcm_read_index = adpcm.audio_read_buffer_index;
+    int adpcm_write_index_diff = adpcm_write_index - adpcm_read_index;
+    if (adpcm_write_index_diff > soundSamplesPerGeneration * 2)
+        adpcm_write_index_diff = soundSamplesPerGeneration * 2;
+    if (adpcm_write_index_diff < 0)
+        adpcm_write_index_diff += ADPCM_AUDIO_BUFFER_SIZE;
+    adpcm_write_index_diff /= 2;
+    int adpcm_read_ctr = 0;
     
     for (int i = 0; i < soundSamplesPerGeneration; i++)
     {
-        int sample = 0;
+        int leftSample = 0;
+        int rightSample = 0;
 
-        sample = (audio.buffer[i * 2] >> 5) * volume / 16;
-        if(sample > 32767)
-            sample = 32767;
-        if(sample < -32768)
-            sample = -32768;
-        leftSamples[i] = sample;
+        leftSample = (audio.buffer[i * 2] >> 5) * volume / 16;
+        rightSample = (audio.buffer[i * 2 + 1] >> 5) * volume / 16;
 
-        sample = (audio.buffer[i * 2 + 1] >> 5) * volume / 16;
-        if(sample > 32767)
-            sample = 32767;
-        if(sample < -32768)
-            sample = -32768;
-        rightSamples[i] = sample;
+        if (config.cd_loaded)
+        {
+            if (cd_write_index_diff)
+            {
+                leftSample += (cd.audio_buffer[cd_read_index] >> 5) * volume / 16;
+                rightSample += (cd.audio_buffer[cd_read_index + 1] >> 5) * volume / 16;
+                cd_read_ctr += cd_write_index_diff;
+
+                // We slow down the sample output, if the sound generation
+                // is too fast.
+                //
+                // This may cause the pitch to go a bit off for some
+                // frames, but it helps to sound smoother.
+                //
+                if (cd_read_ctr >= soundSamplesPerGeneration)
+                {
+                    cd_read_index = (cd_read_index + 2) & (CD_AUDIO_BUFFER_SIZE - 1);
+                    cd_read_ctr -= soundSamplesPerGeneration;
+                }
+            }
+
+            if (adpcm_write_index_diff)
+            {
+                leftSample += (adpcm.audio_buffer[adpcm_read_index] >> 5) * volume / 16;
+                rightSample += (adpcm.audio_buffer[adpcm_read_index + 1] >> 5) * volume / 16;
+                adpcm_read_ctr += adpcm_write_index_diff;
+
+                // We slow down the sample output, if the sound generation
+                // is too fast.
+                //
+                // This may cause the pitch to go a bit off for some
+                // frames, but it helps to sound smoother.
+                //
+                if (adpcm_read_ctr >= soundSamplesPerGeneration)
+                {
+                    adpcm_read_index = (adpcm_read_index + 2) & (ADPCM_AUDIO_BUFFER_SIZE - 1);
+                    adpcm_read_ctr -= soundSamplesPerGeneration;
+                }
+            }
+        }
+
+        if(leftSample > 32767)
+            leftSample = 32767;
+        if(leftSample < -32768)
+            leftSample = -32768;
+        leftSamples[i] = leftSample;
+
+        if(rightSample > 32767)
+            rightSample = 32767;
+        if(rightSample < -32768)
+            rightSample = -32768;
+        rightSamples[i] = rightSample;
     }
     audioFrame++;
+
+    if (config.cd_loaded)
+    {
+        cd.cdda_audio_read_buffer_index = cd_read_index;
+        adpcm.audio_read_buffer_index = adpcm_read_index;
+    }
 }
 
 extern VerticalSections screenWidthVerticalSection;
@@ -479,7 +544,6 @@ bool impl3dsLoadROM(char *romFilePath)
 
     if (load_rom(romFilePath) == -1)
         return false;
-    
     
     impl3dsResetConsole();
 
@@ -560,7 +624,7 @@ void impl3dsEmulationBegin()
 {
     audioFrame = 0;
     emulatorFrame = 0;
-    
+
 	bufferToTransfer = 0;
 	screenTexture = 0;
 	skipDrawingPreviousFrame = true;
@@ -841,6 +905,50 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
         if (config.cd_loaded)
             update_cdda();
         emulatorFrame++;
+
+        #define SYNC_SAMPLES  (735 * 8)
+
+        emulator.waitBehavior = WAIT_FULL;
+        if (config.cd_loaded)
+        {
+            // If we are running too slowly for the CD / ADPCM audio, 
+            // we will have to ask the main loop to avoid waits.
+            //
+            if (cd.has_samples)
+            {
+                int cd_write_index_diff = cd.cdda_audio_buffer_index - cd.cdda_audio_read_buffer_index;
+                if (cd_write_index_diff < 0)
+                    cd_write_index_diff += CD_AUDIO_BUFFER_SIZE;
+                if (cd_write_index_diff < SYNC_SAMPLES)
+                    emulator.waitBehavior = WAIT_NONE;
+            }
+
+            if (adpcm.has_samples)
+            {
+                int adpcm_write_index_diff = cd.cdda_audio_buffer_index - cd.cdda_audio_read_buffer_index;
+                if (adpcm_write_index_diff < 0)
+                    adpcm_write_index_diff += ADPCM_AUDIO_BUFFER_SIZE;
+                if (adpcm_write_index_diff < SYNC_SAMPLES)
+                    emulator.waitBehavior = WAIT_NONE;
+            }
+
+            //if (emulator.waitBehavior == WAIT_NONE)
+            //    printf ("WAIT_NONE\n");
+            cd.has_samples = false;
+            adpcm.has_samples = false;
+        }
+
+        /*
+        if (emulatorFrame % 5 == 0)
+        {
+            //printf ("af=%d ef=%d diff=%d bf=%d,%d\n", audioFrame, emulatorFrame, emulatorFrame - audioFrame, cd.cdda_audio_read_buffer_index, adpcm.audio_buffer_index);
+            int cd_diff = cd.cdda_audio_buffer_index - cd.cdda_audio_read_buffer_index;
+            if (cd_diff < 0)
+                cd_diff += CD_AUDIO_BUFFER_SIZE;
+            printf ("adpcm: %d,%d cd:%d,%d (%d)\n", adpcm.audio_read_buffer_index, adpcm.audio_buffer_index, cd.cdda_audio_read_buffer_index, cd.cdda_audio_buffer_index, cd_diff);
+        }
+        */
+
         gpu3dsDrawVertexes();
 
 

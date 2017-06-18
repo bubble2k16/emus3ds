@@ -283,6 +283,9 @@ void reset_adpcm()
   adpcm.fade_cycle_interval = 0;
   adpcm.fade_cycles = 0;
 
+  adpcm.audio_buffer_index = 0;
+  adpcm.audio_read_buffer_index = 0;
+
   adpcm_playback_rate(0);
   adpcm_full_volume();
 }
@@ -323,6 +326,8 @@ void update_adpcm_dma()
   }
 }
 
+#define ADPCM_SYNC_SAMPLES (735 * 4)
+
 void update_adpcm()
 {
   u32 clock_delta =
@@ -349,6 +354,27 @@ void update_adpcm()
 
   if(adpcm.last_command & 0x20)
   {
+
+    // Check if we are generating too slowly, if so,
+    // we generate samples 1 sec later.
+    //
+    if ((samples_remaining > 0) && (clocks_remaining >= 0))
+    {
+      int adpcm_diff = audio_buffer_index - adpcm.audio_read_buffer_index;
+      if (adpcm_diff < 0)
+        adpcm_diff += ADPCM_AUDIO_BUFFER_SIZE;
+      if (adpcm_diff == 0)
+      {
+        // Generate the sound a few frames later
+        for (int i = 0; i < ADPCM_SYNC_SAMPLES / 2; i++)
+        {
+          adpcm.audio_buffer[audio_buffer_index] = 0;
+          adpcm.audio_buffer[audio_buffer_index + 1] = 0;
+          audio_buffer_index = (audio_buffer_index + 2) % ADPCM_AUDIO_BUFFER_SIZE;
+        }
+      }
+    }
+
     while((samples_remaining > 0) && (clocks_remaining >= 0))
     {
       sample_index = (sample_index + 1) & 0x1FFFF;
@@ -376,15 +402,18 @@ void update_adpcm()
       {
         // Linear interpolation, should sound noticably better without
         // taking a big speed hit.
-        dest_sample = last_sample +
-         ((sample_delta * sample_index_fractional) >>
-         step_fractional_bits_frequency);
+        //dest_sample = last_sample +
+        // ((sample_delta * sample_index_fractional) >>
+        // step_fractional_bits_frequency);
 
         // Use this for nearest neighbor resampling
-        //dest_sample = current_sample;
+        dest_sample = current_sample;
 
-        audio_buffer[audio_buffer_index] += dest_sample;
-        audio_buffer[audio_buffer_index + 1] += dest_sample;
+        //audio_buffer[audio_buffer_index] += dest_sample;
+        //audio_buffer[audio_buffer_index + 1] += dest_sample;
+        adpcm.audio_buffer[audio_buffer_index] = dest_sample;
+        adpcm.audio_buffer[audio_buffer_index + 1] = dest_sample;
+        adpcm.has_samples = true;
 
         //printf ("adpcm: %04x %04x\n", dest_sample, dest_sample);
 
@@ -422,8 +451,10 @@ void update_adpcm()
 
   while(clocks_remaining >= 0)
   {
-    audio_buffer_index =
-     (audio_buffer_index + 2) % AUDIO_BUFFER_SIZE;
+    //audio_buffer_index =
+    // (audio_buffer_index + 2) % AUDIO_BUFFER_SIZE;
+    //audio_buffer_index =
+    // (audio_buffer_index + 2) % ADPCM_AUDIO_BUFFER_SIZE;
 
     clocks_remaining -= psg.clock_step;
   }

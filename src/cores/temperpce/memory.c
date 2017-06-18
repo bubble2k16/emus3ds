@@ -1377,6 +1377,8 @@ s32 load_rom(char *path)
   #endif
   u8 i;
 
+  printf ("a");
+
   if(config.rom_filename[0])
   {
     get_bram_path(path_name);
@@ -1388,6 +1390,8 @@ s32 load_rom(char *path)
   config.cd_loaded = 0;
   config.sgx_mode = 0;
   
+    printf ("b");
+
   if(dot_ptr != NULL)
   {
     // bin eh? Bet you meant cue, didn't you.

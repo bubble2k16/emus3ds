@@ -86,6 +86,8 @@ typedef enum
   CD_SECTOR_LOAD_DATA
 } cd_sector_load_type_enum;
 
+#define CD_AUDIO_BUFFER_SIZE (1024*256)
+
 // 256KB + 2KB + 2352B + 8KB + 196B
 // 266KB + 2548B
 
@@ -172,6 +174,10 @@ typedef struct
   u32 cdda_sector_cycle_interval;
 
   u8 bram[1024 * 8];
+
+  u32 cdda_audio_read_buffer_index;
+  s32 audio_buffer[CD_AUDIO_BUFFER_SIZE];
+  bool has_samples;
 } cd_struct;
 
 // 8B

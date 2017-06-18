@@ -12,6 +12,97 @@ static char *skip_whitespace(char *str)
   return str;
 }
 
+// For CD read-ahead
+
+
+cd_read_ahead_struct cd_read_ahead;
+
+
+void read_ahead_fseek(FILE *fp, int pos, int origin) 
+{
+  fseek(fp, pos, origin);
+  //printf ("rafseek %x, %d, %d\n", fp, pos, origin);
+
+  if (cd_read_ahead.fptr != fp)
+  {
+    cd_read_ahead.fptr = fp;
+
+    if (origin == SEEK_SET)
+      cd_read_ahead.seek_pos = pos;
+    else
+      cd_read_ahead.seek_pos = 0x7fffffff;
+
+    cd_read_ahead.buffer_pos = 0;
+    cd_read_ahead.buffer_length = 0;
+  }
+  else
+  {
+    if (origin == SEEK_SET)
+    {
+      if (cd_read_ahead.seek_pos != 0x7fffffff &&
+        cd_read_ahead.seek_pos <= pos && 
+        pos < (cd_read_ahead.seek_pos + cd_read_ahead.buffer_length))
+      {
+        //printf ("GS %d\n", pos - cd_read_ahead.seek_pos);
+        cd_read_ahead.buffer_pos = pos - cd_read_ahead.seek_pos;
+      }
+      else
+      {
+        //printf ("GN\n");
+        cd_read_ahead.seek_pos = pos;
+        cd_read_ahead.buffer_pos = 0;
+        cd_read_ahead.buffer_length = 0;
+      }
+    }
+    else
+    {
+      //printf ("R\n");
+      cd_read_ahead.seek_pos = -1;
+      cd_read_ahead.buffer_pos = 0;
+      cd_read_ahead.buffer_length = 0;
+    }
+  }
+
+}
+
+int read_ahead_fread(void *dest_buffer, int size, int count, FILE *fp, bool read_ahead) 
+{
+  //printf ("rafread %x, %d\n", fp, size);
+  if (!read_ahead)
+  {
+    cd_read_ahead.buffer_length = 0;
+    cd_read_ahead.buffer_pos = 0; 
+    cd_read_ahead.fptr = fp; 
+    return fread(dest_buffer, size, count, fp);
+  }
+  else
+  {
+    int total_size = (size) * (count);  // count is always 1 in this emulator
+    if (cd_read_ahead.fptr != fp || 
+        (cd_read_ahead.buffer_pos + total_size) > cd_read_ahead.buffer_length) 
+    { 
+      printf ("fread\n"),
+      //fread(cd_read_ahead.buffer, CD_READ_AHEAD_BUFFER_SIZE, 1, fp); 
+      cd_read_ahead.buffer_length = fread(cd_read_ahead.buffer, 1, CD_READ_AHEAD_BUFFER_SIZE, fp); 
+      //cd_read_ahead.buffer_length = CD_READ_AHEAD_BUFFER_SIZE;
+      cd_read_ahead.buffer_pos = 0; 
+      cd_read_ahead.fptr = fp; 
+    } 
+    if (cd_read_ahead.buffer_pos + total_size > cd_read_ahead.buffer_length) 
+    {
+      total_size = cd_read_ahead.buffer_length - cd_read_ahead.buffer_pos; 
+    }
+    memcpy(dest_buffer, &cd_read_ahead.buffer[cd_read_ahead.buffer_pos], total_size); 
+    cd_read_ahead.buffer_pos += total_size; 
+
+    if (total_size == size * count)
+      return 1;
+    else
+      return 0;
+  }
+}
+
+
 #define address8(base, offset)                                                \
   *((u8 *)((u8 *)base + (offset)))                                            \
 
@@ -28,7 +119,8 @@ wav_info_struct *wav_open(FILE *fp)
   u8 *fmt_header = wav_header + 0x0C;
   wav_info_struct *wav_info;
 
-  fread(wav_header, 36, 1, fp);
+  //printf ("fread hdr: 36\n");
+  read_ahead_fread(wav_header, 36, 1, fp, true);
   // RIFF type chunk
   if(strncmp((char *)riff_header + 0x00, "RIFF", 4) ||
    strncmp((char *)riff_header + 0x08, "WAVE", 4) ||
@@ -146,7 +238,7 @@ s32 wav_decode_sector(FILE *wav_file, wav_info_struct *wav_info,
 
   if(switch_factor == 0xF)
   {
-    if(fread(buffer, 2352, 1, wav_file) == 1)
+    if(read_ahead_fread(buffer, 2352, 1, wav_file, true) == 1)
       return 0;
   }
   else
@@ -157,7 +249,7 @@ s32 wav_decode_sector(FILE *wav_file, wav_info_struct *wav_info,
     u32 sample_input_index;
     u32 sample_output_index;
 
-    fread(_sector_buffer, wav_info->bytes_per_sector, 1, wav_file);
+    read_ahead_fread(_sector_buffer, wav_info->bytes_per_sector, 1, wav_file, true);
 
     switch(switch_factor)
     {
@@ -209,7 +301,7 @@ s32 wav_decode_sector(FILE *wav_file, wav_info_struct *wav_info,
 s32 wav_seek(FILE *wav_file, wav_info_struct *wav_info, u32 offset)
 {
   offset = offset * wav_info->bytes_per_sector / 2352;
-  fseek(wav_file, 44 + offset, SEEK_SET);
+  read_ahead_fseek(wav_file, 44 + offset, SEEK_SET);
   return 0;
 }
 
@@ -217,9 +309,9 @@ s32 wav_seek(FILE *wav_file, wav_info_struct *wav_info, u32 offset)
 s32 wav_size(FILE *wav_file, wav_info_struct *wav_info)
 {
   u32 raw_size = ftell(wav_file);
-  fseek(wav_file, 0, SEEK_END);
+  read_ahead_fseek(wav_file, 0, SEEK_END);
   raw_size = ftell(wav_file);
-  fseek(wav_file, 0, SEEK_SET);
+  read_ahead_fseek(wav_file, 0, SEEK_SET);
   raw_size -= 44;
 
   if(wav_info->channels == 1)
@@ -395,7 +487,7 @@ void track_file_seek(cd_track_file_struct *track_file, u32 offset)
     switch(track_file->type)
     {
       case TRACK_FILE_TYPE_BINARY:
-        fseek(track_file->file_handle, offset, SEEK_SET);
+        read_ahead_fseek(track_file->file_handle, offset, SEEK_SET);
         break;
 
       case TRACK_FILE_TYPE_WAVE:
@@ -416,12 +508,12 @@ void track_file_seek(cd_track_file_struct *track_file, u32 offset)
 }
 
 void track_file_read(cd_track_file_struct *track_file, u8 *buffer,
- u32 length)
+ u32 length, cd_track_struct *track)
 {
   switch(track_file->type)
   {
     case TRACK_FILE_TYPE_BINARY:
-      fread(buffer, length, 1, track_file->file_handle);
+      read_ahead_fread(buffer, length, 1, track_file->file_handle, true);
       break;
 
     case TRACK_FILE_TYPE_WAVE:
@@ -473,9 +565,9 @@ u32 track_file_size(cd_track_file_struct *track_file)
   switch(track_file->type)
   {
     case TRACK_FILE_TYPE_BINARY:
-      fseek(track_file->file_handle, 0, SEEK_END);
+      read_ahead_fseek(track_file->file_handle, 0, SEEK_END);
       track_size = ftell(track_file->file_handle);
-      fseek(track_file->file_handle, 0, SEEK_SET);
+      read_ahead_fseek(track_file->file_handle, 0, SEEK_SET);
       return track_size;
 
     case TRACK_FILE_TYPE_WAVE:
@@ -846,7 +938,7 @@ s32 bin_cue_read_sector(u8 *sector_buffer, u32 sector_offset, u32 offset,
      target_track->physical_offset +
      (target_track->sector_size * track_sector_offset) + offset);
     track_file_read(cd_bin.track_files + target_track->file_number,
-     sector_buffer, size);
+     sector_buffer, size, target_track);
   }
   else
   {

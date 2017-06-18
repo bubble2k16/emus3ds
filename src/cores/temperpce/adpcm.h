@@ -9,6 +9,7 @@ typedef enum
   ADPCM_STATE_STOPPED
 } adpcm_state_enum;
 
+#define ADPCM_AUDIO_BUFFER_SIZE (1024*256)
 // 64K + 96B
 
 typedef struct
@@ -47,7 +48,14 @@ typedef struct
   u32 frequency_step;
 
   u32 shift_write;
+
+  u32 audio_read_buffer_index;
+  s32 audio_buffer[ADPCM_AUDIO_BUFFER_SIZE];
+  bool has_samples;
 } adpcm_struct;
+
+extern adpcm_struct adpcm;
+
 
 
 #ifdef EXTERN_C_START

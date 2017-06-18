@@ -61,6 +61,9 @@ scsi_command_struct scsi_commands[256];
   cd.data_buffer_bytes_written = 0                                            \
 
 
+extern cd_read_ahead_struct cd_read_ahead;
+
+
 void cd_raise_event(u32 event)
 {
   cd.irq_status |= event;
@@ -936,6 +939,9 @@ void reset_cd()
   cd.cdda_start_last_cycles = 0xFFFFFFFF;
   cd.cdda_read_offset = 0;
 
+  cd.cdda_audio_buffer_index = 0;
+  cd.cdda_audio_read_buffer_index = 0;
+
   cd.message = 0;
   cd.status_sent = 0;
   cd.message_sent = 0;
@@ -945,6 +951,11 @@ void reset_cd()
   cd.additional_sense_code = 0;
   cd.additional_sense_code_qualifier = 0;
   cd.field_replaceable_unit_code = 0;
+
+  //cd_read_ahead.fptr = NULL;
+  //cd_read_ahead.buffer_pos = 0;
+  //cd_read_ahead.buffer_length = 0;
+  //memset(cd_read_ahead.buffer, 0, CD_READ_AHEAD_BUFFER_SIZE);
 
   cd_full_volume();
 }
@@ -1008,8 +1019,12 @@ void update_cd_read()
   cd.last_read_cycles += clock_delta;
 }
 
+#define CD_SYNC_SAMPLES (735 * 4)
+
 void update_cdda()
 {
+  s32 audio_buffer_index = cd.cdda_audio_buffer_index;
+  
   s64 clock_delta =
    (cpu.global_cycles << step_fractional_bits_clock) - cd.last_cdda_cycles;
   cd.last_cdda_cycles += clock_delta;
@@ -1042,6 +1057,26 @@ void update_cdda()
   if((cd.cdda_status == CDDA_STATUS_PLAYING) && (!cd.cdda_access_cycles))
   {
     s32 sample_l, sample_r;
+
+    // Check if we are generating too slowly, if so,
+    // we generate samples 1 sec later.
+    //
+    if (clock_delta >= 0)
+    {
+      int cd_diff = audio_buffer_index - cd.cdda_audio_read_buffer_index;
+      if (cd_diff < 0)
+        cd_diff += CD_AUDIO_BUFFER_SIZE;
+      if (cd_diff == 0)
+      {
+        // Generate the sound a few frames later
+        for (int i = 0; i < CD_SYNC_SAMPLES / 2; i++)
+        {
+          cd.audio_buffer[audio_buffer_index] = 0;
+          cd.audio_buffer[audio_buffer_index + 1] = 0;
+          audio_buffer_index = (audio_buffer_index + 2) % CD_AUDIO_BUFFER_SIZE;
+        }
+      }
+    }
 
     while(clock_delta >= 0)
     {
@@ -1086,14 +1121,24 @@ void update_cdda()
       sample_l = cd.cdda_cache[cd.cdda_read_offset];
       sample_r = cd.cdda_cache[cd.cdda_read_offset + 1];
 
+      /*
       audio.buffer[cd.cdda_audio_buffer_index] +=
        sample_l * cd.cdda_volume;
       audio.buffer[cd.cdda_audio_buffer_index + 1] +=
        sample_r * cd.cdda_volume;
-
+       */
+      cd.audio_buffer[audio_buffer_index] =
+       sample_l * cd.cdda_volume;
+      cd.audio_buffer[audio_buffer_index + 1] =
+       sample_r * cd.cdda_volume;
+      cd.has_samples = true;
+       
       cd.cdda_read_offset += 2;
-      cd.cdda_audio_buffer_index =
-       (cd.cdda_audio_buffer_index + 2) % AUDIO_BUFFER_SIZE;
+
+      //cd.cdda_audio_buffer_index =
+      // (cd.cdda_audio_buffer_index + 2) % AUDIO_BUFFER_SIZE;
+      audio_buffer_index =
+       (audio_buffer_index + 2) % CD_AUDIO_BUFFER_SIZE;
 
       cd.cdda_cycles -= psg.clock_step;
       clock_delta -= psg.clock_step;
@@ -1105,13 +1150,17 @@ void update_cdda()
 
   while(clock_delta >= 0)
   {
-    cd.cdda_audio_buffer_index =
-     (cd.cdda_audio_buffer_index + 2) % AUDIO_BUFFER_SIZE;
+    //cd.cdda_audio_buffer_index =
+    // (cd.cdda_audio_buffer_index + 2) % AUDIO_BUFFER_SIZE;
+    //audio_buffer_index =
+    // (audio_buffer_index + 2) % CD_AUDIO_BUFFER_SIZE;
 
     clock_delta -= psg.clock_step;
   }
 
   cd.last_cdda_cycles -= clock_delta;
+
+  cd.cdda_audio_buffer_index = audio_buffer_index;
 }
 
 void save_bram(char *path)
