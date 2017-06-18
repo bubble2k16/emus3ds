@@ -81,7 +81,7 @@ int read_ahead_fread(void *dest_buffer, int size, int count, FILE *fp, bool read
     if (cd_read_ahead.fptr != fp || 
         (cd_read_ahead.buffer_pos + total_size) > cd_read_ahead.buffer_length) 
     { 
-      printf ("fread\n"),
+      //printf ("fread\n"),
       //fread(cd_read_ahead.buffer, CD_READ_AHEAD_BUFFER_SIZE, 1, fp); 
       cd_read_ahead.buffer_length = fread(cd_read_ahead.buffer, 1, CD_READ_AHEAD_BUFFER_SIZE, fp); 
       //cd_read_ahead.buffer_length = CD_READ_AHEAD_BUFFER_SIZE;
@@ -602,7 +602,7 @@ s32 load_bin_cue(char *cue_file_name)
 
   close_bin_cue();
 
-  printf("loading cue file %s\n", cue_file_name);
+  //printf("loading cue file %s\n", cue_file_name);
 
   if(cue_file)
   {
@@ -634,7 +634,7 @@ s32 load_bin_cue(char *cue_file_name)
     if(separator_pos)
     {
       *separator_pos = 0;
-      printf("changing directory to %s\n", cue_file_dir);
+      //printf("changing directory to %s\n", cue_file_dir);
       chdir(cue_file_dir);
       *separator_pos = DIR_SEPARATOR_CHAR;
     }
@@ -808,7 +808,7 @@ s32 load_bin_cue(char *cue_file_name)
     next_physical_track = cd_bin.physical_tracks + 1;
     global_sector_offset = 0;
 
-    printf("Done parsing cue, calculating physical offsets and sizes:\n");
+    //printf("Done parsing cue, calculating physical offsets and sizes:\n");
 
     for(current_file = 0; current_file < num_files; current_file++)
     {
@@ -851,20 +851,20 @@ s32 load_bin_cue(char *cue_file_name)
       next_physical_track++;
     }
 
-    printf("finished loading cue file %s\n", cue_file_name);
-    printf("first track: %d, last track: %d\n", cd_bin.first_track,
-     cd_bin.last_track);
+    //printf("finished loading cue file %s\n", cue_file_name);
+    //printf("first track: %d, last track: %d\n", cd_bin.first_track,
+    // cd_bin.last_track);
 
     for(i = cd_bin.first_track; i <= cd_bin.last_track; i++)
     {
-      printf("track %d:\n", i);
+      //printf("track %d:\n", i);
       if(cd_bin.logical_tracks[i] == NULL)
       {
-        printf("  (invalid)\n");
+        //printf("  (invalid)\n");
       }
       else
       {
-        printf("  file %p (%d)\n",
+        /*printf("  file %p (%d)\n",
          cd_bin.track_files + cd_bin.logical_tracks[i]->file_number,
          cd_bin.logical_tracks[i]->file_number);
         printf("  physical offset 0x%x\n",
@@ -874,7 +874,7 @@ s32 load_bin_cue(char *cue_file_name)
         printf("  sector count %x\n",
          cd_bin.logical_tracks[i]->sector_count);
         printf("  sector size %d\n",
-         cd_bin.logical_tracks[i]->sector_size);
+         cd_bin.logical_tracks[i]->sector_size);*/
       }
     }
 
