@@ -1,9 +1,10 @@
 ## Emus for 3DS (TemperPCE TurboGrafx/PC-Engine core)
 
-This is a port of Exophase's Temper (TurboGrafx/PC-Engine) emulator to the old 3DS and old 2DS. Despite all the optimisations Exophase did to run Temper on a portable device, the old 3DS is still too underpowered. So this port heavily relies on the 3DS's 3D GPU hardware to achieve 60 FPS (or close to 60 with frame skips). Since we are using the hardware, some games that utilise special palette effects may not work so well.
+This is a port of Exophase's Temper (TurboGrafx/PC-Engine) emulator to the old 3DS and old 2DS. This port heavily relies on the 3DS's 3D GPU hardware to achieve 60 FPS (or close to 60 with frame skips). Since we are using the hardware, some games that utilise special palette effects may not work so well.
 
-This emulator bears the same user interface as VirtuaNES for 3DS and Snes9x for 3DS. It should run better on the New 3DS as usual (but I haven't really tried running it on the New 3DS yet).
+This emulator bears the same user interface as VirtuaNES for 3DS and Snes9x for 3DS. It should run better on the New 3DS as usual.
 
+https://github.com/bubble2k16/temperpce_3ds/releases
 
 ### Homebrew Launcher:
 
@@ -40,13 +41,24 @@ This emulator bears the same user interface as VirtuaNES for 3DS and Snes9x for 
 
 ## TemperPCE Screenshots
 
-![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/temperpce%20-%20Bionic%20Commando.bmp)
+![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE - Castlevania X.bmp)
+![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE - Dragon Slayer.bmp)
+![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE - R-Type.bmp)
+![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE - Salamander.bmp)
+![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE - Soldier Blade.bmp)
+![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE - Ys Book I & II.bmp)
 
 
 -------------------------------------------------------------------------------------------
 
 ## Change History
 
+
+### v0.91
+- Fixed frame rate issues with CD-ROM games speeding up to 100-200 FPS.
+- Fixed skipping CD music
+- Improved overall CD/ADPCM synchronization.
+- Added option to select optimized CPU core (less compatible)
 
 ### v0.90
 - First release.
