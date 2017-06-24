@@ -14,7 +14,7 @@ https://github.com/bubble2k16/emus3ds/releases
 
 https://github.com/bubble2k16/emus3ds/blob/master/readme-virtuanes.md
 
-![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/VirtuaNES%20-%20Kirby's%20Adventure.bmp)
+![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/VirtuaNES%20-%20Gradius%20II.bmp)
 
 ![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/VirtuaNES%20-%20Kirby's%20Adventure.bmp)
 
