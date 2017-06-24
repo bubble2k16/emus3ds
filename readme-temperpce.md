@@ -41,17 +41,17 @@ https://github.com/bubble2k16/temperpce_3ds/releases
 
 ## TemperPCE Screenshots
 
-![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE - Castlevania X.bmp)
+![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE01.bmp)
 
-![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE - Dragon Slayer.bmp)
+![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE02.bmp)
 
-![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE - R-Type.bmp)
+![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE03.bmp)
 
-![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE - Salamander.bmp)
+![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE04.bmp)
 
-![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE - Soldier Blade.bmp)
+![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE05.bmp)
 
-![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE - Ys Book I & II.bmp)
+![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE06.bmp)
 
 
 -------------------------------------------------------------------------------------------
