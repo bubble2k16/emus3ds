@@ -1,4 +1,4 @@
-### Emus for 3DS 
+# Emus for 3DS 
 
 ## VirtuaNES core
 
@@ -6,11 +6,11 @@ VirtuaNES a high compatibility NES emulator for your old 3DS or 2DS. It's not as
 
 This 3DS version also fixes a few bugs from VirtuaNES's MMC5 mappers and even plays Rockman 4 Minus Infinity and Zelda Legend of Link hacks.
 
-# Download
+### Download
 
 https://github.com/bubble2k16/emus3ds/releases
 
-# Details
+### Details
 
 https://github.com/bubble2k16/emus3ds/blob/master/readme-virtuanes.md
 
@@ -22,11 +22,11 @@ https://github.com/bubble2k16/emus3ds/blob/master/readme-virtuanes.md
 
 This is a port of Exophase's Temper (TurboGrafx/PC-Engine) emulator to the old 3DS and old 2DS. This port heavily relies on the 3DS's 3D GPU hardware to achieve 60 FPS (or close to 60 with frame skips). Since we are using the hardware, some games that utilise special palette effects may not work so well.
 
-# Download
+### Download
 
 https://github.com/bubble2k16/temperpce_3ds/releases
 
-# Details
+### Details
 
 https://github.com/bubble2k16/emus3ds/blob/master/readme-temperpce.md
 
