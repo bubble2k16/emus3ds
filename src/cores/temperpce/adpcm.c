@@ -252,12 +252,20 @@ void adpcm_fade_out(u32 ms)
 
 void initialize_adpcm()
 {
-
+  adpcm.audio_buffer = malloc(ADPCM_AUDIO_BUFFER_SIZE * 4);
 }
+
+void close_adpcm()
+{
+  if (adpcm.audio_buffer) free(adpcm.audio_buffer);
+}
+
 
 void reset_adpcm()
 {
   memset(adpcm.sample_ram, 0, 64 * 1024);
+  memset(adpcm.audio_buffer, 0, ADPCM_AUDIO_BUFFER_SIZE);
+
   adpcm.last_cycles = 0;
   adpcm.last_dma_cycles = 0;
 
@@ -326,15 +334,20 @@ void update_adpcm_dma()
   }
 }
 
-#define ADPCM_SYNC_SAMPLES (735 * 4)
+#define ADPCM_SYNC_SAMPLES (735 * 2 * 2)  // 2 frames in advance
+#include "3dsopt.h"
 
 void update_adpcm()
 {
+  //t3dsStartTiming(61, "update_adpcm");
   u32 clock_delta =
    (cpu.global_cycles << step_fractional_bits_clock) - adpcm.last_cycles;
 
   if(clock_delta < 0)
+  {
+    //t3dsEndTiming(61);
     return;
+  }
 
   s32 clocks_remaining = clock_delta;
   s32 samples_remaining = adpcm.sample_length;
@@ -421,6 +434,17 @@ void update_adpcm()
         audio_buffer_index =
          (audio_buffer_index + 2) % ADPCM_AUDIO_BUFFER_SIZE;
 
+        // If we are too fast, hold on for a while
+        // (16 1ms is about 1 frame).
+        int wait_count = 16;
+        while (audio_buffer_index == adpcm.audio_read_buffer_index)
+        {
+          // Wait 1 ms
+          svcSleepThread((long)1000000);
+          wait_count--;
+          printf (".");
+        }
+
         clocks_remaining -= psg.clock_step;
       }
 
@@ -482,6 +506,7 @@ void update_adpcm()
       }
     }
   }
+  //t3dsEndTiming(61);
 }
 
 #define adpcm_savestate_extra_load()                                          \

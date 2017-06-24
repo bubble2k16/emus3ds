@@ -369,7 +369,7 @@ void setup_io_tables()
   // VDC section: 0x0000 to 0x03FF
   if(config.sgx_mode)
   {
-    printf("Using SGX VDC map.\n");
+    //printf("Using SGX VDC map.\n");
     for(i = 0; i < (0x400 / 0x20); i++, current_io_read_function += 0x20,
      current_io_write_function += 0x20)
     {
@@ -1195,7 +1195,7 @@ void setup_hucard_map()
   {
     if(config.cd_system_type >= CD_SYSTEM_TYPE_V3)
     {
-      printf("setting up SCD RAM\n");
+      //printf("setting up SCD RAM\n");
       for(i = 0x0; i < 0x18; i++)
       {
         memory_map_set(read, i + 0x68, cd.ext_ram + (i * 0x2000));
@@ -1206,7 +1206,7 @@ void setup_hucard_map()
     // Setup Arcade Card
     if(config.cd_system_type == CD_SYSTEM_TYPE_ACD)
     {
-      printf("setting up Arcade Card\n");
+      //printf("setting up Arcade Card\n");
       map_arcade_card();
     }
     else
@@ -1237,7 +1237,7 @@ void flip_rom()
   // In USA ROMs, the bits in each byte are reversed due to having
   // a different physical pin arrangement.
 
-  printf("Mirroring bits in USA ROM.\n");
+  //printf("Mirroring bits in USA ROM.\n");
 
   // 0000b -> 0000b
   // 0001b -> 1000b
@@ -1318,7 +1318,7 @@ s32 load_syscard()
     // DIR_SEPARATOR_CHAR, DIR_SEPARATOR_CHAR, syscard_name);
     sprintf(syscard_path, "/3ds/temperpce_3ds/syscards/%s.pce", syscard_name);
 
-    printf("could not open syscard, trying %s\n", syscard_path);
+    //printf("could not open syscard, trying %s\n", syscard_path);
     rom_file = fopen(syscard_path, "rb");
 
     if(rom_file == NULL)
@@ -1377,8 +1377,6 @@ s32 load_rom(char *path)
   #endif
   u8 i;
 
-  printf ("a");
-
   if(config.rom_filename[0])
   {
     get_bram_path(path_name);
@@ -1390,8 +1388,6 @@ s32 load_rom(char *path)
   config.cd_loaded = 0;
   config.sgx_mode = 0;
   
-    printf ("b");
-
   if(dot_ptr != NULL)
   {
     // bin eh? Bet you meant cue, didn't you.
@@ -1499,7 +1495,7 @@ s32 load_rom(char *path)
 
   if(memory.rom_pages > 0x80)
   {
-    printf("loading Street Fighter 2\n");
+    //printf("loading Street Fighter 2\n");
     memory.sf2_region = 0;
   }
   else
@@ -1509,7 +1505,7 @@ s32 load_rom(char *path)
 
   if(!memcmp(memory.hucard_rom + 0x1F26, "POPULOUS", strlen("POPULOUS")))
   {
-    printf("loading Populous\n");
+    //printf("loading Populous\n");
     config.populous_loaded = 1;
   }
   else

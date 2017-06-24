@@ -49,6 +49,7 @@ SSettings3DS settings3DS;
 #define SETTINGS_SOFTWARERENDERING      0
 #define SETTINGS_IDLELOOPPATCH          1
 #define SETTINGS_BIOS                   2
+#define SETTINGS_CPUCORE                3
 
 //----------------------------------------------------------------------
 // Menu options
@@ -132,6 +133,13 @@ SMenuItem optionsForIdleLoopPatch[] =
     MENU_MAKE_LASTITEM  ()  
 };
 
+SMenuItem optionsForCPUCore[] =
+{
+    MENU_MAKE_DIALOG_ACTION (0, "Original",             "Original CPU core."),
+    MENU_MAKE_DIALOG_ACTION (1, "Fast",                 "Faster, heavily optimized CPU core."),
+    MENU_MAKE_LASTITEM  ()  
+};
+
 SMenuItem optionsForRendering[] =
 {
     MENU_MAKE_DIALOG_ACTION (0, "Hardware",             "Faster"),
@@ -157,6 +165,7 @@ SMenuItem optionMenu[] = {
     MENU_MAKE_CHECKBOX  (15001, "  Hide text in bottom screen", 0),
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("GAME-SPECIFIC SETTINGS"),
+    MENU_MAKE_PICKER    (22000, "  CPU Core", "Change to the original core if your game freezes.", optionsForCPUCore, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (20000, "  Idle Loop Patching", "You must reload the ROM after changing this.", optionsForIdleLoopPatch, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (10000, "  Frameskip", "Try changing this if the game runs slow. Skipping frames help it run faster but less smooth.", optionsForFrameskip, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (21000, "  BIOS", "The BIOS must be in your /3ds/syscards folder. Re-load ROM after changing.", optionsForBIOS, DIALOGCOLOR_CYAN),
@@ -266,8 +275,6 @@ SGPUTexture *emuDepthForScreens;
 
 
 uint32 *bufferRGBA[2];
-unsigned char linecolor[256];
-
 
 
 //---------------------------------------------------------
@@ -292,12 +299,11 @@ char *impl3dsTitleImage = "./temperpce_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "TemperPCE for 3DS v0.9";
+char *impl3dsTitleText = "TemperPCE for 3DS v0.91";
 
 
 int soundSamplesPerGeneration = 0;
 int soundSamplesPerSecond = 0;
-short soundSamples[1000];
 
 int audioFrame = 0;
 int emulatorFrame = 0;
@@ -314,7 +320,7 @@ bool impl3dsInitializeCore()
 	soundSamplesPerSecond = soundSamplesPerGeneration * numberOfGenerationsPerSecond;
     audio.output_frequency = soundSamplesPerSecond;
 
-    config.per_game_bram = true;
+    config.per_game_bram = 1;
     snprintf(config.main_path, MAX_PATH, ".");
     
     initialize_video();
@@ -362,8 +368,8 @@ bool impl3dsInitializeCore()
     emuDepthForScreens = gpu3dsCreateTextureInVRAM(512, 256, GPU_RGBA8);       // 0.250 MB
     //nesDepthForOtherTextures = gpu3dsCreateTextureInVRAM(256, 256, GPU_RGBA8); // 0.250 MB
 
-	bufferRGBA[0] = linearMemAlign(512*256*4, 0x80);
-	bufferRGBA[1] = linearMemAlign(512*256*4, 0x80);
+	//bufferRGBA[0] = linearMemAlign(512*256*4, 0x80);
+	//bufferRGBA[1] = linearMemAlign(512*256*4, 0x80);
 
     if (emuTileCacheTexture == NULL || 
         emuMainScreenHWTarget == NULL ||
@@ -409,6 +415,9 @@ bool impl3dsInitializeCore()
 //---------------------------------------------------------
 void impl3dsFinalize()
 {
+    close_cd();
+    close_adpcm();
+
     if (emuMainScreenHWTarget) gpu3dsDestroyTextureFromVRAM(emuMainScreenHWTarget);
 	if (emuTileCacheTexture) gpu3dsDestroyTextureFromLinearMemory(emuTileCacheTexture);
 	if (emuMainScreenTarget[0]) gpu3dsDestroyTextureFromLinearMemory(emuMainScreenTarget[0]);
@@ -416,8 +425,8 @@ void impl3dsFinalize()
 	if (emuDepthForScreens) gpu3dsDestroyTextureFromVRAM(emuDepthForScreens);
 	//if (nesDepthForOtherTextures) gpu3dsDestroyTextureFromVRAM(nesDepthForOtherTextures);
 
-	if (bufferRGBA[0]) linearFree(bufferRGBA[0]);
-	if (bufferRGBA[1]) linearFree(bufferRGBA[1]);
+	//if (bufferRGBA[0]) linearFree(bufferRGBA[0]);
+	//if (bufferRGBA[1]) linearFree(bufferRGBA[1]);
 
 	
 }
@@ -565,6 +574,21 @@ bool impl3dsLoadROM(char *romFilePath)
         else
             menuItem->Type = MENUITEM_DISABLED;
     }
+    
+    /*
+    CLEAR_BOTTOM_SCREEN
+        aptOpenSession();
+        s32 t;
+        //APT_SetAppCpuTimeLimit(100); // enables syscore usage
+        APT_GetAppCpuTimeLimit(&t); // enables syscore usage
+    printf ("Time limit: %d\n", t);
+        aptCloseSession();   
+        svcSetThreadPriority(0x18, 0xFFFF8000);
+        svcGetThreadPriority(&t, 0xFFFF8000);
+    printf ("Thread priority %d\n", t);
+        
+    DEBUG_WAIT_L_KEY
+    */
     
     impl3dsResetConsole();
 
@@ -910,7 +934,6 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
 {
     // Hardware rendering:
     //
-    skipDrawingFrame = false;
 	t3dsStartTiming(1, "RunOneFrame");
 
 	t3dsStartTiming(10, "EmulateFrame");
@@ -927,7 +950,11 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
             update_cdda();
         emulatorFrame++;
 
-        #define SYNC_SAMPLES  (735 * 8)
+        // if the sound generation is < n frames behind the write pointer
+        // the CPU emulation is running too slow. Then we force the
+        // CPU emulation to avoid syncing to 60fps.
+        //
+        #define SYNC_SAMPLES  (735 * 2 * 2)     
 
         emulator.waitBehavior = WAIT_FULL;
         if (config.cd_loaded)
@@ -946,7 +973,10 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
 
             if (adpcm.has_samples)
             {
-                int adpcm_write_index_diff = cd.cdda_audio_buffer_index - cd.cdda_audio_read_buffer_index;
+                // Wow, bug fix here! We should be computing the
+                // difference between the adpcm read/write indexes! :(
+                //int adpcm_write_index_diff = cd.cdda_audio_buffer_index - cd.cdda_audio_read_buffer_index;
+                int adpcm_write_index_diff = adpcm.audio_buffer_index - adpcm.audio_read_buffer_index;
                 if (adpcm_write_index_diff < 0)
                     adpcm_write_index_diff += ADPCM_AUDIO_BUFFER_SIZE;
                 if (adpcm_write_index_diff < SYNC_SAMPLES)
@@ -966,7 +996,13 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
             int cd_diff = cd.cdda_audio_buffer_index - cd.cdda_audio_read_buffer_index;
             if (cd_diff < 0)
                 cd_diff += CD_AUDIO_BUFFER_SIZE;
-            printf ("adpcm: %d,%d cd:%d,%d (%d)\n", adpcm.audio_read_buffer_index, adpcm.audio_buffer_index, cd.cdda_audio_read_buffer_index, cd.cdda_audio_buffer_index, cd_diff);
+            int adpcm_diff = adpcm.audio_buffer_index - adpcm.audio_read_buffer_index;
+            if (adpcm_diff < 0)
+                adpcm_diff += ADPCM_AUDIO_BUFFER_SIZE;
+
+            printf ("ad: %d (%d) cd:%d (%d)\n", 
+                adpcm.audio_read_buffer_index, adpcm_diff,
+                cd.cdda_audio_read_buffer_index, cd_diff);
         }
         */
 
@@ -1202,6 +1238,7 @@ void impl3dsInitializeDefaultSettings()
     settings3DS.OtherOptions[SETTINGS_IDLELOOPPATCH] = 0;	
     settings3DS.OtherOptions[SETTINGS_SOFTWARERENDERING] = 0;	
     settings3DS.OtherOptions[SETTINGS_BIOS] = 0;
+    settings3DS.OtherOptions[SETTINGS_CPUCORE] = 0;
 }
 
 
@@ -1244,6 +1281,7 @@ bool impl3dsReadWriteSettingsByGame(bool writeMode)
     config3dsReadWriteInt32("ButtonMapL=%d\n", &settings3DS.ButtonMapping[4], 0, 0xffff);
     config3dsReadWriteInt32("ButtonMapR=%d\n", &settings3DS.ButtonMapping[5], 0, 0xffff);
     config3dsReadWriteInt32("BIOS=%d\n", &settings3DS.OtherOptions[SETTINGS_BIOS], 0, 4);
+    config3dsReadWriteInt32("CPUCore=%d\n", &settings3DS.OtherOptions[SETTINGS_CPUCORE], 0, 4);
 
     // All new options should come here!
 
@@ -1373,6 +1411,10 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
         else if (settings3DS.OtherOptions[SETTINGS_BIOS] == 4)
             config.cd_system_type = CD_SYSTEM_TYPE_GECD;
 
+        if (settings3DS.OtherOptions[SETTINGS_CPUCORE] == 0)
+            config.compatibility_mode = 1;
+        else
+            config.compatibility_mode = 0;
     }
 
     return settingsChanged;
@@ -1459,6 +1501,7 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_SOFTWARERENDERING], 1, 19000);
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_IDLELOOPPATCH], 1, 20000);
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_BIOS], 1, 21000);
+    UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_CPUCORE], 1, 22000);
 
     return settingsUpdated;
 	

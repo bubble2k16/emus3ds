@@ -2983,7 +2983,7 @@ ext_symbol(execute_instructions_compatible):
   ldr r2, [r1, #0x0]                        @ r2 = cpu.global_cycles low
   ldr r3, [r1, #0x4]                        @ r3 = cpu.global_cycles high
 
-  add r2, r2, r0                            @ cpu.global_cycles += cycles
+  adds r2, r2, r0                            @ cpu.global_cycles += cycles
   adc r3, r3, #0
 
   str r2, [r1, #0x0]                        @ write back cpu.global_cycles

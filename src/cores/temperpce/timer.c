@@ -71,30 +71,29 @@ void reset_timer()
 
 s32 add_cycles;
 
-#ifdef ARM_ARCH
-
-void execute_instructions_fast(u32 count);
-
-#define execute_instructions_select(count)                                    \
-    execute_instructions_fast(count)                                          \
-
-/*
+// these are the assembly-optimized versions
+void execute_instructions_fast(u32 count);        
 void execute_instructions_compatible(u32 count);
-void execute_instructions_fast(u32 count);
 
 #define execute_instructions_select(count)                                    \
   if(config.compatibility_mode)                                               \
-    execute_instructions_compatible(count);                                   \
+    execute_instructions(count);                                   \
   else                                                                        \
-    execute_instructions_fast(count)                                          \
+    execute_instructions_compatible(count)                                          \
+
+
+
+/*
+#include "3dsemu.h"
+
+typedef struct
+{
+    bool                isReal3DS;
+    bool                enableDebug;
+    int                 emulatorState;
+} SEmulator;
+extern SEmulator emulator;
 */
-
-#else
-
-#define execute_instructions_select(count)                                    \
-    execute_instructions(count)                                          \
-
-#endif
 
 void execute_instructions_timer(s32 cpu_cycles_remaining)
 {
@@ -121,6 +120,9 @@ void execute_instructions_timer(s32 cpu_cycles_remaining)
   update_cd_read();
   update_adpcm_dma();
   update_adpcm();
+
+  //printf ("%lld\n", cpu.global_cycles);
+  //DEBUG_WAIT_L_KEY
 }
 
 

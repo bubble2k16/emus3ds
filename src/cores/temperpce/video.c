@@ -1,5 +1,6 @@
 #include "common.h"
 #include "palette.h"
+#include "3dsopt.h"
 
 // Put temp debug vars here
 
@@ -2926,7 +2927,6 @@ void vdc_line_increment(vdc_struct *vdc)
   }
 }
 
-
 void update_frame_execute(u32 skip)
 {
   s32 hds_cycles;
@@ -2978,10 +2978,12 @@ void update_frame_execute(u32 skip)
 
     if(!skip)
     {
+      //t3dsStartTiming(21, "render_line");
       //if (config.software_rendering)
       //  render_line();
       //else
         render_line_hw();
+      //t3dsEndTiming(21);
     }
 
     if(vdc_a.vblank_active && (vdc_a.cr & 0x08))

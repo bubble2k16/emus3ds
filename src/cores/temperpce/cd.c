@@ -893,7 +893,14 @@ void initialize_cd()
   // For now, this is about 800ms
   cd.access_sector_cycle_interval = (u32)(MASTER_CLOCK_RATE * 0.8);
 
+  cd.audio_buffer = malloc(CD_AUDIO_BUFFER_SIZE * 4);
+
   initialize_access_factors();
+}
+
+void close_cd()
+{
+  if (cd.audio_buffer) free(cd.audio_buffer);
 }
 
 void reset_cd()
@@ -905,6 +912,8 @@ void reset_cd()
   memset(cd.cdda_cache, 0, 2352);
 
   memset(cd.command_buffer, 0, 16);
+
+  memset(cd.audio_buffer, 0, CD_AUDIO_BUFFER_SIZE);
 
   cd.last_read_cycles = 0;
   cd.last_cdda_cycles = 0;
@@ -1019,10 +1028,11 @@ void update_cd_read()
   cd.last_read_cycles += clock_delta;
 }
 
-#define CD_SYNC_SAMPLES (735 * 4)
-
+#define CD_SYNC_SAMPLES (735 * 2 * 2)   // 2 frames in advance   
+#include "3dsopt.h"
 void update_cdda()
 {
+  t3dsStartTiming(60, "update_cdda");
   s32 audio_buffer_index = cd.cdda_audio_buffer_index;
   
   s64 clock_delta =
@@ -1132,6 +1142,11 @@ void update_cdda()
       cd.audio_buffer[audio_buffer_index + 1] =
        sample_r * cd.cdda_volume;
       cd.has_samples = true;
+
+      /*FILE *fp = fopen("snd.raw", "ab");
+      int samples[2] = { cd.audio_buffer[audio_buffer_index] >> 5, cd.audio_buffer[audio_buffer_index + 1] >> 5 };
+      fwrite(samples, 4, 1, fp);
+      fclose(fp);*/
        
       cd.cdda_read_offset += 2;
 
@@ -1140,12 +1155,25 @@ void update_cdda()
       audio_buffer_index =
        (audio_buffer_index + 2) % CD_AUDIO_BUFFER_SIZE;
 
+      // If we are too fast, hold on for a while
+      // (16 1ms is about 1 frame).
+      int wait_count = 16;
+      while (audio_buffer_index == cd.cdda_audio_read_buffer_index && wait_count)
+      {
+        // Wait 1 ms
+        svcSleepThread((long)1000000);
+        wait_count--;
+        printf (".");
+      }
+
       cd.cdda_cycles -= psg.clock_step;
       clock_delta -= psg.clock_step;
 
       if(cd.cdda_cycles < 0)
         break;
     }
+
+    
   }
 
   while(clock_delta >= 0)
@@ -1161,6 +1189,8 @@ void update_cdda()
   cd.last_cdda_cycles -= clock_delta;
 
   cd.cdda_audio_buffer_index = audio_buffer_index;
+
+  t3dsEndTiming(60);
 }
 
 void save_bram(char *path)

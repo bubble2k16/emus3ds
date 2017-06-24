@@ -858,7 +858,7 @@ void emulatorLoop()
         // the rendering for the next frame if we are too slow.
         //
 #ifndef EMU_RELEASE
-        //if (emulator.isReal3DS)
+        if (emulator.isReal3DS)
 #endif
         {
 

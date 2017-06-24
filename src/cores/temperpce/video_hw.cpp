@@ -5,6 +5,7 @@
 #include "3dsgpu.h"
 #include "3dsimpl_gpu.h"
 #include "3dsimpl_tilecache.h"
+#include "3dsopt.h"
 #include "vsect.h"
 
 
@@ -619,6 +620,7 @@ void render_clear_screen_hw(int start_y, int end_y)
 
 void render_flush(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
 {
+    t3dsStartTiming(20, "render_flush");
     int scanline_line = vce.frame_counter - 14 - 1;
     if (scanline_line < 0)
         return;
@@ -665,6 +667,8 @@ void render_flush(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
     */
     
     vdc_hw->start_render_line = scanline_line + 1;
+
+    t3dsEndTiming(20);
 }
 
 

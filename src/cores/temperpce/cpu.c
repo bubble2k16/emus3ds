@@ -1940,7 +1940,7 @@ u8 disasm_output[500];
                                                                               \
   } while(cpu_cycles_remaining > 0)                                           \
 
-#ifndef ARM_ARCH
+//#ifndef ARM_ARCH
 
 void execute_instructions(s32 cpu_cycles_remaining)
 {
@@ -2039,7 +2039,7 @@ void execute_instructions(s32 cpu_cycles_remaining)
     cpu.extra_cycles = -cpu_cycles_remaining;
 }
 
-#endif
+//#endif
 
 void initialize_cpu()
 {

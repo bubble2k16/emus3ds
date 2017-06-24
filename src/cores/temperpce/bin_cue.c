@@ -83,6 +83,9 @@ int read_ahead_fread(void *dest_buffer, int size, int count, FILE *fp, bool read
     { 
       //printf ("fread\n"),
       //fread(cd_read_ahead.buffer, CD_READ_AHEAD_BUFFER_SIZE, 1, fp); 
+      //printf ("seek: %d\n", cd_read_ahead.buffer_pos + cd_read_ahead.seek_pos);
+      fseek(fp, cd_read_ahead.buffer_pos + cd_read_ahead.seek_pos, SEEK_SET);
+      cd_read_ahead.seek_pos = cd_read_ahead.buffer_pos + cd_read_ahead.seek_pos;
       cd_read_ahead.buffer_length = fread(cd_read_ahead.buffer, 1, CD_READ_AHEAD_BUFFER_SIZE, fp); 
       //cd_read_ahead.buffer_length = CD_READ_AHEAD_BUFFER_SIZE;
       cd_read_ahead.buffer_pos = 0; 
@@ -144,16 +147,16 @@ wav_info_struct *wav_open(FILE *fp)
    ((wav_info->bytes_per_sample != 1) &&
     (wav_info->bytes_per_sample != 2)))
   {
-    printf("rejected wave file: bad format\n");
+    //printf("rejected wave file: bad format\n");
     free(wav_info);
     return NULL;
   }
 
   wav_info->frequency_div = 44100 / wav_info->frequency;
 
-  printf("loaded wav file, channels: %d, frequency: %d,"
-   " bytes per sample: %d\n", wav_info->channels, wav_info->frequency,
-   wav_info->bytes_per_sample);
+  //printf("loaded wav file, channels: %d, frequency: %d,"
+  // " bytes per sample: %d\n", wav_info->channels, wav_info->frequency,
+  // wav_info->bytes_per_sample);
 
   wav_info->bytes_per_sector =
    588 * wav_info->channels * wav_info->bytes_per_sample *
@@ -366,12 +369,12 @@ FILE *fopen_scan_dir_case_insensitive(char *file_name, char *open_mode)
   getcwd(path_buffer, MAX_PATH);
   current_dir = opendir(path_buffer);
 
-  printf("performing directory scan to try to find match for %s (dir %s)\n",
-   file_name, path_buffer);
+  //printf("performing directory scan to try to find match for %s (dir %s)\n",
+  // file_name, path_buffer);
 
   if(separator_pos)
   {
-    printf("stripping Windows absolute path from filename\n");
+    //printf("stripping Windows absolute path from filename\n");
     strcpy(path_buffer, separator_pos + 1);
     str_to_lower(file_name_lower_case, path_buffer);
     file_name = path_buffer;
@@ -387,12 +390,12 @@ FILE *fopen_scan_dir_case_insensitive(char *file_name, char *open_mode)
     if(current_file)
     {
       str_to_lower(current_file_name, current_file->d_name);
-      printf("checking %s against %s\n", current_file_name, file_name_lower_case);
+      //printf("checking %s against %s\n", current_file_name, file_name_lower_case);
 
       if(!strcmp(file_name_lower_case, current_file_name))
       {
         FILE *matched_file;
-        printf("found a match (%s)\n", current_file->d_name);
+        //printf("found a match (%s)\n", current_file->d_name);
         matched_file = fopen(current_file->d_name, open_mode);
         closedir(current_dir);
         return matched_file;
@@ -888,7 +891,7 @@ s32 load_bin_cue(char *cue_file_name)
   }
 
  bin_cue_load_error:
-  printf("Could not load CD image.\n");
+  //printf("Could not load CD image.\n");
   return -1;
 }
 
