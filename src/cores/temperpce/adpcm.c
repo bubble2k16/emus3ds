@@ -1,4 +1,5 @@
 #include "common.h"
+#include "3dsemu.h"
 
 adpcm_struct adpcm;
 
@@ -436,13 +437,16 @@ void update_adpcm()
 
         // If we are too fast, hold on for a while
         // (16 1ms is about 1 frame).
-        int wait_count = 16;
-        while (audio_buffer_index == adpcm.audio_read_buffer_index)
+        if (emulator.isReal3DS)
         {
-          // Wait 1 ms
-          svcSleepThread((long)1000000);
-          wait_count--;
-          printf (".");
+          int wait_count = 16;
+          while (audio_buffer_index == adpcm.audio_read_buffer_index)
+          {
+            // Wait 1 ms
+            svcSleepThread((long)1000000);
+            wait_count--;
+            //printf (".");
+          }
         }
 
         clocks_remaining -= psg.clock_step;

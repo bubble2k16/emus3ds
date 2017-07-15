@@ -516,7 +516,7 @@ void render_spr_block(int start_y, int end_y, int offset_y, vdc_struct *vdc, vdc
     u32 *screen_ptr = get_screen_ptr();
     u32 screen_width = vdc->screen_width;
 
-    u16 *satb_location = vdc->sat;
+    u16 *satb_location = vdc->sat_hw;
     u16 *current_sprite = satb_location;
 
     for(int i = 63; i >= 0; i--)
@@ -617,6 +617,14 @@ void render_clear_screen_hw(int start_y, int end_y)
 
 }
 
+void render_clear_screen_to_black_hw(int start_y, int end_y)
+{
+    gpu3dsDisableAlphaTest();
+    gpu3dsDisableDepthTest();
+    gpu3dsSetTextureEnvironmentReplaceColor();
+    gpu3dsDrawRectangle(0, start_y, 512, end_y + 1, 0, 0xff);
+
+}
 
 void render_flush(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
 {
@@ -631,29 +639,38 @@ void render_flush(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
 
     //printf ("flush @ %3d: %3d-%3d %3d sp:%d bg:%d\n", vce.frame_counter, vdc_hw->start_render_line, scanline_line, vdc_a.start_line, vdc_hw->prev_spr, vdc_hw->prev_bg);
 
-    
-    render_clear_screen_hw(vdc_hw->start_render_line, scanline_line);
-
-    gpu3dsSetTextureEnvironmentReplaceTexture0();
-    gpu3dsBindTexture(emuTileCacheTexture, GPU_TEXUNIT0);
-
-    gpu3dsDisableAlphaTest();
-    gpu3dsDisableDepthTest();
-
-    if (vdc_hw->prev_spr) 
+    if (vdc_hw->prev_vblank)
     {
-        gpu3dsEnableAlphaTestNotEqualsZero();
-        gpu3dsDisableDepthTest();
-        render_spr_block(vdc_hw->start_render_line, scanline_line, offset_y, vdc, vdc_hw);
-        gpu3dsDrawVertexes();
+        // This properly renders vblank as a black block of scanlines
+        // rather than the background color
+        //
+        render_clear_screen_to_black_hw(vdc_hw->start_render_line, scanline_line);
     }
-
-    if (vdc_hw->prev_bg) 
+    else
     {
-        gpu3dsEnableAlphaTestNotEqualsZero();
-        gpu3dsEnableDepthTest();
-        render_bg_block(vdc_hw->start_render_line, scanline_line, 0, vdc, vdc_hw);
-        gpu3dsDrawVertexes();
+        render_clear_screen_hw(vdc_hw->start_render_line, scanline_line);
+
+        gpu3dsSetTextureEnvironmentReplaceTexture0();
+        gpu3dsBindTexture(emuTileCacheTexture, GPU_TEXUNIT0);
+
+        gpu3dsDisableAlphaTest();
+        gpu3dsDisableDepthTest();
+
+        if (vdc_hw->prev_spr) 
+        {
+            gpu3dsEnableAlphaTestNotEqualsZero();
+            gpu3dsDisableDepthTest();
+            render_spr_block(vdc_hw->start_render_line, scanline_line, offset_y, vdc, vdc_hw);
+            gpu3dsDrawVertexes();
+        }
+
+        if (vdc_hw->prev_bg) 
+        {
+            gpu3dsEnableAlphaTestNotEqualsZero();
+            gpu3dsEnableDepthTest();
+            render_bg_block(vdc_hw->start_render_line, scanline_line, 0, vdc, vdc_hw);
+            gpu3dsDrawVertexes();
+        }
     }
    
     
@@ -893,6 +910,7 @@ void copy_line_data(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
     vdc_hw->prev_hsw = vdc_hw->cur_hsw;
     vdc_hw->prev_spr = vdc_hw->cur_spr;
     vdc_hw->prev_bg  = vdc_hw->cur_bg;
+    vdc_hw->prev_vblank  = vdc_hw->cur_vblank;
 
     u32 scanline_line = vce.frame_counter - 14;
 
@@ -915,6 +933,7 @@ void copy_line_data(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
             vdc_hw->cur_hdw = vdc->hdw;
             vdc_hw->cur_hds = vdc->hds;
             vdc_hw->cur_hsw = vdc->hsw;
+            vdc_hw->cur_vblank = vdc->vblank_active;
         }
         else
         {
@@ -922,7 +941,8 @@ void copy_line_data(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
             vdc_hw->cur_bg = 0;
         }
 
-        if ((vdc_hw->prev_bg != vdc_hw->cur_bg) ||
+        if ((vdc_hw->prev_vblank != vdc_hw->cur_vblank) ||
+            (vdc_hw->prev_bg != vdc_hw->cur_bg) ||
             (vdc_hw->prev_spr != vdc_hw->cur_spr) ||
             (vdc_hw->prev_hdw != vdc_hw->cur_hdw) ||
             (vdc_hw->prev_hds != vdc_hw->cur_hds) ||

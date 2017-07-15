@@ -1377,11 +1377,13 @@ s32 load_rom(char *path)
   #endif
   u8 i;
 
+/*
   if(config.rom_filename[0])
   {
     get_bram_path(path_name);
     save_bram(path_name);
   }
+*/
 
   dot_ptr = strrchr(path, '.');
 
@@ -1520,9 +1522,13 @@ s32 load_rom(char *path)
 
   get_bram_path(path_name);
   if(stat(path_name, &sb))
+  {
     create_bram(path_name);
+  }
   else
+  {
     load_bram(path_name);
+  }
 
   if(config.cd_loaded)
   {

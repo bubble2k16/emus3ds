@@ -1,4 +1,5 @@
 #include "common.h"
+#include "3dsemu.h"
 
 #ifdef GP2X_OR_WIZ_BUILD
 
@@ -62,7 +63,6 @@ scsi_command_struct scsi_commands[256];
 
 
 extern cd_read_ahead_struct cd_read_ahead;
-
 
 void cd_raise_event(u32 event)
 {
@@ -1157,13 +1157,17 @@ void update_cdda()
 
       // If we are too fast, hold on for a while
       // (16 1ms is about 1 frame).
-      int wait_count = 16;
-      while (audio_buffer_index == cd.cdda_audio_read_buffer_index && wait_count)
+
+      if (emulator.isReal3DS)
       {
-        // Wait 1 ms
-        svcSleepThread((long)1000000);
-        wait_count--;
-        printf (".");
+        int wait_count = 16;
+        while (audio_buffer_index == cd.cdda_audio_read_buffer_index && wait_count)
+        {
+          // Wait 1 ms
+          svcSleepThread((long)1000000);
+          wait_count--;
+          //printf (".");
+        }
       }
 
       cd.cdda_cycles -= psg.clock_step;

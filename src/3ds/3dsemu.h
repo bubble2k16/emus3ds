@@ -36,4 +36,19 @@
         } \ 
     }
 
+
+//---------------------------------------------------------
+// Information about the emulator.
+//---------------------------------------------------------
+typedef struct
+{
+    bool                isReal3DS;
+    bool                enableDebug;
+    int                 emulatorState;
+    int                 waitBehavior;
+} SEmulator;
+
+extern SEmulator emulator;
+    
+
 #endif

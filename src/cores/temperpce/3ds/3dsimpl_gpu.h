@@ -1,6 +1,7 @@
 
 #include "3dsgpu.h"
 #include "3dsmain.h"
+#include "3dsemu.h"
 
 #ifndef _3DSIMPL_GPU_H_
 #define _3DSIMPL_GPU_H_

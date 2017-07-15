@@ -1887,15 +1887,6 @@ cpu_struct cpu;
 
 #include "3dsemu.h"
 
-typedef struct
-{
-    bool                isReal3DS;
-    bool                enableDebug;
-    int                 emulatorState;
-} SEmulator;
-
-extern SEmulator emulator;
-
 u32 disasm_pc;
 u32 disasm_pc2;
 u8 disasm_output[500];

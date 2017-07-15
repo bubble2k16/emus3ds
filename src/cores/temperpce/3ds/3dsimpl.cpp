@@ -299,7 +299,7 @@ char *impl3dsTitleImage = "./temperpce_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "TemperPCE for 3DS v0.91";
+char *impl3dsTitleText = "TemperPCE for 3DS v0.92b";
 
 
 int soundSamplesPerGeneration = 0;
@@ -1025,6 +1025,16 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
 	}
 	t3dsEndTiming(10);
 
+    /*
+    // debugging only - display cached tiles
+    gpu3dsUseShader(0);
+    gpu3dsSetTextureEnvironmentReplaceTexture0();
+    gpu3dsSetRenderTargetToTexture(emuMainScreenHWTarget, emuDepthForScreens);
+    gpu3dsBindTexture(emuTileCacheTexture, GPU_TEXUNIT0);
+    gpu3dsAddQuadVertexes(0, 0, 200, 200, 0, 0, 256, 256, 0);
+    gpu3dsDrawVertexes();
+    */
+
 	if (!skipDrawingFrame)
 	{
 		impl3dsRenderDrawTextureToTopFrameBuffer(emuMainScreenHWTarget, 32, 0);	
@@ -1041,9 +1051,9 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
 		t3dsEndTiming(19);
 	}
 
-	t3dsStartTiming(15, "Flush");
-	gpu3dsFlush();
-	t3dsEndTiming(15);
+    t3dsStartTiming(15, "Flush");
+    gpu3dsFlush();
+    t3dsEndTiming(15);
 
 	skipDrawingPreviousFrame = skipDrawingFrame;
 	t3dsEndTiming(1);
@@ -1129,6 +1139,13 @@ void impl3dsEmulationPaused()
     {
         ui3dsDrawRect(50, 140, 270, 154, 0x000000);
         ui3dsDrawStringWithNoWrapping(50, 140, 270, 154, 0x3f7fff, HALIGN_CENTER, "Saving SRAM to SD card...");
+
+        char path_name[MAX_PATH];
+        if(config.cd_loaded)
+        {
+            get_bram_path(path_name);
+            save_bram(path_name);
+        }
     }
 }
 

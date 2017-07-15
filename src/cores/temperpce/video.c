@@ -1,6 +1,7 @@
 #include "common.h"
 #include "palette.h"
 #include "3dsopt.h"
+#include "3dsemu.h"
 
 // Put temp debug vars here
 
@@ -571,6 +572,7 @@ void reset_vdc(vdc_struct *vdc)
   vdc->desr = 0;
   vdc->lenr = 0;
   vdc->satb = 0;
+  vdc->copy_sat_hw = 0;
 
   vdc->write_latch = 0xFF;
   vdc->read_latch = 0xFF;
@@ -2845,6 +2847,26 @@ void vdc_frame_start(vdc_struct *vdc)
 
 u32 vdc_check_vblank(vdc_struct *vdc)
 {
+  // Originally, the vblank copies the SAT
+  // from VRAM into the internal SAT buffer BEFORE
+  // the hardware renderer renders a block of scanlines. 
+  // 
+  // This caused the renderer to display new SATs but pointing
+  // to an outdated copy of sprite bitmaps.
+  //
+  // Doing this "delays" the copying of the SAT to the next
+  // scanline after the vblank, so that the hardware renderer
+  // can render sprites using the old SATs. 
+  //
+  // This fixes Castlevania Rondo of Blood, but we'll have to
+  // see if other games may suffer from this (?)
+  //
+  if (vdc->copy_sat_hw)
+  {
+    memcpy(vdc->sat_hw, vdc->sat, 512);
+    vdc->copy_sat_hw = 0;
+  }
+
   if(vdc->display_counter == vdc->vblank_line)
   {
     vdc->vblank_active = 1;
@@ -2860,6 +2882,9 @@ u32 vdc_check_vblank(vdc_struct *vdc)
       {
         memcpy(vdc->sat, vdc->vram + vdc->satb, 512);
         update_satb(vdc);
+
+        //if (!config.software_rendering)
+          vdc->copy_sat_hw = 1;
       }
     }
     return 1;
@@ -2982,7 +3007,7 @@ void update_frame_execute(u32 skip)
       //if (config.software_rendering)
       //  render_line();
       //else
-        render_line_hw();
+       render_line_hw();
       //t3dsEndTiming(21);
     }
 

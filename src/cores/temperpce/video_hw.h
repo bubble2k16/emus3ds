@@ -13,10 +13,9 @@ typedef struct
     int     x_scroll[256];
     int     y_scroll[256];
 
-    // Indicates if a particular line is blank
-    //
-    int     blank_line[256];
-    
+    int     prev_vblank;
+    int     cur_vblank;
+
     int     prev_bg;
     int     cur_bg;
 

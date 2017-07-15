@@ -2,18 +2,6 @@
 #ifndef _3DSMAIN_H_
 #define _3DSMAIN_H_
 
-//---------------------------------------------------------
-// Information about the emulator.
-//---------------------------------------------------------
-typedef struct
-{
-    bool                isReal3DS = false;
-    bool                enableDebug = false;
-    int                 emulatorState = 0;
-    int                 waitBehavior = 0;
-} SEmulator;
-
-extern SEmulator emulator;
 
 extern char romFileNameFullPath[];
 extern char romFileNameLastSelected[];

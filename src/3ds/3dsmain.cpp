@@ -638,6 +638,10 @@ char *noCheatsText[] {
 //--------------------------------------------------------
 void emulatorInitialize()
 {
+    emulator.enableDebug = false;
+    emulator.emulatorState = 0;
+    emulator.waitBehavior = 0;
+
     file3dsInitialize();
 
     romFileNameLastSelected[0] = 0;
