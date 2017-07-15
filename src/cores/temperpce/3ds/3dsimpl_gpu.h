@@ -55,7 +55,7 @@ struct STileVertex {
 #define SVERTEXCOLOR_ATTRIBFORMAT       GPU_ATTRIBFMT(0, 4, GPU_SHORT) | GPU_ATTRIBFMT(1, 4, GPU_UNSIGNED_BYTE)
 
 #define MAX_TEXTURE_POSITIONS		16383
-#define MAX_HASH					(2048 * 16 * 2)
+#define MAX_HASH					(2048 * 2 * 16 * 2)
 
 typedef struct
 {
@@ -72,7 +72,7 @@ typedef struct
     int     newCacheTexturePosition = 2;
 
     // Memory Usage = 0.50 MB
-    uint32  VRAMPaletteFrame[2048][32];  // vramaddr, pal
+    uint32  VRAMPaletteFrame[4096][32];  // vramaddr, pal
     uint32  PaletteFrame[32];  // pal
 
 } SGPU3DSExtended;

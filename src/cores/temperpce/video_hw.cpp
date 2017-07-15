@@ -13,6 +13,7 @@ VerticalSections screenWidthVerticalSection;
 
 vdc_hw_struct vdc_hw_a;
 vdc_hw_struct vdc_hw_b;
+extern vpc_struct vpc;
 
 
 extern "C" void cache_tile(vdc_struct *vdc, u32 tile_number);
@@ -53,8 +54,8 @@ int get_horizontal_width(vdc_struct *vdc)
 }
 
 
-int bg_depth = 3 << 8;               // depth for BG (shifted left by 8)
-int spr_depth[2] = {2 << 8, 5 << 8};      // depth for SPR (shifted left by 8)
+int bg_depth = 3 << 8;                      // depth for BG (shifted left by 8)
+int spr_depth[2] = {2 << 8, 4 << 8};        // depth for SPR (shifted left by 8)
 
 
 inline void render_bg_tile (
@@ -71,13 +72,16 @@ inline void render_bg_tile (
 
     // Cache the tile if it is marked dirty
     //
+    int cache_tile_number = tile_number;
+    if (vdc == &vdc_b)
+        cache_tile_number = tile_number + 2048;
     if(vdc->dirty_tiles[tile_number])
     {
         cache_tile(vdc, tile_number);
         vdc->dirty_tiles[tile_number] = 0;
     
         for (int p = 0; p < 16; p++)
-            GPU3DSExt.VRAMPaletteFrame[tile_number][p] = 0;
+            GPU3DSExt.VRAMPaletteFrame[cache_tile_number][p] = 0;
     }
 
     // Cached tile position
@@ -87,44 +91,15 @@ inline void render_bg_tile (
 
     // Cache the BG tile in our texture.
     //
-    int texturePos = cache3dsGetTexturePositionFast(tile_number * 32, current_palette_idx);
-    if (GPU3DSExt.VRAMPaletteFrame[tile_number][current_palette_idx] != 
+    int texturePos = cache3dsGetTexturePositionFast(cache_tile_number * 32, current_palette_idx);
+    if (GPU3DSExt.VRAMPaletteFrame[cache_tile_number][current_palette_idx] != 
         GPU3DSExt.PaletteFrame[current_palette_idx])
     {
-        GPU3DSExt.VRAMPaletteFrame[tile_number][current_palette_idx] = GPU3DSExt.PaletteFrame[current_palette_idx];
+        GPU3DSExt.VRAMPaletteFrame[cache_tile_number][current_palette_idx] = GPU3DSExt.PaletteFrame[current_palette_idx];
 
-        texturePos = cacheGetSwapTexturePositionForAltFrameFast(tile_number * 32, current_palette_idx);
+        texturePos = cacheGetSwapTexturePositionForAltFrameFast(cache_tile_number * 32, current_palette_idx);
         cache3dsCacheTGFX8x8TileToTexturePosition(tile_cache, &vce.palette_cache_5551[current_palette_idx * 16], texturePos);
     }
-
-/*
-    // Loop each line and render to screen
-    //
-    for (int tile_y = tile_start_y; tile_y <= tile_end_y; tile_y++)
-    {
-        u8 pixel;
-        u8 *cache_tile_sliver = &tile_cache[tile_y * 8];
-
-#define write_pixel(x)                                                          \
-        pixel = cache_tile_sliver[x];                                           \
-        if (pixel)                                                              \
-        {                                                                       \
-            if (!(tile_screen_ptr[x] & 0x80))                                   \
-                tile_screen_ptr[x] = vce.palette_cache[pixel | current_palette];\
-        }
-
-
-        write_pixel(0)
-        write_pixel(1)
-        write_pixel(2)
-        write_pixel(3)
-        write_pixel(4)
-        write_pixel(5)
-        write_pixel(6)
-        write_pixel(7)
-
-        tile_screen_ptr = tile_screen_ptr + 512;
-    }*/
 
 	// Render tile
 	//
@@ -293,6 +268,10 @@ void render_spr_tile (
 
     // Cache the sprite tile if it is marked dirty
     //
+    int cache_pattern_number = pattern_number;
+    if (vdc == &vdc_b)
+        cache_pattern_number = pattern_number + 512;
+        
     if(vdc->dirty_patterns[pattern_number])
     {
         cache_pattern(vdc, pattern_number);
@@ -300,7 +279,7 @@ void render_spr_tile (
 
         for (int p = 16; p < 32; p++)
         {
-            GPU3DSExt.VRAMPaletteFrame[pattern_number][p] = 0;
+            GPU3DSExt.VRAMPaletteFrame[cache_pattern_number][p] = 0;
         }
         
     }
@@ -312,19 +291,19 @@ void render_spr_tile (
 
     // Cache the BG tile in our texture.
     //
-    int texturePos0 = cache3dsGetTexturePositionFast(pattern_number * 128 + 0,  current_palette_idx);
-    int texturePos1 = cache3dsGetTexturePositionFast(pattern_number * 128 + 32, current_palette_idx);
-    int texturePos2 = cache3dsGetTexturePositionFast(pattern_number * 128 + 64, current_palette_idx);
-    int texturePos3 = cache3dsGetTexturePositionFast(pattern_number * 128 + 96, current_palette_idx);
-    if (GPU3DSExt.VRAMPaletteFrame[pattern_number][current_palette_idx] != 
+    int texturePos0 = cache3dsGetTexturePositionFast(cache_pattern_number * 128 + 0,  current_palette_idx);
+    int texturePos1 = cache3dsGetTexturePositionFast(cache_pattern_number * 128 + 32, current_palette_idx);
+    int texturePos2 = cache3dsGetTexturePositionFast(cache_pattern_number * 128 + 64, current_palette_idx);
+    int texturePos3 = cache3dsGetTexturePositionFast(cache_pattern_number * 128 + 96, current_palette_idx);
+    if (GPU3DSExt.VRAMPaletteFrame[cache_pattern_number][current_palette_idx] != 
         GPU3DSExt.PaletteFrame[current_palette_idx])
     {
-        GPU3DSExt.VRAMPaletteFrame[pattern_number][current_palette_idx] = GPU3DSExt.PaletteFrame[current_palette_idx];
+        GPU3DSExt.VRAMPaletteFrame[cache_pattern_number][current_palette_idx] = GPU3DSExt.PaletteFrame[current_palette_idx];
 
-        texturePos0 = cacheGetSwapTexturePositionForAltFrameFast(pattern_number * 128 + 0,  current_palette_idx);
-        texturePos1 = cacheGetSwapTexturePositionForAltFrameFast(pattern_number * 128 + 32, current_palette_idx);
-        texturePos2 = cacheGetSwapTexturePositionForAltFrameFast(pattern_number * 128 + 64, current_palette_idx);
-        texturePos3 = cacheGetSwapTexturePositionForAltFrameFast(pattern_number * 128 + 96, current_palette_idx);
+        texturePos0 = cacheGetSwapTexturePositionForAltFrameFast(cache_pattern_number * 128 + 0,  current_palette_idx);
+        texturePos1 = cacheGetSwapTexturePositionForAltFrameFast(cache_pattern_number * 128 + 32, current_palette_idx);
+        texturePos2 = cacheGetSwapTexturePositionForAltFrameFast(cache_pattern_number * 128 + 64, current_palette_idx);
+        texturePos3 = cacheGetSwapTexturePositionForAltFrameFast(cache_pattern_number * 128 + 96, current_palette_idx);
 
         u16 *palette_cache_5551_spr = &vce.palette_cache_5551[current_palette_idx * 16];
         cache3dsCacheTGFX16x16TileToTexturePosition(pattern_cache, palette_cache_5551_spr, 0, texturePos0);
@@ -332,101 +311,6 @@ void render_spr_tile (
         cache3dsCacheTGFX16x16TileToTexturePosition(pattern_cache, palette_cache_5551_spr, 2, texturePos2);
         cache3dsCacheTGFX16x16TileToTexturePosition(pattern_cache, palette_cache_5551_spr, 3, texturePos3);
     }
-
-/*
-    // Clip y
-    //
-    int height = 8;
-    int tile_start_y = 0;
-    int tile_end_y = 15;
-    if (y < start_y)
-    {
-        tile_start_y += (start_y - y);
-        height -= (start_y - y);
-        y = start_y;
-    }
-    if (height > 0 && y + height > end_y)
-    {
-        tile_end_y -= (y + height - end_y);
-        height -= (y + height - end_y);
-    }
-*/
-    /*
-    u32 *tile_screen_ptr = &screen_ptr[y * 512 + x];
-
-    // Loop each line and render to screen
-    //
-    if (!flip_x)
-    {
-        for (int tile_y = tile_start_y; tile_y <= tile_end_y; tile_y++)
-        {
-            u8 pixel;
-            int ty = tile_y;
-            if (flip_y)
-                ty = 15 - ty;
-            u8 *cache_pattern_sliver = &pattern_cache[ty * 16];
-
-    #define write_pixel(x)                                                  \
-            pixel = cache_pattern_sliver[x];                                \
-            if (pixel)                                                      \
-                tile_screen_ptr[x] = vce.palette_cache[pixel | current_palette | 0x100] | prio; 
-            
-            write_pixel(0)
-            write_pixel(1)
-            write_pixel(2)
-            write_pixel(3)
-            write_pixel(4)
-            write_pixel(5)
-            write_pixel(6)
-            write_pixel(7)
-            write_pixel(8)
-            write_pixel(9)
-            write_pixel(10)
-            write_pixel(11)
-            write_pixel(12)
-            write_pixel(13)
-            write_pixel(14)
-            write_pixel(15)
-
-            tile_screen_ptr = tile_screen_ptr + 512;
-        }
-    }
-    else
-    {
-        for (int tile_y = tile_start_y; tile_y <= tile_end_y; tile_y++)
-        {
-            u8 pixel;
-            int ty = tile_y;
-            if (flip_y)
-                ty = 15 - ty;
-            u8 *cache_pattern_sliver = &pattern_cache[ty * 16];
-
-    #define write_pixel(x)                                                  \
-            pixel = cache_pattern_sliver[15-x];                             \
-            if (pixel)                                                      \
-                tile_screen_ptr[x] = vce.palette_cache[pixel | current_palette | 0x100] | prio; 
-            
-            write_pixel(0)
-            write_pixel(1)
-            write_pixel(2)
-            write_pixel(3)
-            write_pixel(4)
-            write_pixel(5)
-            write_pixel(6)
-            write_pixel(7)
-            write_pixel(8)
-            write_pixel(9)
-            write_pixel(10)
-            write_pixel(11)
-            write_pixel(12)
-            write_pixel(13)
-            write_pixel(14)
-            write_pixel(15)
-
-            tile_screen_ptr = tile_screen_ptr + 512;
-        }
-    }
-    */
 
 	// Render tile
 	//
@@ -626,7 +510,7 @@ void render_clear_screen_to_black_hw(int start_y, int end_y)
 
 }
 
-void render_flush(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
+void render_flush(vdc_struct *vdc, vdc_hw_struct *vdc_hw, bool master_vdc)
 {
     t3dsStartTiming(20, "render_flush");
     int scanline_line = vce.frame_counter - 14 - 1;
@@ -637,18 +521,18 @@ void render_flush(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
 
     int offset_y = vdc->start_line - 14;
 
-    //printf ("flush @ %3d: %3d-%3d %3d sp:%d bg:%d\n", vce.frame_counter, vdc_hw->start_render_line, scanline_line, vdc_a.start_line, vdc_hw->prev_spr, vdc_hw->prev_bg);
-
     if (vdc_hw->prev_vblank)
     {
         // This properly renders vblank as a black block of scanlines
         // rather than the background color
         //
-        render_clear_screen_to_black_hw(vdc_hw->start_render_line, scanline_line);
+        if (master_vdc)
+            render_clear_screen_to_black_hw(vdc_hw->start_render_line, scanline_line);
     }
     else
     {
-        render_clear_screen_hw(vdc_hw->start_render_line, scanline_line);
+        if (master_vdc)
+            render_clear_screen_hw(vdc_hw->start_render_line, scanline_line);
 
         gpu3dsSetTextureEnvironmentReplaceTexture0();
         gpu3dsBindTexture(emuTileCacheTexture, GPU_TEXUNIT0);
@@ -952,11 +836,137 @@ void copy_line_data(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
             vsectCommit(&screenWidthVerticalSection, scanline_line);
             vsectUpdateValue(&screenWidthVerticalSection, scanline_line + 1, get_horizontal_width(vdc), vdc->hds, vdc->hsw);
 
-            render_flush(vdc, vdc_hw);
+            render_flush(vdc, vdc_hw, true);
         }
-            
     }
-    
+}
+
+void copy_line_data_sgx(
+    vdc_struct *vdc, vdc_hw_struct *vdc_hw,
+    vdc_struct *vdc_b, vdc_hw_struct *vdc_b_hw)
+{
+    vdc_hw->prev_hdw = vdc_hw->cur_hdw;
+    vdc_hw->prev_hds = vdc_hw->cur_hds;
+    vdc_hw->prev_hsw = vdc_hw->cur_hsw;
+    vdc_hw->prev_spr = vdc_hw->cur_spr;
+    vdc_hw->prev_bg  = vdc_hw->cur_bg;
+    vdc_hw->prev_vblank  = vdc_hw->cur_vblank;
+
+    vdc_b_hw->prev_hdw = vdc_b_hw->cur_hdw;
+    vdc_b_hw->prev_hds = vdc_b_hw->cur_hds;
+    vdc_b_hw->prev_hsw = vdc_b_hw->cur_hsw;
+    vdc_b_hw->prev_spr = vdc_b_hw->cur_spr;
+    vdc_b_hw->prev_bg  = vdc_b_hw->cur_bg;
+    vdc_b_hw->prev_vblank  = vdc_b_hw->cur_vblank;
+
+    u32 scanline_line = vce.frame_counter - 14;
+
+    //if (scanline_line >= 0 && scanline_line <= 240)
+    {
+        if((vdc->display_counter >= vdc->start_line) &&
+            (vdc->display_counter < vdc->vblank_line) &&
+            (vdc->burst_mode == 0))
+        {
+            int y_scroll = vdc->effective_byr;
+            int x_scroll = vdc->bxr + vdc->scroll_shift;
+
+            vdc_hw->x_scroll[scanline_line] = x_scroll;
+            vdc_hw->y_scroll[scanline_line] = y_scroll;
+
+            vdc_hw->screen_width[scanline_line] = vdc->screen_width;
+
+            vdc_hw->cur_spr = (vdc->cr & 0x40) > 0;
+            vdc_hw->cur_bg = (vdc->cr & 0x80) > 0;
+            vdc_hw->cur_hdw = vdc->hdw;
+            vdc_hw->cur_hds = vdc->hds;
+            vdc_hw->cur_hsw = vdc->hsw;
+            vdc_hw->cur_vblank = vdc->vblank_active;
+        }
+        else
+        {
+            vdc_hw->cur_spr = 0;
+            vdc_hw->cur_bg = 0;
+        }
+
+        if((vdc_b->display_counter >= vdc_b->start_line) &&
+            (vdc_b->display_counter < vdc_b->vblank_line) &&
+            (vdc_b->burst_mode == 0))
+        {
+            int y_scroll = vdc_b->effective_byr;
+            int x_scroll = vdc_b->bxr + vdc_b->scroll_shift;
+
+            vdc_b_hw->x_scroll[scanline_line] = x_scroll;
+            vdc_b_hw->y_scroll[scanline_line] = y_scroll;
+
+            vdc_b_hw->screen_width[scanline_line] = vdc->screen_width;
+
+            vdc_b_hw->cur_spr = (vdc_b->cr & 0x40) > 0;
+            vdc_b_hw->cur_bg = (vdc_b->cr & 0x80) > 0;
+            vdc_b_hw->cur_hdw = vdc_b->hdw;
+            vdc_b_hw->cur_hds = vdc_b->hds;
+            vdc_b_hw->cur_hsw = vdc_b->hsw;
+            vdc_b_hw->cur_vblank = vdc_b->vblank_active;
+        }
+        else
+        {
+            vdc_b_hw->cur_spr = 0;
+            vdc_b_hw->cur_bg = 0;
+        }        
+
+        if (
+            (vdc_hw->prev_vblank != vdc_hw->cur_vblank) ||
+            (vdc_hw->prev_bg != vdc_hw->cur_bg) ||
+            (vdc_hw->prev_spr != vdc_hw->cur_spr) ||
+            (vdc_hw->prev_hdw != vdc_hw->cur_hdw) ||
+            (vdc_hw->prev_hds != vdc_hw->cur_hds) ||
+            (vdc_hw->prev_hsw != vdc_hw->cur_hsw) ||
+            (vdc_b_hw->prev_vblank != vdc_b_hw->cur_vblank) ||
+            (vdc_b_hw->prev_bg != vdc_b_hw->cur_bg) ||
+            (vdc_b_hw->prev_spr != vdc_b_hw->cur_spr) ||
+            (vdc_b_hw->prev_hdw != vdc_b_hw->cur_hdw) ||
+            (vdc_b_hw->prev_hds != vdc_b_hw->cur_hds) ||
+            (vdc_b_hw->prev_hsw != vdc_b_hw->cur_hsw) ||
+            scanline_line == RESOLUTION_HEIGHT - 1)
+        {
+            vsectCommit(&screenWidthVerticalSection, scanline_line);
+            vsectUpdateValue(&screenWidthVerticalSection, scanline_line + 1, get_horizontal_width(vdc), vdc->hds, vdc->hsw);
+
+            //printf("y=%3d %04x %04x %04x\n", scanline_line, vpc.window_status, vpc.window1_value, vpc.window2_value);
+
+            // This is quite a hack of the windowing feature in SGX.
+            // Does it even work correctly? 
+            //
+            int b_spr_depth_0 = 2 << 8;
+            int b_spr_depth_1 = 4 << 8;
+            int status = 0;
+            if (vpc.window1_value == 0 && vpc.window2_value == 0)
+                status = ((vpc.window_status & 0xf000) >> 12) & 0xc;
+            else if (vpc.window1_value >= 0 && vpc.window2_value == 0)
+                status = ((vpc.window_status & 0x0f00) >> 8) & 0xc;
+            else if (vpc.window1_value == 0 && vpc.window2_value > 0)
+                status = ((vpc.window_status & 0x00f0) >> 4) & 0xc;
+            else if (vpc.window1_value > 0 && vpc.window2_value > 0)
+                status = ((vpc.window_status & 0x000f) >> 0) & 0xc;
+
+            if (status == 0x4 || status == 0x8)
+            {
+                b_spr_depth_0 = 2 << 8;
+                b_spr_depth_1 = 7 << 8;
+            }
+
+            bg_depth = 3 << 8;      
+            spr_depth[0] = b_spr_depth_0;
+            spr_depth[1] = b_spr_depth_1;
+
+            render_flush(vdc_b, vdc_b_hw, true);
+
+            bg_depth = 6 << 8;      
+            spr_depth[0] = 5 << 8;
+            spr_depth[1] = 8 << 8;
+
+            render_flush(vdc, vdc_hw, false);
+        }
+    }
 }
 
 void render_line_hw(void)
@@ -975,6 +985,29 @@ void render_line_hw(void)
         (vce.frame_counter < (14 + RESOLUTION_HEIGHT)))
     {
         copy_line_data(&vdc_a, &vdc_hw_a);
+        vdc_check_line_hw (&vdc_a);
+    }
+}
+
+
+void render_line_sgx_hw(void)
+{
+    if (vce.frame_counter == 0)
+    {
+        vdc_hw_b.start_render_line = 0; 
+        vdc_hw_a.start_render_line = 0; 
+    }
+
+    if (vce.frame_counter == 13)
+    {
+        vsectUpdateValue(&screenWidthVerticalSection, 0, get_horizontal_width(&vdc_a), vdc_a.hds, vdc_a.hsw);
+    }
+
+    if ((vce.frame_counter >= 14) &&
+        (vce.frame_counter < (14 + RESOLUTION_HEIGHT)))
+    {
+        copy_line_data_sgx(&vdc_a, &vdc_hw_a, &vdc_b, &vdc_hw_b);
+        vdc_check_line_hw (&vdc_b);
         vdc_check_line_hw (&vdc_a);
     }
 

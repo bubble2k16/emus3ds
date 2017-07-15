@@ -46,6 +46,7 @@ EXTERN_C_START
 void update_palette_frame(int pal);
 void reset_video_hw();
 void render_line_hw(void);
+void render_line_sgx_hw(void);
 
 #ifdef EXTERN_C_END
 EXTERN_C_END

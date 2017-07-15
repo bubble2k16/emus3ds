@@ -3101,7 +3101,10 @@ void update_frame_execute_sgx(u32 skip)
     vdc_set_effective_byr(&vdc_b);
 
     if(!skip)
-      render_line_sgx();
+    {
+      //render_line_sgx();
+      render_line_sgx_hw();
+    }
       
     if(vdc_a.vblank_active && (vdc_a.cr & 0x08))
     {

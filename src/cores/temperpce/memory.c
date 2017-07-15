@@ -1397,7 +1397,7 @@ s32 load_rom(char *path)
     {
       if((strlen(path) > 7) && (strcasecmp(dot_ptr - 7, "syscard.bin")))
       {
-        printf("Load cue, not bin, stupid.\n");
+        //printf("Load cue, not bin, stupid.\n");
         strcpy(dot_ptr + 1, "cue");
       }
     }
@@ -1410,7 +1410,7 @@ s32 load_rom(char *path)
       config.cd_loaded = 1;
     }
 
-    if(strstr(path, "sgx"))
+    if(strstr(path, "sgx") || strstr(path, "SGX"))
       config.sgx_mode = 1;
       
     #ifdef CRC_CHECK

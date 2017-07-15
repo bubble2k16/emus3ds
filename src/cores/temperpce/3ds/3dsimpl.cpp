@@ -299,7 +299,7 @@ char *impl3dsTitleImage = "./temperpce_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "TemperPCE for 3DS v0.92b";
+char *impl3dsTitleText = "TemperPCE for 3DS v1.00b";
 
 
 int soundSamplesPerGeneration = 0;
