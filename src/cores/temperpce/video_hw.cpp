@@ -21,9 +21,15 @@ extern "C" void cache_pattern(vdc_struct *vdc, u32 pattern_number);
 
 extern SGPUTexture *emuTileCacheTexture;
 
+int bg_depth = 3 << 8;                      // depth for BG (shifted left by 8)
+int spr_depth[2] = {2 << 8, 4 << 8};        // depth for SPR (shifted left by 8)
+
 
 void reset_video_hw()
 {
+    bg_depth = 3 << 8;
+    spr_depth[0] = 2 << 8;
+    spr_depth[1] = 4 << 8;
     for (int t = 0; t < 2048; t++)
         for (int p = 0; p < 32; p++)
         {
@@ -53,9 +59,6 @@ int get_horizontal_width(vdc_struct *vdc)
     return hwidth;
 }
 
-
-int bg_depth = 3 << 8;                      // depth for BG (shifted left by 8)
-int spr_depth[2] = {2 << 8, 4 << 8};        // depth for SPR (shifted left by 8)
 
 
 inline void render_bg_tile (
