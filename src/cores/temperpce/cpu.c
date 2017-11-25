@@ -1,5 +1,6 @@
 // Hu6280 CPU emulator.
 
+#include <3ds.h>
 #include "common.h"
 #include "op_list.h"
 
@@ -1283,7 +1284,8 @@ else                                                                          \
 #define op_transfer_check_boundary_dual_down(var)                             \
   if(((var - length) ^ var) & 0xe000)                                         \
   {                                                                           \
-    length = var & 0x1fff;                                                    \
+    /* important bug fix to +1 to length */ \
+    length = (var & 0x1fff) + 1;                                              \
     saved_source = source - length;                                           \
     saved_dest = dest - length;                                               \
   }                                                                           \
@@ -1438,6 +1440,8 @@ else                                                                          \
 // version doesn't really make sense. But it can be added if necessary.
 
 #define op_transfer_loop_tia()                                                \
+  if(mpr_check_ext(dest_ptr))                                                 \
+  {                                                                           \
   io_write_function_ptr *dest_functions =                                     \
    (io_write_function_ptr *)mpr_translate_ext_offset(dest_ptr, dest);         \
   op_transfer_take_cycles_ext(dest);                                          \
@@ -1498,8 +1502,76 @@ else                                                                          \
       offset_index = 1;                                                       \
     }                                                                         \
   }                                                                           \
+  }                                                                           \
+  else                                                                        \
+  {                                                                           \
+  /* this missing part of the TII instruction */                              \
+  dest_ptr = mpr_translate_offset(dest_ptr, dest);                            \
+  length -= 2;                                                                \
+                                                                              \
+  if(mpr_check_ext(source_ptr))                                               \
+  {                                                                           \
+    op_transfer_take_cycles_ext(dest);                                        \
+    io_read_function_ptr *source_functions =                                  \
+     (io_read_function_ptr *)mpr_translate_ext_offset(source_ptr, source);    \
+                                                                              \
+    /* Ext source and normal dest */                                          \
+    if(offset_index)                                                          \
+    {                                                                         \
+      offset_index = 0;                                                       \
+      dest_ptr[1] = source_functions[0]();                                    \
+      source_functions++;                                                     \
+      length--;                                                               \
+    }                                                                         \
+                                                                              \
+    while(length >= 0)                                                        \
+    {                                                                         \
+      dest_ptr[0] = source_functions[0]();                                    \
+      dest_ptr[1] = source_functions[1]();                                    \
+      source_functions += 2;                                                  \
+      length -= 2;                                                            \
+    }                                                                         \
+                                                                              \
+    if((length + 1) == 0)                                                     \
+    {                                                                         \
+      dest_ptr[0] = source_functions[0]();                                    \
+      offset_index = 1;                                                       \
+    }                                                                         \
+                                                                              \
+  }                                                                           \
+  else                                                                        \
+  {                                                                           \
+    op_transfer_take_cycles();                                                \
+    source_ptr = mpr_translate_offset(source_ptr, source);                    \
+    /* Normal source, normal dest */                                          \
+    if(offset_index)                                                          \
+    {                                                                         \
+      offset_index = 0;                                                       \
+      dest_ptr[1] = source_ptr[0];                                            \
+      source_ptr++;                                                           \
+      length--;                                                               \
+    }                                                                         \
+                                                                              \
+    while(length >= 0)                                                        \
+    {                                                                         \
+      dest_ptr[0] = source_ptr[0];                                            \
+      dest_ptr[1] = source_ptr[1];                                            \
+      source_ptr += 2;                                                        \
+      length -= 2;                                                            \
+    }                                                                         \
+                                                                              \
+    if((length + 1) == 0)                                                     \
+    {                                                                         \
+      dest_ptr[0] = source_ptr[0];                                            \
+      offset_index = 1;                                                       \
+    }                                                                         \
+  }                                                                           \
+  }                                                                           \
+  
 
 #define op_transfer_loop_tin()                                                \
+  if(mpr_check_ext(dest_ptr))                                                 \
+  {                                                                           \
   io_write_function_ptr *dest_function =                                      \
    (io_write_function_ptr *)mpr_translate_ext_offset(dest_ptr, dest);         \
   op_transfer_take_cycles_ext(dest);                                          \
@@ -1528,6 +1600,40 @@ else                                                                          \
       length--;                                                               \
     }                                                                         \
   }                                                                           \
+  }                                                                           \
+  else                                                                        \
+  {                                                                           \
+  /* this missing part of the TIN instruction */                              \
+  dest_ptr = mpr_translate_offset(dest_ptr, dest);                            \
+                                                                              \
+  if(mpr_check_ext(source_ptr))                                               \
+  {                                                                           \
+    op_transfer_take_cycles_ext(dest);                                        \
+    io_read_function_ptr *source_functions =                                  \
+     (io_read_function_ptr *)mpr_translate_ext_offset(source_ptr, source);    \
+                                                                              \
+    /* Ext source and normal dest */                                          \
+    while(length > 0)                                                         \
+    {                                                                         \
+      dest_ptr[0] = source_functions[0]();                                    \
+      source_functions++;                                                     \
+      length--;                                                               \
+    }                                                                         \
+  }                                                                           \
+  else                                                                        \
+  {                                                                           \
+    op_transfer_take_cycles();                                                \
+    source_ptr = mpr_translate_offset(source_ptr, source);                    \
+    /* Normal source, normal dest */                                          \
+    while(length > 0)                                                         \
+    {                                                                         \
+      dest_ptr[0] = source_ptr[0];                                            \
+      source_ptr++;                                                           \
+      length--;                                                               \
+    }                                                                         \
+  }                                                                           \
+  }                                                                           \
+  
 
 #define op_transfer_loop_copy(increment)                                      \
   if(mpr_check_ext(source_ptr))                                               \
@@ -1892,16 +1998,18 @@ u32 disasm_pc2;
 u8 disasm_output[500];
 
 
+
 /*
 #define disasm_opcode \
+  disasm_pc2 = disasm_pc = ((pc_high << 13) + pc_low) & 0xFFFF; \
   if (emulator.enableDebug) \
   { \
-    disasm_pc2 = disasm_pc = ((pc_high << 13) + pc_low) & 0xFFFF; \
     disasm_instruction(disasm_output, &disasm_pc); \
     printf ("%4x: %-15s A%02X X%02X Y%02X S%02X\n", disasm_pc2, disasm_output, a, x, y, s); \
     { DEBUG_WAIT_L_KEY } \
   } \
 */
+
 #define disasm_opcode
 
 
