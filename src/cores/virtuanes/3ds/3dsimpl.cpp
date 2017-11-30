@@ -128,6 +128,8 @@ SMenuItem optionMenu[] = {
     MENU_MAKE_PICKER    (18000, "  Font", "The font used for the user interface.", optionsForFont, DIALOGCOLOR_CYAN),
     MENU_MAKE_CHECKBOX  (15001, "  Hide text in bottom screen", 0),
     MENU_MAKE_DISABLED  (""),
+    MENU_MAKE_CHECKBOX  (21000, "  Automatically save state on exit and load state on start", 0),
+    MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("GAME-SPECIFIC SETTINGS"),
     MENU_MAKE_PICKER    (10000, "  Frameskip", "Try changing this if the game runs slow. Skipping frames help it run faster but less smooth.", optionsForFrameskip, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (12000, "  Framerate", "Some games run at 50 or 60 FPS by default. Override if required.", optionsForFrameRate, DIALOGCOLOR_CYAN),
@@ -1153,62 +1155,63 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
     }
 
     bool settingsUpdated = false;
-    UPDATE_SETTINGS(settings3DS.Font, 1, 18000);
-    UPDATE_SETTINGS(settings3DS.ScreenStretch, 1, 11000);
-    UPDATE_SETTINGS(settings3DS.HideUnnecessaryBottomScrText, 1, 15001);
-    UPDATE_SETTINGS(settings3DS.MaxFrameSkips, 1, 10000);
-    UPDATE_SETTINGS(settings3DS.ForceFrameRate, 1, 12000);
-    UPDATE_SETTINGS(settings3DS.UseGlobalButtonMappings, 1, 20000);
-    UPDATE_SETTINGS(settings3DS.UseGlobalTurbo, 1, 20001);
-    UPDATE_SETTINGS(settings3DS.UseGlobalVolume, 1, 20002);
+    UPDATE_SETTINGS(settings3DS.Font, -1, 18000);
+    UPDATE_SETTINGS(settings3DS.ScreenStretch, -1, 11000);
+    UPDATE_SETTINGS(settings3DS.HideUnnecessaryBottomScrText, -1, 15001);
+    UPDATE_SETTINGS(settings3DS.MaxFrameSkips, -1, 10000);
+    UPDATE_SETTINGS(settings3DS.ForceFrameRate, -1, 12000);
+    UPDATE_SETTINGS(settings3DS.UseGlobalButtonMappings, -1, 20000);
+    UPDATE_SETTINGS(settings3DS.UseGlobalTurbo, -1, 20001);
+    UPDATE_SETTINGS(settings3DS.UseGlobalVolume, -1, 20002);
+    UPDATE_SETTINGS(settings3DS.AutoSavestate, -1, 21000);
     if (settings3DS.UseGlobalButtonMappings || copyMenuToSettings)
     {
-        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[0], 1, 13010);
-        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[1], 1, 13011);
-        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[2], 1, 13012);
-        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[3], 1, 13013);
-        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[4], 1, 13014);
-        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[5], 1, 13015);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[0], -1, 13010);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[1], -1, 13011);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[2], -1, 13012);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[3], -1, 13013);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[4], -1, 13014);
+        UPDATE_SETTINGS(settings3DS.GlobalButtonMapping[5], -1, 13015);
     }
     if (!settings3DS.UseGlobalButtonMappings || copyMenuToSettings)
     {
-        UPDATE_SETTINGS(settings3DS.ButtonMapping[0], 1, 13010);
-        UPDATE_SETTINGS(settings3DS.ButtonMapping[1], 1, 13011);
-        UPDATE_SETTINGS(settings3DS.ButtonMapping[2], 1, 13012);
-        UPDATE_SETTINGS(settings3DS.ButtonMapping[3], 1, 13013);
-        UPDATE_SETTINGS(settings3DS.ButtonMapping[4], 1, 13014);
-        UPDATE_SETTINGS(settings3DS.ButtonMapping[5], 1, 13015);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[0], -1, 13010);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[1], -1, 13011);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[2], -1, 13012);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[3], -1, 13013);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[4], -1, 13014);
+        UPDATE_SETTINGS(settings3DS.ButtonMapping[5], -1, 13015);
     }
     if (settings3DS.UseGlobalTurbo || copyMenuToSettings)
     {
-        UPDATE_SETTINGS(settings3DS.GlobalTurbo[0], 1, 13000);
-        UPDATE_SETTINGS(settings3DS.GlobalTurbo[1], 1, 13001);
-        UPDATE_SETTINGS(settings3DS.GlobalTurbo[2], 1, 13002);
-        UPDATE_SETTINGS(settings3DS.GlobalTurbo[3], 1, 13003);
-        UPDATE_SETTINGS(settings3DS.GlobalTurbo[4], 1, 13004);
-        UPDATE_SETTINGS(settings3DS.GlobalTurbo[5], 1, 13005);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[0], -1, 13000);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[1], -1, 13001);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[2], -1, 13002);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[3], -1, 13003);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[4], -1, 13004);
+        UPDATE_SETTINGS(settings3DS.GlobalTurbo[5], -1, 13005);
     }
     if (!settings3DS.UseGlobalTurbo || copyMenuToSettings) 
     {
-        UPDATE_SETTINGS(settings3DS.Turbo[0], 1, 13000);
-        UPDATE_SETTINGS(settings3DS.Turbo[1], 1, 13001);
-        UPDATE_SETTINGS(settings3DS.Turbo[2], 1, 13002);
-        UPDATE_SETTINGS(settings3DS.Turbo[3], 1, 13003);
-        UPDATE_SETTINGS(settings3DS.Turbo[4], 1, 13004);
-        UPDATE_SETTINGS(settings3DS.Turbo[5], 1, 13005);
+        UPDATE_SETTINGS(settings3DS.Turbo[0], -1, 13000);
+        UPDATE_SETTINGS(settings3DS.Turbo[1], -1, 13001);
+        UPDATE_SETTINGS(settings3DS.Turbo[2], -1, 13002);
+        UPDATE_SETTINGS(settings3DS.Turbo[3], -1, 13003);
+        UPDATE_SETTINGS(settings3DS.Turbo[4], -1, 13004);
+        UPDATE_SETTINGS(settings3DS.Turbo[5], -1, 13005);
     }
     if (settings3DS.UseGlobalVolume || copyMenuToSettings)
     {
-        UPDATE_SETTINGS(settings3DS.GlobalVolume, 1, 14000);
+        UPDATE_SETTINGS(settings3DS.GlobalVolume, -1, 14000);
     }
     if (!settings3DS.UseGlobalVolume || copyMenuToSettings)
     {
-        UPDATE_SETTINGS(settings3DS.Volume, 1, 14000);
+        UPDATE_SETTINGS(settings3DS.Volume, -1, 14000);
     }
     
-    UPDATE_SETTINGS(settings3DS.PaletteFix, 1, 16000);
-    UPDATE_SETTINGS(settings3DS.SRAMSaveInterval, 1, 17000);
-    UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_ALLSPRITES], 1, 19000);     // sprite flicker
+    UPDATE_SETTINGS(settings3DS.PaletteFix, -1, 16000);
+    UPDATE_SETTINGS(settings3DS.SRAMSaveInterval, -1, 17000);
+    UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_ALLSPRITES], -1, 19000);     // sprite flicker
 
     return settingsUpdated;
 	

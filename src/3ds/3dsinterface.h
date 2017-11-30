@@ -35,11 +35,11 @@ typedef struct
     int     UseGlobalVolume = 0;            // Use global button mappings for all games
                                             // 0 - no, 1 - yes
 
-    int     GlobalButtonMapping[6] = {0, 0, 0, 0, 0, 0};  
+    int     GlobalButtonMapping[10][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};  
                                             // Button Mapping using 3DS buttons: 0 - A, 1 - B, 2 - X, 3 - Y, 4 - L, 5 - R, 6 - ZL, 7 - ZR
                                             // Values: Specific to each core.
 
-    int     GlobalTurbo[6] = {0, 0, 0, 0, 0, 0};  
+    int     GlobalTurbo[8] = {0, 0, 0, 0, 0, 0, 0, 0};  
                                             // Turbo buttons: 0 - No turbo, 1 - Release/Press every alt frame.
                                             // Indexes for 3DS buttons: 0 - A, 1 - B, 2 - X, 3 - Y, 4 - L, 5 - R
 
@@ -57,10 +57,11 @@ typedef struct
 
     int     ForceFrameRate = 0;             // 0 - Use ROM's Region, 1 - Force 50 fps, 2 - Force 60 fps
 
-    int     Turbo[6] = {0, 0, 0, 0, 0, 0};  // Turbo buttons: 0 - No turbo, 1 - Release/Press every alt frame.
+    int     Turbo[8] = {0, 0, 0, 0, 0, 0, 0, 0};  
+                                            // Turbo buttons: 0 - No turbo, 1 - Release/Press every alt frame.
                                             // Indexes for 3DS buttons: 0 - A, 1 - B, 2 - X, 3 - Y, 4 - L, 5 - R
 
-    int     ButtonMapping[6] = {0, 0, 0, 0, 0, 0};  
+    int     ButtonMapping[10][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};  
                                             // Button Mapping using 3DS buttons: 0 - A, 1 - B, 2 - X, 3 - Y, 4 - L, 5 - R, 6 - ZL, 7 - ZR
                                             // Values: Specific to each core.
 
@@ -75,9 +76,24 @@ typedef struct
 
     int     PaletteFix;                     // Palette Fixes Changes (if applicable)
 
+    int     AutoSavestate = 0;              // Automatically save the the current state when the emulator is closed
+                                            // or the game is changed, and load it again when the game is loaded.
+                                            //   0 - Disabled
+                                            //   1 - Enabled
+
     int     SRAMSaveInterval;               // SRAM Save Interval (if applicable)
 
     int     OtherOptions[50];               // Use this to store other options.
+
+    int     UseGlobalEmuControlKeys = 0;    // Use global emulator control keys for all games
+
+    int     ButtonHotkeyOpenMenu;           // Stores button that can be held to open the menu.
+
+    int     ButtonHotkeyDisableFramelimit;  // Stores button that can be held to disable the frame limit.
+
+    int     GlobalButtonHotkeyOpenMenu;     // Stores button that can be held to open the menu.
+
+    int     GlobalButtonHotkeyDisableFramelimit; // Stores button that can be held to disable the frame limit.
 
 } SSettings3DS;
 
@@ -214,6 +230,13 @@ bool impl3dsLoadState(int slotNumber);
 // is paused.
 //---------------------------------------------------------
 extern SMenuItem optionMenu[];
+
+
+//---------------------------------------------------------
+// This menu will be displayed when the emulator
+// is paused.
+//---------------------------------------------------------
+extern SMenuItem controlsMenu[];
 
 
 //---------------------------------------------------------

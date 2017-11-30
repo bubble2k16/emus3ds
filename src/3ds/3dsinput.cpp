@@ -64,7 +64,10 @@ u32 input3dsScanInputForEmulation()
     // -----------------------------------------------
 #endif
 
-    if (keysDown & KEY_TOUCH)
+    if ((keysDown & KEY_TOUCH) || 
+        (settings3DS.UseGlobalEmuControlKeys && (keysDown & settings3DS.GlobalButtonHotkeyOpenMenu)) ||
+        (!settings3DS.UseGlobalEmuControlKeys && (keysDown & settings3DS.ButtonHotkeyOpenMenu)) 
+        )
     {
         snd3dsStopPlaying();
         impl3dsEmulationPaused();
