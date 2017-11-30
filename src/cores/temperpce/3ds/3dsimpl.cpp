@@ -757,8 +757,8 @@ void impl3dsEmulationBegin()
 
 
 u32 prevConsoleJoyPad;
-u32 prevConsoleButtonPressed[6];
-u32 buttons3dsPressed[6];
+u32 prevConsoleButtonPressed[10];
+u32 buttons3dsPressed[10];
 void impl3dsEmulationPollInput()
 {
 	u32 keysHeld3ds = input3dsGetCurrentKeysHeld();
@@ -813,7 +813,7 @@ void impl3dsEmulationPollInput()
         turbo = settings3DS.GlobalTurbo;
     
     #define HANDLE_TURBO(i, buttonMapping) 										\
-		if (settings3DS.Turbo[i] && buttons3dsPressed[i]) { 		\
+		if (turbo[i] && buttons3dsPressed[i]) { 		\
 			if (!prevConsoleButtonPressed[i]) 						\
 			{ 														\
 				prevConsoleButtonPressed[i] = 11 - turbo[i]; 		\
@@ -829,7 +829,6 @@ void impl3dsEmulationPollInput()
 				); \
 			} \
 		} \
-
 
 	if (settings3DS.UseGlobalButtonMappings)
 	{
