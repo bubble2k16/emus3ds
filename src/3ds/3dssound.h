@@ -13,16 +13,16 @@ typedef struct
     short       *fullBuffers;
     short       *leftBuffer;
     short       *rightBuffer;
-    u64			startTick;
-    u64         bufferPosition;
-    u64         samplePosition;
+    s64			startTick;
+    s64         bufferPosition;
+    s64         samplePosition;
 
     Handle      mixingThreadHandle;
     u8          mixingThreadStack[0x4000] __attribute__((aligned(8)));
     bool        terminateMixingThread;
 
-    u64         startSamplePosition = 0;
-    u64         upToSamplePosition = 0;
+    s64         startSamplePosition = 0;
+    s64         upToSamplePosition = 0;
 
     CSND_ChnInfo*   channelInfo;
 

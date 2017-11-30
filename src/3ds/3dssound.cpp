@@ -26,6 +26,8 @@ int snd3dsSamplesPerLoop = 735;
 bool snd3dsIsStereo = true;
 bool snd3dsSpawnMixingThread = true;
 
+#define SAMPLEBUFFER_SIZE 44100
+
 
 //---------------------------------------------------------
 // Gets the current playing sample position.
@@ -137,8 +139,13 @@ void snd3dsMixSamples()
     //
     t3dsStartTiming(43, "Mix-Flush");
     blockCount++;
+
+    // Doing GSPGPU_FlushDataCache may cause race conditions with
+    // the battery check (and other stuff?) on the main thread.
+    // causing the whole emulator to freeze.
+    //
     if (blockCount % MIN_FORWARD_BLOCKS == 0)
-        GSPGPU_FlushDataCache(snd3DS.fullBuffers, snd3dsSampleRate * 2 * 2);
+        GSPGPU_FlushDataCache(snd3DS.fullBuffers, SAMPLEBUFFER_SIZE * 2 * 2);
     t3dsEndTiming(43);
 }
 
@@ -158,8 +165,15 @@ void snd3dsMixingThread(void *p)
     {
         if (!emulator.isReal3DS)
             svcSleepThread(100000 * 1);
-        snd3dsMixSamples();
-        //async3dsExecuteTasks();
+
+        // Fix for race condition for 64-bit access in the sound thread.
+        // Without this the reading of the startTick and upToSamplePosition may
+        // return incorrect results during the thread, causing the svcSleepThread
+        // int snd3dsMixSamples to wait for an incorrect amount of time, causing 
+        // the sound to stop for a long time.
+        //
+        if (snd3DS.isPlaying)
+            snd3dsMixSamples();
     }
     snd3DS.terminateMixingThread = -1;
     svcExitThread();
@@ -225,7 +239,8 @@ void snd3dsStartPlaying()
         // clear the buffers to prevent any left over sound from playing
         // again.
         //
-        memset(snd3DS.fullBuffers, 0, sizeof(snd3dsSampleRate * 2 * 2));
+        memset(snd3DS.fullBuffers, 0, sizeof(SAMPLEBUFFER_SIZE * 2 * 2));
+        GSPGPU_FlushDataCache(snd3DS.fullBuffers, SAMPLEBUFFER_SIZE * 2 * 2);
         
         // CSND
         // Fix: Copied libctru's csndPlaySound and modified it so that it will
@@ -245,7 +260,9 @@ void snd3dsStartPlaying()
         // Flush CSND command buffers
         csndExecCmds(true);
         snd3DS.startTick = svcGetSystemTick();
-        snd3DS.upToSamplePosition = 0;
+
+        // Fix for race condition for 64-bit access in the sound thread.
+        snd3DS.upToSamplePosition = snd3dsGetSamplePosition();  
         snd3DS.isPlaying = true;
     }
 }
@@ -258,12 +275,12 @@ void snd3dsStopPlaying()
 {
     if (snd3DS.isPlaying)
     {
+        snd3DS.isPlaying = false;
         CSND_SetPlayState(LEFT_CHANNEL, 0);
         CSND_SetPlayState(RIGHT_CHANNEL, 0);
 
         // Flush CSND command buffers
         csndExecCmds(true);
-        snd3DS.isPlaying = false;
     }
 }
 
@@ -319,10 +336,10 @@ bool snd3dsInitialize()
 
     // Initialize the sound buffers
     //
-    snd3DS.fullBuffers = (short *)linearAlloc(44100 * 2 * 2);
+    snd3DS.fullBuffers = (short *)linearAlloc(SAMPLEBUFFER_SIZE * 2 * 2);
 	snd3DS.leftBuffer = &snd3DS.fullBuffers[0];
-	snd3DS.rightBuffer = &snd3DS.fullBuffers[44100];
-    memset(snd3DS.fullBuffers, 0, sizeof(snd3dsSampleRate * 2 * 2));
+	snd3DS.rightBuffer = &snd3DS.fullBuffers[SAMPLEBUFFER_SIZE];
+    memset(snd3DS.fullBuffers, 0, sizeof(SAMPLEBUFFER_SIZE * 2 * 2));
 
     if (!snd3DS.fullBuffers)
     {
