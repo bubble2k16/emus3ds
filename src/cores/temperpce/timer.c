@@ -95,7 +95,7 @@ typedef struct
 extern SEmulator emulator;
 */
 
-void execute_instructions_timer(s32 cpu_cycles_remaining)
+void execute_instructions_timer(s32 cpu_cycles_remaining, bool emulateCDHardware)
 {
   if(timer.cycles_remaining < cpu_cycles_remaining)
   {
@@ -117,9 +117,19 @@ void execute_instructions_timer(s32 cpu_cycles_remaining)
     execute_instructions_select(cpu_cycles_remaining);
   }
 
-  update_cd_read();
-  update_adpcm_dma();
-  update_adpcm();
+  // This saves some precious CPU processes for non-CD games.
+  // And the 'startOfScanline' flag allows us to process
+  // CD and ADPCM commands once every scanline, instead of twice.
+  // 
+  // Here's hoping it doesn't break games with sensitive timing
+  // to the ADPCM/CD commands.
+  //
+  if (config.cd_loaded && emulateCDHardware)
+  {
+    update_cd_read();
+    update_adpcm_dma();
+    update_adpcm();
+  }
 
   //printf ("%lld\n", cpu.global_cycles);
   //DEBUG_WAIT_L_KEY

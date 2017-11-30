@@ -2997,7 +2997,7 @@ void update_frame_execute(u32 skip)
 
     hds_cycles = vdc_a.hds_cycles;
 
-    execute_instructions_timer(hds_cycles);
+    execute_instructions_timer(hds_cycles, false);
 
     vdc_set_effective_byr(&vdc_a);
 
@@ -3019,7 +3019,7 @@ void update_frame_execute(u32 skip)
 
       vdc_a.status |= VDC_STATUS_VBLANK_IRQ;
 
-      execute_instructions_timer(6);
+      execute_instructions_timer(6, false);
       hds_cycles += 6;
 
       if(vdc_a.status & VDC_STATUS_VBLANK_IRQ)
@@ -3027,7 +3027,7 @@ void update_frame_execute(u32 skip)
     }
 
     // Active display
-    execute_instructions_timer(vce.scanline_cycles - hds_cycles);
+    execute_instructions_timer(vce.scanline_cycles - hds_cycles, true);
 
     vdc_line_increment(&vdc_a);
 
@@ -3035,6 +3035,10 @@ void update_frame_execute(u32 skip)
 
     if(vce.frame_counter == vce.num_lines)
       vce.frame_counter = 0;
+
+//FILE *fp = fopen("out.txt", "a");
+//fprintf(fp, "  SL %d\n", vce.frame_counter);
+//fclose(fp);
 
   } while(vce.frame_counter != vdc_a.vblank_line);
 
@@ -3095,7 +3099,7 @@ void update_frame_execute_sgx(u32 skip)
 
     hds_cycles = vdc_a.hds_cycles;
 
-    execute_instructions_timer(hds_cycles);
+    execute_instructions_timer(hds_cycles, false);
 
     vdc_set_effective_byr(&vdc_a);
     vdc_set_effective_byr(&vdc_b);
@@ -3114,7 +3118,7 @@ void update_frame_execute_sgx(u32 skip)
 
       vdc_a.status |= VDC_STATUS_VBLANK_IRQ;
 
-      execute_instructions_timer(6);
+      execute_instructions_timer(6, false);
       hds_cycles += 6;
 
       if(vdc_a.status & VDC_STATUS_VBLANK_IRQ)
@@ -3130,7 +3134,7 @@ void update_frame_execute_sgx(u32 skip)
     }
 
     // Active display
-    execute_instructions_timer(vce.scanline_cycles - hds_cycles);
+    execute_instructions_timer(vce.scanline_cycles - hds_cycles, true);
 
     vdc_line_increment(&vdc_a);
     vdc_line_increment(&vdc_b);
