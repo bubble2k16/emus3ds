@@ -372,13 +372,25 @@
 #define fetch_8bit_ldrb(dest)                                                 \
   ldrb dest, [reg_code_page, reg_tr_pc, ror #19];                             \
   adds reg_tr_pc, reg_tr_pc, #(1 << 19);                                      \
-  blcs adjust_pc_plus                                                         \
+  /* critical bug fix: when there's an overflow, bl destroys r14, which       \
+     some instructions like op_jmp uses (reg_t1) to fetch_16bit! */           \
+  bcc 0f;                                                                     \
+  stmdb sp!, { r14 };                                                         \
+  bl adjust_pc_plus;                                                          \
+  ldmia sp!, { r14 };                                                         \
+0:                                                                            \
 
 #define fetch_8bit_ldrsb(dest)                                                \
   add dest, reg_code_page, reg_tr_pc, ror #19;                                \
   ldrsb dest, [dest];                                                         \
   adds reg_tr_pc, reg_tr_pc, #(1 << 19);                                      \
-  blcs adjust_pc_plus                                                         \
+  /* critical bug fix: when there's an overflow, bl destroys r14, which       \
+     some instructions like op_jmp uses (reg_t1) to fetch_16bit! */           \
+  bcc 0f;                                                                     \
+  stmdb sp!, { r14 };                                                         \
+  blcs adjust_pc_plus;                                                        \
+  ldmia sp!, { r14 };                                                          \
+0:                                                                            \
 
 #define fetch_8bit(dest, ld_type)                                             \
   fetch_8bit_##ld_type(dest)                                                  \
