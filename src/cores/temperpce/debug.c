@@ -34,8 +34,23 @@ void print_stack()
   print_segment(mpr_translate_offset(memory.mpr_translated[1], 0x2100));
 }
 
+
 void print_debug(int a, int x, int y, int p, int s, int pc, u32 remaining)
 {
+  //return ;
+
+  u8 disasm_output[500];
+  int oldpc = pc;
+  disasm_instruction(disasm_output, &pc); 
+
+  if (1==1)
+  {
+    FILE *fp = fopen("out.txt", "a");
+    fprintf (fp, "%4x: %-15s A%02X X%02X Y%02X S%02X t:%d\n", oldpc, disasm_output, a, x, y, s, remaining); 
+    fclose (fp);
+  }
+
+  /*
   char disasm[128];
   char flags_str[] = "--------";
   char *flags_set = "nvtbdizc";
@@ -64,7 +79,7 @@ void print_debug(int a, int x, int y, int p, int s, int pc, u32 remaining)
   printf("\n%x instructions in (%d cycles until break) (line %d)"
    " (irq %x:%x)",
    debug.instruction_count, remaining, vce.frame_counter,
-   irq.status, cpu.irq_raised);
+   irq.status, cpu.irq_raised);*/
 }
 
 
@@ -184,7 +199,7 @@ void step_debug(int a, int x, int y, int p, int s, int pc, int remaining)
   if(should_print_debug)
   {
     print_debug(a, x, y, p, s, pc, remaining);
-    printf("\n");
+    //printf("\n");
   }
 
   if(should_break)
