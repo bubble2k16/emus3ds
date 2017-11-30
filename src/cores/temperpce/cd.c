@@ -913,7 +913,7 @@ void reset_cd()
 
   memset(cd.command_buffer, 0, 16);
 
-  memset(cd.audio_buffer, 0, CD_AUDIO_BUFFER_SIZE);
+  memset(cd.audio_buffer, 0, CD_AUDIO_BUFFER_SIZE * 4);
 
   cd.last_read_cycles = 0;
   cd.last_cdda_cycles = 0;
@@ -1032,7 +1032,7 @@ void update_cd_read()
 #include "3dsopt.h"
 void update_cdda()
 {
-  t3dsStartTiming(60, "update_cdda");
+  //t3dsStartTiming(60, "update_cdda");
   s32 audio_buffer_index = cd.cdda_audio_buffer_index;
   
   s64 clock_delta =
@@ -1071,7 +1071,7 @@ void update_cdda()
     // Check if we are generating too slowly, if so,
     // we generate samples 1 sec later.
     //
-    if (clock_delta >= 0)
+    /*if (clock_delta >= 0)
     {
       int cd_diff = audio_buffer_index - cd.cdda_audio_read_buffer_index;
       if (cd_diff < 0)
@@ -1086,7 +1086,7 @@ void update_cdda()
           audio_buffer_index = (audio_buffer_index + 2) % CD_AUDIO_BUFFER_SIZE;
         }
       }
-    }
+    }*/
 
     while(clock_delta >= 0)
     {
@@ -1156,15 +1156,12 @@ void update_cdda()
        (audio_buffer_index + 2) % CD_AUDIO_BUFFER_SIZE;
 
       // If we are too fast, hold on for a while
-      // (16 1ms is about 1 frame).
-
-      if (emulator.isReal3DS)
+      if (emulator.isReal3DS && !emulator.fastForwarding)
       {
-        int wait_count = 16;
+        int wait_count = 64;
         while (audio_buffer_index == cd.cdda_audio_read_buffer_index && wait_count)
         {
-          // Wait 1 ms
-          svcSleepThread((long)1000000);
+          svcSleepThread((long)100000);
           wait_count--;
           //printf (".");
         }
@@ -1194,7 +1191,7 @@ void update_cdda()
 
   cd.cdda_audio_buffer_index = audio_buffer_index;
 
-  t3dsEndTiming(60);
+  //t3dsEndTiming(60);
 }
 
 void save_bram(char *path)

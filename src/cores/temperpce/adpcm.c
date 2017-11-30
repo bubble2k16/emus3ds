@@ -16,7 +16,7 @@ u16 adpcm_step_values[49] =
 
 s32 adpcm_table_move[8] = { -1, -1, -1, -1, 2, 4, 6, 8 };
 
-s32 adpcm_convert_sample(u32 adpcm_code)
+inline __attribute__((always_inline)) s32 adpcm_convert_sample(u32 adpcm_code)
 {
   s32 step_index = adpcm.step_index;
   u32 step_value = adpcm_step_values[step_index];
@@ -265,7 +265,7 @@ void close_adpcm()
 void reset_adpcm()
 {
   memset(adpcm.sample_ram, 0, 64 * 1024);
-  memset(adpcm.audio_buffer, 0, ADPCM_AUDIO_BUFFER_SIZE);
+  memset(adpcm.audio_buffer, 0, ADPCM_AUDIO_BUFFER_SIZE * 4);
 
   adpcm.last_cycles = 0;
   adpcm.last_dma_cycles = 0;
@@ -340,24 +340,23 @@ void update_adpcm_dma()
 
 void update_adpcm()
 {
-  //t3dsStartTiming(61, "update_adpcm");
-  u32 clock_delta =
+  s32 clock_delta =
    (cpu.global_cycles << step_fractional_bits_clock) - adpcm.last_cycles;
 
   if(clock_delta < 0)
   {
-    //t3dsEndTiming(61);
     return;
   }
 
-  s32 clocks_remaining = clock_delta;
-  s32 samples_remaining = adpcm.sample_length;
-  u32 frequency_step = adpcm.frequency_step;
+  //t3dsStartTiming(61, "update_adpcm");
+  register s32 clocks_remaining = clock_delta;
+  register s32 samples_remaining = adpcm.sample_length;
+  register u32 frequency_step = adpcm.frequency_step;
 
-  u32 sample_index = adpcm.sample_read_address;
-  u32 sample_index_fractional = adpcm.sample_index_fractional;
+  register u32 sample_index = adpcm.sample_read_address;
+  register u32 sample_index_fractional = adpcm.sample_index_fractional;
 
-  u32 audio_buffer_index = adpcm.audio_buffer_index;
+  register u32 audio_buffer_index = adpcm.audio_buffer_index;
   s32 *audio_buffer = audio.buffer;
   u8 *sample_ram = adpcm.sample_ram;
   u32 current_adpcm_code;
@@ -372,7 +371,7 @@ void update_adpcm()
     // Check if we are generating too slowly, if so,
     // we generate samples 1 sec later.
     //
-    if ((samples_remaining > 0) && (clocks_remaining >= 0))
+    /*if ((samples_remaining > 0) && (clocks_remaining >= 0))
     {
       int adpcm_diff = audio_buffer_index - adpcm.audio_read_buffer_index;
       if (adpcm_diff < 0)
@@ -387,8 +386,9 @@ void update_adpcm()
           audio_buffer_index = (audio_buffer_index + 2) % ADPCM_AUDIO_BUFFER_SIZE;
         }
       }
-    }
+    }*/
 
+    //t3dsStartTiming(62, "update_adpcm:freq");
     while((samples_remaining > 0) && (clocks_remaining >= 0))
     {
       sample_index = (sample_index + 1) & 0x1FFFF;
@@ -425,8 +425,10 @@ void update_adpcm()
 
         //audio_buffer[audio_buffer_index] += dest_sample;
         //audio_buffer[audio_buffer_index + 1] += dest_sample;
+
+        // since there's no stereo panning, we just write 1 value to save some time.
         adpcm.audio_buffer[audio_buffer_index] = dest_sample;
-        adpcm.audio_buffer[audio_buffer_index + 1] = dest_sample;
+        //adpcm.audio_buffer[audio_buffer_index + 1] = dest_sample; 
         adpcm.has_samples = true;
 
         //printf ("adpcm: %04x %04x\n", dest_sample, dest_sample);
@@ -436,16 +438,17 @@ void update_adpcm()
          (audio_buffer_index + 2) % ADPCM_AUDIO_BUFFER_SIZE;
 
         // If we are too fast, hold on for a while
-        // (16 1ms is about 1 frame).
-        if (emulator.isReal3DS)
+        if (audio_buffer_index == adpcm.audio_read_buffer_index)  // doing this here saves a bit of time.
         {
-          int wait_count = 16;
-          while (audio_buffer_index == adpcm.audio_read_buffer_index)
+          if (emulator.isReal3DS && !emulator.fastForwarding)
           {
-            // Wait 1 ms
-            svcSleepThread((long)1000000);
-            wait_count--;
-            //printf (".");
+            int wait_count = 64;
+            while (audio_buffer_index == adpcm.audio_read_buffer_index && wait_count)
+            {
+              // Wait 1 ms
+              svcSleepThread((long)100000);
+              wait_count--;
+            }
           }
         }
 
@@ -457,6 +460,7 @@ void update_adpcm()
       samples_remaining--;
       sample_index_fractional &= ((1 << step_fractional_bits_frequency) - 1);
     }
+    //t3dsEndTiming(62);
 
     adpcm.sample_length = samples_remaining;
     adpcm.sample_read_address = sample_index;
