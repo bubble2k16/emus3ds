@@ -31,7 +31,7 @@ typedef struct
 } SMenuTab;
 
 
-SMenuTab            menuTab[4];
+SMenuTab            menuTab[5];
 SMenuTab            dialogTab;
 
 int                 menuTabCount;
@@ -305,14 +305,16 @@ void menu3dsDrawMenu(int menuItemFrame, int translateY)
 
     // Draw the tabs at the top
     //
+    int tabWidth = 300 / menuTabCount;
+    int tabPadding = (320 - tabWidth * menuTabCount) / 2;
     for (int i = 0; i < menuTabCount; i++)
     {
         int color = i == currentMenuTab ? 0xFFFFFF : 0x90CAF9 ;
-        ui3dsDrawStringWithNoWrapping(i * 75 + 10, 6, (i+1)*75 + 10, 21, color, HALIGN_CENTER, 
+        ui3dsDrawStringWithNoWrapping(i * tabWidth + tabPadding, 6, (i+1)*tabWidth + tabPadding, 21, color, HALIGN_CENTER, 
             menuTab[i].Title);
 
         if (i == currentMenuTab)
-            ui3dsDrawRect(i * 75 + 10, 21, (i+1)*75 + 10, 24, 0xFFFFFF);
+            ui3dsDrawRect(i * tabWidth + tabPadding, 21, (i+1)*tabWidth + tabPadding, 24, 0xFFFFFF);
     }
 
     // Shadows
@@ -320,10 +322,67 @@ void menu3dsDrawMenu(int menuItemFrame, int translateY)
     //ui3dsDrawRect(0, 24, 320, 25, 0xcccccc);
     //ui3dsDrawRect(0, 25, 320, 27, 0xeeeeee);
 
-    ui3dsDrawStringWithNoWrapping(10, 223, 310, 240, 0xFFFFFF, HALIGN_LEFT,
+    ui3dsDrawStringWithNoWrapping(10, 223, 285, 240, 0xFFFFFF, HALIGN_LEFT,
         "A:Select  B:Cancel");
-    ui3dsDrawStringWithNoWrapping(10, 223, 310, 240, 0xFFFFFF, HALIGN_RIGHT,
+    ui3dsDrawStringWithNoWrapping(10, 223, 285, 240, 0xFFFFFF, HALIGN_RIGHT,
         impl3dsTitleText);
+
+    //battery display
+    const int maxBatteryLevel = 5;
+    const int battLevelWidth = 3;
+    const int battFullLevelWidth = (maxBatteryLevel) * battLevelWidth + 1;
+    const int battBorderWidth = 1;
+    const int battY1 = 226;
+    const int battY2 = 233;
+    const int battX2 = 311;
+    const int battYHeight = battY2 - battY1;
+    const int battHeadWidth = 2;
+    const int battHeadSpacing = 1;
+
+    // battery positive end
+    ui3dsDrawRect(
+        battX2 - battFullLevelWidth - battBorderWidth - battHeadWidth, 
+        battY1 + battHeadSpacing, 
+        battX2 - battFullLevelWidth - battBorderWidth, 
+        battY2 - battHeadSpacing, 
+        0xFFFFFF, 1.0f);
+    // battery body
+    ui3dsDrawRect(
+        battX2 - battFullLevelWidth - battBorderWidth, 
+        battY1 - battBorderWidth, 
+        battX2 + battBorderWidth, 
+        battY2 + battBorderWidth, 
+        0xFFFFFF, 1.0f);
+    // battery's empty insides
+    ui3dsDrawRect(
+        battX2 - battFullLevelWidth, 
+        battY1, 
+        battX2, 
+        battY2, 
+        0x1976D2, 1.0f);
+    
+    ptmuInit();
+    
+    u8 batteryChargeState = 0;
+    u8 batteryLevel = 0;
+    if(R_SUCCEEDED(PTMU_GetBatteryChargeState(&batteryChargeState)) && batteryChargeState) {
+        ui3dsDrawRect(
+            battX2-battFullLevelWidth + 1, battY1 + 1, 
+            battX2 - 1, battY2 - 1, 0xFF9900, 1.0f);
+    } else if(R_SUCCEEDED(PTMU_GetBatteryLevel(&batteryLevel))) {
+        if (batteryLevel > 5)
+            batteryLevel = 5;
+        for (int i = 0; i < batteryLevel; i++)
+        {
+            ui3dsDrawRect(
+                battX2-battLevelWidth*(i+1), battY1 + 1, 
+                battX2-battLevelWidth*(i) - 1, battY2 - 1, 0xFFFFFF, 1.0f);
+        }
+    } else {
+        //ui3dsDrawRect(battX2, battY1, battX2, battY2, 0xFFFFFF, 1.0f);
+    }
+ 
+    ptmuExit();        
 
     int line = 0;
     int maxItems = MENU_HEIGHT;
@@ -672,6 +731,7 @@ int menu3dsMenuSelectItem(bool (*itemChangedCallback)(int ID, int value))
                     );
                 if (resultValue != -1)
                 {
+                    currentTab->MenuItems[currentTab->SelectedItemIndex].Value = resultValue;
                     if (itemChangedCallback)
                     {
                         bool returnFromMenu = itemChangedCallback(currentTab->MenuItems[currentTab->SelectedItemIndex].ID, resultValue);
@@ -682,7 +742,6 @@ int menu3dsMenuSelectItem(bool (*itemChangedCallback)(int ID, int value))
                             return -1;
                         }
                     }
-                    currentTab->MenuItems[currentTab->SelectedItemIndex].Value = resultValue;
                 }
                 menu3dsDrawEverything();
                 menu3dsHideDialog();
@@ -706,6 +765,9 @@ int menu3dsMenuSelectItem(bool (*itemChangedCallback)(int ID, int value))
                     if (currentTab->SelectedItemIndex < 0)
                     {
                         currentTab->SelectedItemIndex = currentTab->ItemCount - 1;
+                        currentTab->FirstItemIndex = currentTab->ItemCount - maxItems;
+                        if (currentTab->FirstItemIndex < 0)
+                            currentTab->FirstItemIndex = 0;
                     }
                 }
                 moveCursorTimes++;
@@ -869,14 +931,33 @@ void menu3dsSetSelectedItemIndexByID(int tabIndex, int ID)
 //-------------------------------------------------------
 void menu3dsSetValueByID(int tabIndex, int ID, int value)
 {
-    SMenuTab *currentTab = &menuTab[tabIndex];
-
-    for (int i = 0; i < currentTab->ItemCount; i++)
+    if (tabIndex == -1)
     {
-        if (currentTab->MenuItems[i].ID == ID)
+        for (int j = 0; j < menuTabCount; j++)
         {
-            currentTab->MenuItems[i].Value = value;
-            break;
+            SMenuTab *currentTab = &menuTab[j];
+
+            for (int i = 0; i < currentTab->ItemCount; i++)
+            {
+                if (currentTab->MenuItems[i].ID == ID)
+                {
+                    currentTab->MenuItems[i].Value = value;
+                    break;
+                }
+            }
+        }
+    }
+    else
+    {
+        SMenuTab *currentTab = &menuTab[tabIndex];
+
+        for (int i = 0; i < currentTab->ItemCount; i++)
+        {
+            if (currentTab->MenuItems[i].ID == ID)
+            {
+                currentTab->MenuItems[i].Value = value;
+                break;
+            }
         }
     }
 }
@@ -887,13 +968,31 @@ void menu3dsSetValueByID(int tabIndex, int ID, int value)
 //-------------------------------------------------------
 int menu3dsGetValueByID(int tabIndex, int ID)
 {
-    SMenuTab *currentTab = &menuTab[tabIndex];
-
-    for (int i = 0; i < currentTab->ItemCount; i++)
+    if (tabIndex == -1)
     {
-        if (currentTab->MenuItems[i].ID == ID)
+        for (int j = 0; j < menuTabCount; j++)
         {
-            return currentTab->MenuItems[i].Value;
+            SMenuTab *currentTab = &menuTab[j];
+
+            for (int i = 0; i < currentTab->ItemCount; i++)
+            {
+                if (currentTab->MenuItems[i].ID == ID)
+                {
+                    return currentTab->MenuItems[i].Value;
+                }
+            }
+        }
+    }
+    else
+    {
+        SMenuTab *currentTab = &menuTab[tabIndex];
+
+        for (int i = 0; i < currentTab->ItemCount; i++)
+        {
+            if (currentTab->MenuItems[i].ID == ID)
+            {
+                return currentTab->MenuItems[i].Value;
+            }
         }
     }
     return -1;
