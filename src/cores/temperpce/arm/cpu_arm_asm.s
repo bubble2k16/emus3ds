@@ -373,7 +373,8 @@
   ldrb dest, [reg_code_page, reg_tr_pc, ror #19];                             \
   adds reg_tr_pc, reg_tr_pc, #(1 << 19);                                      \
   /* critical bug fix: when there's an overflow, bl destroys r14, which       \
-     some instructions like op_jmp uses (reg_t1) to fetch_16bit! */           \
+     some instructions like op_jmp uses (reg_t1) to fetch_16bit!              \
+     Games like 1943 Kai locks up due to this bug. */                         \
   bcc 0f;                                                                     \
   stmdb sp!, { r14 };                                                         \
   bl adjust_pc_plus;                                                          \
@@ -385,7 +386,8 @@
   ldrsb dest, [dest];                                                         \
   adds reg_tr_pc, reg_tr_pc, #(1 << 19);                                      \
   /* critical bug fix: when there's an overflow, bl destroys r14, which       \
-     some instructions like op_jmp uses (reg_t1) to fetch_16bit! */           \
+     some instructions like op_jmp uses (reg_t1) to fetch_16bit!              \
+     Games like 1943 Kai locks up due to this bug. */                         \
   bcc 0f;                                                                     \
   stmdb sp!, { r14 };                                                         \
   blcs adjust_pc_plus;                                                        \
