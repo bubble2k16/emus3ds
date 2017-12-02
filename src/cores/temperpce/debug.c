@@ -128,6 +128,9 @@ u32 parse_commands(char *command, char **commands, u32 max_commands)
 
 void step_debug(int a, int x, int y, int p, int s, int pc, int remaining)
 {
+  print_debug(a, x, y, p, s, pc, remaining);
+  return;
+  
   // Moved here for a slight speedup, but rearranging the header in the ASM
   // will help more.
 
