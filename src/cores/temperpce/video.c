@@ -1,5 +1,6 @@
 #include "common.h"
 #include "palette.h"
+#include "3dsdbg.h"
 #include "3dsopt.h"
 #include "3dsemu.h"
 
@@ -811,6 +812,8 @@ void vce_data_write_low(u32 value)
 
   if (vce.palette[vce.palette_offset] != palette_entry)
   {
+    render_line_force_flush();
+    
     vce.palette[vce.palette_offset] = palette_entry;
 
     if(((vce.palette_offset & 0x0F) == 0) && (vce.palette_offset < 0x100))
@@ -857,6 +860,8 @@ void vce_data_write_high(u32 value)
 
   if (vce.palette[vce.palette_offset] != palette_entry)
   {
+    render_line_force_flush();
+
     vce.palette[vce.palette_offset] = palette_entry;
 
     if(((vce.palette_offset & 0x0F) == 0) && (vce.palette_offset < 0x100))
@@ -2954,6 +2959,8 @@ void vdc_line_increment(vdc_struct *vdc)
 
 void update_frame_execute(u32 skip)
 {
+  vdc_hw_a.skip = skip;
+  
   s32 hds_cycles;
 
   static u32 check_idle_loop_line = 0;
@@ -2963,6 +2970,8 @@ void update_frame_execute(u32 skip)
 
   do
   {
+    vdc_hw_a.force_flush = false;
+
     if(check_idle_loops && (vce.frame_counter == check_idle_loop_line))
     {
       patch_idle_loop();
@@ -3036,10 +3045,6 @@ void update_frame_execute(u32 skip)
     if(vce.frame_counter == vce.num_lines)
       vce.frame_counter = 0;
 
-//FILE *fp = fopen("out.txt", "a");
-//fprintf(fp, "  SL %d\n", vce.frame_counter);
-//fclose(fp);
-
   } while(vce.frame_counter != vdc_a.vblank_line);
 
   check_idle_loop_line += 16;
@@ -3049,6 +3054,9 @@ void update_frame_execute(u32 skip)
 
 void update_frame_execute_sgx(u32 skip)
 {
+  vdc_hw_a.skip = skip;
+  vdc_hw_b.skip = skip;
+
   s32 hds_cycles;
 
   static u32 check_idle_loop_line = 0;
@@ -3058,6 +3066,8 @@ void update_frame_execute_sgx(u32 skip)
 
   do
   {
+    vdc_hw_a.force_flush = false;
+    
     if(check_idle_loops && (vce.frame_counter == check_idle_loop_line))
     {
       patch_idle_loop();

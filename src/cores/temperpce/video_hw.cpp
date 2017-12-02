@@ -3,6 +3,7 @@
 #include "common.h"
 
 #include "3dsgpu.h"
+#include "3dsdbg.h"
 #include "3dsimpl_gpu.h"
 #include "3dsimpl_tilecache.h"
 #include "3dsopt.h"
@@ -129,6 +130,9 @@ inline void render_bg_tile (
 
 void render_bg_block(int start_y, int end_y, int offset_y, vdc_struct *vdc, vdc_hw_struct *vdc_hw)
 {
+    if (start_y < 0)
+        start_y = 0;
+
     s32 bg_offset[4] = { 32, 64, 104, 104 };
     
     u16 *bat_offset;
@@ -395,6 +399,9 @@ int spr_y4[4][2] = {
 
 void render_spr_block(int start_y, int end_y, int offset_y, vdc_struct *vdc, vdc_hw_struct *vdc_hw)
 {
+    if (start_y < 0)
+        start_y = 0;
+
     u32 bg_offset[4] = { -16, -32, -88, -88 };
     u32 spr_offset[4] = { 0, -8, -16, -16 };
     //s32 scanline_offset = bg_offset[vce.control & 0x3] + (vdc->hds * 8);;
@@ -495,6 +502,8 @@ void render_spr_block(int start_y, int end_y, int offset_y, vdc_struct *vdc, vdc
 
 void render_clear_screen_hw(int start_y, int end_y)
 {
+    if (start_y < 0)
+        start_y = 0;
     u32 back_color = vce.palette_cache[0] | 0xff;
     
     gpu3dsDisableAlphaTest();
@@ -506,6 +515,8 @@ void render_clear_screen_hw(int start_y, int end_y)
 
 void render_clear_screen_to_black_hw(int start_y, int end_y)
 {
+    if (start_y < 0)
+        start_y = 0;
     gpu3dsDisableAlphaTest();
     gpu3dsDisableDepthTest();
     gpu3dsSetTextureEnvironmentReplaceColor();
@@ -792,14 +803,17 @@ void vdc_check_line_hw(vdc_struct *vdc)
 
 void copy_line_data(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
 {
+    u32 scanline_line = vce.frame_counter - 14;
+
+    if (vdc_hw->start_render_line == scanline_line)
+        return;
+
     vdc_hw->prev_hdw = vdc_hw->cur_hdw;
     vdc_hw->prev_hds = vdc_hw->cur_hds;
     vdc_hw->prev_hsw = vdc_hw->cur_hsw;
     vdc_hw->prev_spr = vdc_hw->cur_spr;
     vdc_hw->prev_bg  = vdc_hw->cur_bg;
     vdc_hw->prev_vblank  = vdc_hw->cur_vblank;
-
-    u32 scanline_line = vce.frame_counter - 14;
 
     //if (scanline_line >= 0 && scanline_line <= 240)
     {
@@ -828,7 +842,8 @@ void copy_line_data(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
             vdc_hw->cur_bg = 0;
         }
 
-        if ((vdc_hw->prev_vblank != vdc_hw->cur_vblank) ||
+        if (vdc_hw->force_flush ||
+            (vdc_hw->prev_vblank != vdc_hw->cur_vblank) ||
             (vdc_hw->prev_bg != vdc_hw->cur_bg) ||
             (vdc_hw->prev_spr != vdc_hw->cur_spr) ||
             (vdc_hw->prev_hdw != vdc_hw->cur_hdw) ||
@@ -839,7 +854,11 @@ void copy_line_data(vdc_struct *vdc, vdc_hw_struct *vdc_hw)
             vsectCommit(&screenWidthVerticalSection, scanline_line);
             vsectUpdateValue(&screenWidthVerticalSection, scanline_line + 1, get_horizontal_width(vdc), vdc->hds, vdc->hsw);
 
+            //printf("y=%3d %04x %04x %04x\n", scanline_line, vpc.window_status, vpc.window1_value, vpc.window2_value);
+
             render_flush(vdc, vdc_hw, true);
+
+            vdc_hw->force_flush = false;
         }
     }
 }
@@ -848,6 +867,11 @@ void copy_line_data_sgx(
     vdc_struct *vdc, vdc_hw_struct *vdc_hw,
     vdc_struct *vdc_b, vdc_hw_struct *vdc_b_hw)
 {
+    u32 scanline_line = vce.frame_counter - 14;
+
+    if (vdc_hw->start_render_line == scanline_line)
+        return;
+
     vdc_hw->prev_hdw = vdc_hw->cur_hdw;
     vdc_hw->prev_hds = vdc_hw->cur_hds;
     vdc_hw->prev_hsw = vdc_hw->cur_hsw;
@@ -861,8 +885,6 @@ void copy_line_data_sgx(
     vdc_b_hw->prev_spr = vdc_b_hw->cur_spr;
     vdc_b_hw->prev_bg  = vdc_b_hw->cur_bg;
     vdc_b_hw->prev_vblank  = vdc_b_hw->cur_vblank;
-
-    u32 scanline_line = vce.frame_counter - 14;
 
     //if (scanline_line >= 0 && scanline_line <= 240)
     {
@@ -916,7 +938,7 @@ void copy_line_data_sgx(
             vdc_b_hw->cur_bg = 0;
         }        
 
-        if (
+        if (vdc_hw->force_flush ||
             (vdc_hw->prev_vblank != vdc_hw->cur_vblank) ||
             (vdc_hw->prev_bg != vdc_hw->cur_bg) ||
             (vdc_hw->prev_spr != vdc_hw->cur_spr) ||
@@ -968,6 +990,8 @@ void copy_line_data_sgx(
             spr_depth[1] = 8 << 8;
 
             render_flush(vdc, vdc_hw, false);
+
+            vdc_hw->force_flush = false;
         }
     }
 }
@@ -976,8 +1000,13 @@ void render_line_hw(void)
 {
     if (vce.frame_counter == 0)
     {
-        vdc_hw_a.start_render_line = 0; 
+        vdc_hw_a.start_render_line = -100; 
     }
+
+    u32 scanline_line = vce.frame_counter - 14;
+
+    if (vdc_hw_a.start_render_line == scanline_line)
+        return;
 
     if (vce.frame_counter == 13)
     {
@@ -997,9 +1026,14 @@ void render_line_sgx_hw(void)
 {
     if (vce.frame_counter == 0)
     {
-        vdc_hw_b.start_render_line = 0; 
-        vdc_hw_a.start_render_line = 0; 
+        vdc_hw_b.start_render_line = -100; 
+        vdc_hw_a.start_render_line = -100; 
     }
+
+    u32 scanline_line = vce.frame_counter - 14;
+
+    if (vdc_hw_a.start_render_line == scanline_line)
+        return;
 
     if (vce.frame_counter == 13)
     {
@@ -1013,6 +1047,18 @@ void render_line_sgx_hw(void)
         vdc_check_line_hw (&vdc_b);
         vdc_check_line_hw (&vdc_a);
     }
+}
 
 
+void render_line_force_flush(void)
+{
+    if (!vdc_hw_a.skip)
+    {
+        vdc_hw_a.force_flush = true;
+
+        if(config.sgx_mode)
+            render_line_sgx_hw();
+        else
+            render_line_hw();
+    }
 }
