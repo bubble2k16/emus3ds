@@ -543,8 +543,8 @@ void impl3dsEmulationBegin()
 
 
 u32 prevConsoleJoyPad;
-u32 prevConsoleButtonPressed[6];
-u32 buttons3dsPressed[6];
+u32 prevConsoleButtonPressed[10];
+u32 buttons3dsPressed[10];
 void impl3dsEmulationPollInput()
 {
 	u32 keysHeld3ds = input3dsGetCurrentKeysHeld();
