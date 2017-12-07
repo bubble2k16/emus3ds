@@ -34,6 +34,21 @@ void print_stack()
   print_segment(mpr_translate_offset(memory.mpr_translated[1], 0x2100));
 }
 
+#define load_mem_dbg(dest, address)                                               \
+{                                                                             \
+  u32 _address = address;                                                     \
+  u8 *mpr_translated_value = memory.mpr_translated[_address >> 13];           \
+                                                                              \
+  if(!mpr_check_ext(mpr_translated_value))                                    \
+  {                                                                           \
+    dest = mpr_translate(mpr_translated_value, _address);                     \
+  }                                                                           \
+  else                                                                        \
+  {                                                                           \
+    mpr_translate_ext_read(mpr_translated_value, _address, dest);             \
+  }                                                                           \
+}                                                                             \
+
 
 void print_debug(int a, int x, int y, int p, int s, int pc, u32 remaining)
 {
@@ -126,6 +141,7 @@ u32 parse_commands(char *command, char **commands, u32 max_commands)
 #define lhex_arg(num)                                                         \
   strtoll(commands[num + 1], NULL, 16)                                        \
 
+extern int emulatorFrame;
 void step_debug(int a, int x, int y, int p, int s, int pc, int remaining)
 {
   print_debug(a, x, y, p, s, pc, remaining);
