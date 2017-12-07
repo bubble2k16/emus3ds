@@ -1505,7 +1505,7 @@ else                                                                          \
   }                                                                           \
   else                                                                        \
   {                                                                           \
-  /* this missing part of the TII instruction */                              \
+  /* this missing part of the TIA instruction */                              \
   dest_ptr = mpr_translate_offset(dest_ptr, dest);                            \
   length -= 2;                                                                \
                                                                               \
