@@ -1052,7 +1052,7 @@ void render_line_sgx_hw(void)
 
 void render_line_force_flush(void)
 {
-    if (!vdc_hw_a.skip)
+    if (config.palette_change_forces_flush && !vdc_hw_a.skip)
     {
         vdc_hw_a.force_flush = true;
 
