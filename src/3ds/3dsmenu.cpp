@@ -1004,13 +1004,32 @@ int menu3dsGetValueByID(int tabIndex, int ID)
 //-------------------------------------------------------
 SMenuItem* menu3dsGetMenuItemByID(int tabIndex, int ID)
 {
-    SMenuTab *currentTab = &menuTab[tabIndex];
-
-    for (int i = 0; i < currentTab->ItemCount; i++)
+    if (tabIndex == -1)
     {
-        if (currentTab->MenuItems[i].ID == ID)
+        for (int j = 0; j < menuTabCount; j++)
         {
-            return &currentTab->MenuItems[i];
+            SMenuTab *currentTab = &menuTab[j];
+
+            for (int i = 0; i < currentTab->ItemCount; i++)
+            {
+                if (currentTab->MenuItems[i].ID == ID)
+                {
+                    return &currentTab->MenuItems[i];
+                }
+            }
+        }
+
+    }
+    else
+    {
+        SMenuTab *currentTab = &menuTab[tabIndex];
+
+        for (int i = 0; i < currentTab->ItemCount; i++)
+        {
+            if (currentTab->MenuItems[i].ID == ID)
+            {
+                return &currentTab->MenuItems[i];
+            }
         }
     }
     return NULL;
