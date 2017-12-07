@@ -745,6 +745,7 @@ void cd_enable_bram(u32 value)
   if(value & 0x80)
   {
     cd.bram_enable = 1;
+    cd.uses_bram = true;
     memory_remap_read_write(0xF7, 1, cd.bram, cd.bram);
   }
 }
@@ -967,6 +968,8 @@ void reset_cd()
   //memset(cd_read_ahead.buffer, 0, CD_READ_AHEAD_BUFFER_SIZE);
 
   cd_full_volume();
+
+  cd.uses_bram = false;
 }
 
 void update_cd_read()
@@ -1222,7 +1225,7 @@ void create_bram(char *path)
   cd.bram[6] = 0x10;
   cd.bram[7] = 0x80;
 
-  save_bram(path);
+  //save_bram(path);
 }
 
 void dump_cd_status()

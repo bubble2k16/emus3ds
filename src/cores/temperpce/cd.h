@@ -178,6 +178,8 @@ typedef struct
   u32 cdda_audio_read_buffer_index;
   s32 *audio_buffer;
   bool has_samples;
+
+  bool uses_bram;
 } cd_struct;
 
 // 8B
