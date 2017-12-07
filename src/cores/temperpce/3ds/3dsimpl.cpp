@@ -150,8 +150,8 @@ SMenuItem optionsForIdleLoopPatch[] =
 
 SMenuItem optionsForCPUCore[] =
 {
-    MENU_MAKE_DIALOG_ACTION (0, "Original",             "Original CPU core."),
     MENU_MAKE_DIALOG_ACTION (1, "Fast",                 "Faster, heavily optimized CPU core."),
+    MENU_MAKE_DIALOG_ACTION (2, "Compatible",           "More compatible, but slower CPU core."),
     MENU_MAKE_LASTITEM  ()  
 };
 
@@ -173,6 +173,14 @@ SMenuItem optionsForBIOS[] =
 };
 
 
+SMenuItem optionsForPaletteFix[] =
+{
+    MENU_MAKE_DIALOG_ACTION (0, "Enabled",              "Best, but slower"),
+    MENU_MAKE_DIALOG_ACTION (1, "Disabled",             "Fastest, less accurate"),
+    MENU_MAKE_LASTITEM  ()  
+};
+
+
 SMenuItem optionMenu[] = {
     MENU_MAKE_HEADER1   ("GLOBAL SETTINGS"),
     MENU_MAKE_PICKER    (11000, "  Screen Stretch", "How would you like the final screen to appear?", optionsForStretch, DIALOGCOLOR_CYAN),
@@ -186,6 +194,7 @@ SMenuItem optionMenu[] = {
     MENU_MAKE_PICKER    (20000, "  Idle Loop Patching", "You must reload the ROM after changing this.", optionsForIdleLoopPatch, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (10000, "  Frameskip", "Try changing this if the game runs slow. Skipping frames help it run faster but less smooth.", optionsForFrameskip, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (21000, "  BIOS", "The BIOS must be in your /3ds/syscards folder. Re-load ROM after changing.", optionsForBIOS, DIALOGCOLOR_CYAN),
+    MENU_MAKE_PICKER    (16000, "  In-Frame Palette Changes", "Try changing this if some colours in the game look off.", optionsForPaletteFix, DIALOGCOLOR_CYAN),
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("AUDIO"),
     MENU_MAKE_CHECKBOX  (50002, "  Apply volume to all games", 0),
@@ -363,7 +372,7 @@ char *impl3dsTitleImage = "./temperpce_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "TemperPCE for 3DS v1.00b";
+char *impl3dsTitleText = "TemperPCE for 3DS v1.00";
 
 
 int soundSamplesPerGeneration = 0;
@@ -631,7 +640,7 @@ bool impl3dsLoadROM(char *romFilePath)
     if (load_rom(romFilePath) == -1)
         return false;
 
-    SMenuItem *menuItem = menu3dsGetMenuItemByID(1, 21000);
+    SMenuItem *menuItem = menu3dsGetMenuItemByID(-1, 21000);
     if (menuItem != NULL)
     {
         if (config.cd_loaded)
@@ -1047,6 +1056,7 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
     //
 	t3dsStartTiming(1, "RunOneFrame");
 
+
 /*
 FILE *fp = fopen("out.txt", "a");
 fprintf(fp, "%d------------------------------\n", emulatorFrame);
@@ -1257,7 +1267,7 @@ void impl3dsEmulationPaused()
         ui3dsDrawStringWithNoWrapping(50, 140, 270, 154, 0x3f7fff, HALIGN_CENTER, "Saving SRAM to SD card...");
 
         char path_name[MAX_PATH];
-        if(config.cd_loaded)
+        if(cd.uses_bram)
         {
             get_bram_path(path_name);
             save_bram(path_name);
@@ -1391,17 +1401,21 @@ void impl3dsInitializeDefaultSettings()
 	settings3DS.ButtonMapping[3][0] = IO_BUTTON_IV;
 	settings3DS.ButtonMapping[4][0] = IO_BUTTON_V;
 	settings3DS.ButtonMapping[5][0] = IO_BUTTON_VI;
+	settings3DS.ButtonMapping[8][0] = IO_BUTTON_SELECT;
+	settings3DS.ButtonMapping[9][0] = IO_BUTTON_RUN;
 	settings3DS.GlobalButtonMapping[0][0] = IO_BUTTON_I;
 	settings3DS.GlobalButtonMapping[1][0] = IO_BUTTON_II;
 	settings3DS.GlobalButtonMapping[2][0] = IO_BUTTON_III;
 	settings3DS.GlobalButtonMapping[3][0] = IO_BUTTON_IV;
 	settings3DS.GlobalButtonMapping[4][0] = IO_BUTTON_V;
 	settings3DS.GlobalButtonMapping[5][0] = IO_BUTTON_VI;
+	settings3DS.GlobalButtonMapping[8][0] = IO_BUTTON_SELECT;
+	settings3DS.GlobalButtonMapping[9][0] = IO_BUTTON_RUN;
 
     settings3DS.OtherOptions[SETTINGS_IDLELOOPPATCH] = 0;	
     settings3DS.OtherOptions[SETTINGS_SOFTWARERENDERING] = 0;	
     settings3DS.OtherOptions[SETTINGS_BIOS] = 0;
-    settings3DS.OtherOptions[SETTINGS_CPUCORE] = 0;
+    settings3DS.OtherOptions[SETTINGS_CPUCORE] = 1;
 }
 
 
@@ -1482,10 +1496,12 @@ bool impl3dsReadWriteSettingsByGame(bool writeMode)
     config3dsReadWriteInt32("ButtonMapL=%d\n", &deprecated, 0, 0xffff);
     config3dsReadWriteInt32("ButtonMapR=%d\n", &deprecated, 0, 0xffff);
     config3dsReadWriteInt32("BIOS=%d\n", &settings3DS.OtherOptions[SETTINGS_BIOS], 0, 4);
-    config3dsReadWriteInt32("CPUCore=%d\n", &settings3DS.OtherOptions[SETTINGS_CPUCORE], 0, 4);
+    config3dsReadWriteInt32("CPUCore=%d\n", &settings3DS.OtherOptions[SETTINGS_CPUCORE], 0, 2);
 
     // v1.00 options
     //
+    if (settings3DS.OtherOptions[SETTINGS_CPUCORE] == 0)
+        settings3DS.OtherOptions[SETTINGS_CPUCORE] = 1;
     config3dsReadWriteInt32("IdleLoopPatch=%d\n", &settings3DS.OtherOptions[SETTINGS_IDLELOOPPATCH], 0, 1);
     config3dsReadWriteInt32("TurboZL=%d\n", &settings3DS.Turbo[6], 0, 10);
     config3dsReadWriteInt32("TurboZR=%d\n", &settings3DS.Turbo[7], 0, 10);
@@ -1497,8 +1513,10 @@ bool impl3dsReadWriteSettingsByGame(bool writeMode)
             config3dsReadWriteInt32(buttonNameFormat, &settings3DS.ButtonMapping[i][j]);
         }
     }
-    config3dsReadWriteInt32("ButtonMappingDisableFramelimitHold_0=%d\n", &settings3DS.ButtonHotkeyDisableFramelimit);
-    config3dsReadWriteInt32("ButtonMappingOpenEmulatorMenu_0=%d\n", &settings3DS.ButtonHotkeyOpenMenu);
+    config3dsReadWriteInt32("ButtonMappingDisableFramelimitHold=%d\n", &settings3DS.ButtonHotkeyDisableFramelimit);
+    config3dsReadWriteInt32("ButtonMappingOpenEmulatorMenu=%d\n", &settings3DS.ButtonHotkeyOpenMenu);
+    config3dsReadWriteInt32("ButtonMappingOpenEmulatorMenu=%d\n", &settings3DS.ButtonHotkeyOpenMenu);
+    config3dsReadWriteInt32("PalFix=%d\n", &settings3DS.PaletteFix, 0, 1);
 
     if (!writeMode)
         setDefaultButtonMapping(settings3DS.ButtonMapping);
@@ -1656,7 +1674,7 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
         else if (settings3DS.OtherOptions[SETTINGS_BIOS] == 4)
             config.cd_system_type = CD_SYSTEM_TYPE_GECD;
 
-        if (settings3DS.OtherOptions[SETTINGS_CPUCORE] == 0)
+        if (settings3DS.OtherOptions[SETTINGS_CPUCORE] != 1)
             config.compatibility_mode = 1;
         else
             config.compatibility_mode = 0;
@@ -1742,6 +1760,8 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
     }
 
     UPDATE_SETTINGS(settings3DS.PaletteFix, -1, 16000);
+    config.palette_change_forces_flush = (settings3DS.PaletteFix == 0);
+
     UPDATE_SETTINGS(settings3DS.SRAMSaveInterval, -1, 17000);
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_SOFTWARERENDERING], -1, 19000);
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_IDLELOOPPATCH], -1, 20000);
