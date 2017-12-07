@@ -1404,6 +1404,9 @@ s32 load_rom(char *path)
 
     if(strstr(path, ".cue"))
     {
+      // bug fix to close the rom_file here, otherwise it will never be closed,
+      // and the file handlers will leak.
+      fclose(rom_file);
       if(load_bin_cue(path) == -1)
         return -1;
 
