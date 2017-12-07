@@ -142,10 +142,12 @@ void snd3dsMixSamples()
 
     // Doing GSPGPU_FlushDataCache may cause race conditions with
     // the battery check (and other stuff?) on the main thread.
-    // causing the whole emulator to freeze.
+    // causing the whole emulator to freeze. 
     //
-    if (blockCount % MIN_FORWARD_BLOCKS == 0)
-        GSPGPU_FlushDataCache(snd3DS.fullBuffers, SAMPLEBUFFER_SIZE * 2 * 2);
+    // So we only flush data cache if the snd3DS.isPlaying is true.
+    //
+    if (blockCount % MIN_FORWARD_BLOCKS == 0 && snd3DS.isPlaying)
+        CSND_FlushDataCache(snd3DS.fullBuffers, SAMPLEBUFFER_SIZE * 2 * 2);
     t3dsEndTiming(43);
 }
 
@@ -166,12 +168,6 @@ void snd3dsMixingThread(void *p)
         if (!emulator.isReal3DS)
             svcSleepThread(100000 * 1);
 
-        // Fix for race condition for 64-bit access in the sound thread.
-        // Without this the reading of the startTick and upToSamplePosition may
-        // return incorrect results during the thread, causing the svcSleepThread
-        // int snd3dsMixSamples to wait for an incorrect amount of time, causing 
-        // the sound to stop for a long time.
-        //
         if (snd3DS.isPlaying)
             snd3dsMixSamples();
     }
@@ -236,11 +232,12 @@ void snd3dsStartPlaying()
 {
     if (!snd3DS.isPlaying)
     {
-        // clear the buffers to prevent any left over sound from playing
-        // again.
-        //
-        memset(snd3DS.fullBuffers, 0, sizeof(SAMPLEBUFFER_SIZE * 2 * 2));
-        GSPGPU_FlushDataCache(snd3DS.fullBuffers, SAMPLEBUFFER_SIZE * 2 * 2);
+        for (int i = 0; i < SAMPLEBUFFER_SIZE; i++)
+        {
+            snd3DS.leftBuffer[i] = 0;
+            snd3DS.rightBuffer[i] = 0;
+        }
+        CSND_FlushDataCache(snd3DS.fullBuffers, SAMPLEBUFFER_SIZE * 2 * 2);
         
         // CSND
         // Fix: Copied libctru's csndPlaySound and modified it so that it will
