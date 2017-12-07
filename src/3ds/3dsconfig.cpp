@@ -1,8 +1,11 @@
 
+#include "3ds.h"
+#include "string.h"
 #include "3dsconfig.h"
 
 static FILE    *fp = NULL;
-static bool    WriteMode = false;    
+static bool    WriteMode = false;   
+static char    fileBuffer[4096];
 
 //----------------------------------------------------------------------
 // Opens a config .cfg file.
@@ -12,6 +15,7 @@ bool config3dsOpenFile(const char *filename, bool fileWriteMode)
     if (!fp)
     {
         WriteMode = fileWriteMode;
+        fileBuffer[0] = 0;
         if (fileWriteMode)
             fp = fopen(filename, "w+");
         else
@@ -31,6 +35,10 @@ void config3dsCloseFile()
 {
     if (fp)
     {
+        if (WriteMode && strlen(fileBuffer) != 0)
+        {
+            fprintf(fp, fileBuffer);
+        }
         fclose(fp);
         fp = NULL;
     }
@@ -49,17 +57,28 @@ void config3dsReadWriteInt32(char *format, int *value, int minValue, int maxValu
 
     if (WriteMode)
     {
+        char tempBuffer[1024] = { 0 };
         if (value != NULL)
         {
             //printf ("Writing %s %d\n", format, *value);
-        	fprintf(fp, format, *value);
+        	//fprintf(fp, format, *value);
+            snprintf(tempBuffer, 1023, format, *value);
         }
         else
         {
             //printf ("Writing %s\n", format);
-        	fprintf(fp, format);
-
+        	//fprintf(fp, format);
+            snprintf(tempBuffer, 1023, format);
         }
+
+        // Flush the text buffer to disk
+        //
+        if (strlen(fileBuffer) + strlen(tempBuffer) > 4096)
+        {
+            fprintf(fp, fileBuffer);
+            fileBuffer[0] = 0;
+        }
+        strcat(fileBuffer, tempBuffer);
     }
     else
     {
