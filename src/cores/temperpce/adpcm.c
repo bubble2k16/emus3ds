@@ -416,12 +416,12 @@ void update_adpcm()
       {
         // Linear interpolation, should sound noticably better without
         // taking a big speed hit.
-        //dest_sample = last_sample +
-        // ((sample_delta * sample_index_fractional) >>
-        // step_fractional_bits_frequency);
+        dest_sample = last_sample +
+         ((sample_delta * sample_index_fractional) >>
+         step_fractional_bits_frequency);
 
         // Use this for nearest neighbor resampling
-        dest_sample = current_sample;
+        //dest_sample = current_sample;
 
         //audio_buffer[audio_buffer_index] += dest_sample;
         //audio_buffer[audio_buffer_index + 1] += dest_sample;
