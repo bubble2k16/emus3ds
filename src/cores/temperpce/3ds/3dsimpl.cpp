@@ -1567,11 +1567,11 @@ bool impl3dsReadWriteSettingsGlobal(bool writeMode)
     config3dsReadWriteInt32("ButtonMapL=%d\n", &deprecated, 0, 0xffff);
     config3dsReadWriteInt32("ButtonMapR=%d\n", &deprecated, 0, 0xffff);
 
-    config3dsReadWriteInt32("UseGlobalButtonMappings=%d\n", &settings3DS.UseGlobalButtonMappings, 0, 2);
-    config3dsReadWriteInt32("UseGlobalTurbo=%d\n", &settings3DS.UseGlobalTurbo, 0, 2);
-    config3dsReadWriteInt32("UseGlobalVolume=%d\n", &settings3DS.UseGlobalVolume, 0, 2);
+    config3dsReadWriteInt32("UseGlobalButtonMappings=%d\n", &settings3DS.UseGlobalButtonMappings, 0, 1);
+    config3dsReadWriteInt32("UseGlobalTurbo=%d\n", &settings3DS.UseGlobalTurbo, 0, 1);
+    config3dsReadWriteInt32("UseGlobalVolume=%d\n", &settings3DS.UseGlobalVolume, 0, 1);
 
-    // v1.0 options
+    // v1.00 options
     //
     config3dsReadWriteInt32("AutoSavestate=%d\n", &settings3DS.AutoSavestate, 0, 1);
     config3dsReadWriteInt32("TurboZL=%d\n", &settings3DS.GlobalTurbo[6], 0, 10);
@@ -1717,7 +1717,7 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
     UPDATE_SETTINGS(settings3DS.UseGlobalButtonMappings, -1, 50000);
     UPDATE_SETTINGS(settings3DS.UseGlobalTurbo, -1, 50001);
     UPDATE_SETTINGS(settings3DS.UseGlobalVolume, -1, 50002);
-    UPDATE_SETTINGS(settings3DS.UseGlobalEmuControlKeys, -1, 50002);
+    UPDATE_SETTINGS(settings3DS.UseGlobalEmuControlKeys, -1, 50003);
     if (settings3DS.UseGlobalButtonMappings || copyMenuToSettings)
     {
         for (int i = 0; i < 2; i++)
