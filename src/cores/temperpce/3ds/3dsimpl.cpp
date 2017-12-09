@@ -514,7 +514,10 @@ void impl3dsFinalize()
 //---------------------------------------------------------
 void impl3dsGenerateSoundSamples()
 {
-    render_psg(soundSamplesPerGeneration);
+    if (!emulator.fastForwarding)
+        render_psg(soundSamplesPerGeneration, false);
+    else
+        render_psg(soundSamplesPerGeneration, true);
 }
 
 
