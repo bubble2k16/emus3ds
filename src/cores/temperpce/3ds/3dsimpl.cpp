@@ -1270,7 +1270,7 @@ void impl3dsEmulationPaused()
         ui3dsDrawStringWithNoWrapping(50, 140, 270, 154, 0x3f7fff, HALIGN_CENTER, "Saving SRAM to SD card...");
 
         char path_name[MAX_PATH];
-        if(cd.uses_bram)
+        //if(cd.uses_bram)
         {
             get_bram_path(path_name);
             save_bram(path_name);

@@ -70,7 +70,6 @@ https://github.com/bubble2k16/temperpce_3ds/releases
 - Added feature to display battery level in the menu, and fixed some menu bugs.
 - Fixed issues with games that do mid-frame palette changes. Games like Castlevania Rondo of Blood (2nd stage) and Strip Fighter look correct now.
 - Optimized the configuration file read/write engine.
-- Optimized battery RAM saving only when it has previously been written to.
 - Fixed bug to allow non-CD games to also save to battery RAM.
 - Fixed file pointer leaks that previously caused the emulator to freeze when too many CDROM games are loaded in a single session.
 - Fixed race condition that occassionally causes the sound to stop playing when resuming a game from the pause menu.
