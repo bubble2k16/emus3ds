@@ -905,9 +905,12 @@ void emulatorLoop()
 
             long currentTick = svcGetSystemTick();
             long actualTicksThisFrame = currentTick - startFrameTick;
+            long ticksPerFrame = settings3DS.TicksPerFrame;
+            if (emulator.fastForwarding)
+                ticksPerFrame = TICKS_PER_FRAME_FASTFORWARD;
 
             emuFrameTotalActualTicks += actualTicksThisFrame;  // actual time spent rendering past x frames.
-            emuFrameTotalAccurateTicks += settings3DS.TicksPerFrame;  // time supposed to be spent rendering past x frames.
+            emuFrameTotalAccurateTicks += ticksPerFrame;  // time supposed to be spent rendering past x frames.
 
             int isSlow = 0;
 
@@ -918,7 +921,7 @@ void emulatorLoop()
                 // We've skewed out of the actual frame rate.
                 // Once we skew beyond 0.1 (10%) frames slower, skip the frame.
                 //
-                if (skew < -settings3DS.TicksPerFrame/10 && emuFramesSkipped < settings3DS.MaxFrameSkips)
+                if (skew < -ticksPerFrame/10 && emuFramesSkipped < settings3DS.MaxFrameSkips)
                 {
                     skipDrawingFrame = true;
                     emuFramesSkipped++;
@@ -933,7 +936,7 @@ void emulatorLoop()
                     {
                         emuFramesSkipped = 0;
                         emuFrameTotalActualTicks = actualTicksThisFrame;
-                        emuFrameTotalAccurateTicks = settings3DS.TicksPerFrame;
+                        emuFrameTotalAccurateTicks = ticksPerFrame;
                     }
                 }
             }
@@ -953,15 +956,8 @@ void emulatorLoop()
                 emuFrameTotalAccurateTicks = 0;
                 emuFramesSkipped = 0;
 
-                if (emulator.fastForwarding) 
-                {
-                    skipDrawingFrame = (frameCount60 % 2) == 0;
-                }
-                else
-                {
-                    svcSleepThread ((long)(timeDiffInMilliseconds * 1000));
-                    skipDrawingFrame = false;
-                }
+                svcSleepThread ((long)(timeDiffInMilliseconds * 1000));
+                skipDrawingFrame = false;
             }
 
         }
