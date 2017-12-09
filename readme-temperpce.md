@@ -58,6 +58,23 @@ https://github.com/bubble2k16/temperpce_3ds/releases
 
 ## Change History
 
+### v1.00
+- Fixes Castlevania Rondo of Blood's flickering sprite problem.
+- Added support for the 6 SGX games.
+- Fixed critical emulation bugs with certain instructions in the original (slow) and fast cores. Games like Populous, Choujikuu Yousai Macross 2036, Alshark, Strip Fighter, Monster Lair that used to encounter ARM 11 exceptions or freeze the emulator should now work.
+- Default the CPU core to use the Fast core, which is now more stable than before.
+- Added key mappings for fast-forwarding (limited to 180 fps), opening emulator menu.
+- Updated button configurations to allow you to map a single 3DS key to multiple Turbografx keys.
+- Minor optimizations for ADPCM and CD sound generation.
+- Added ADPCM sample interpolation.
+- Added feature to display battery level in the menu, and fixed some menu bugs.
+- Fixed issues with games that do mid-frame palette changes. Games like Castlevania Rondo of Blood (2nd stage) and Strip Fighter look correct now.
+- Optimized the configuration file read/write engine.
+- Optimized battery RAM saving only when it has previously been written to.
+- Fixed bug to allow non-CD games to also save to battery RAM.
+- Fixed file pointer leaks that previously caused the emulator to freeze when too many CDROM games are loaded in a single session.
+- Fixed race condition that occassionally causes the sound to stop playing when resuming a game from the pause menu.
+
 
 ### v0.91
 - Fixed frame rate issues with CD-ROM games speeding up to 100-200 FPS.
