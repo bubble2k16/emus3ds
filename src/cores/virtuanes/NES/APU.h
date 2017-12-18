@@ -51,7 +51,7 @@ public:
 	void	Sync();
 	void	SyncDPCM( INT cycles );
 
-	void	Process( LPBYTE lpBuffer, DWORD dwSize );
+	void	Process( LPBYTE lpBuffer, DWORD dwSize, bool fastForwarding );
 
 	// For NSF player
 	INT	GetChannelFrequency( INT ch );
@@ -132,7 +132,7 @@ public:
 	// Channel mute
 	BOOL	m_bMute[16];
 
-	// ���܂�
+	// ‚¨‚Ü‚¯
 	SHORT	m_SoundBuffer[0x100];
 private:
 };
