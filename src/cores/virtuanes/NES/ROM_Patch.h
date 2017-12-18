@@ -21,13 +21,13 @@ while (moo[moo_c].crc32 != 0)
 }
 
 // Mapper 000
-if( crc == 0x57970078 ) {	// F-1 Race(J) ������p�b�`(^^;
+if( crc == 0x57970078 ) {	// F-1 Race(J) –³—–î—ƒpƒbƒ`(^^;
 	lpPRG[0x078C] = 0x6C;
 	lpPRG[0x3FE1] = 0xFF;
 	lpPRG[0x3FE6] = 0x00;
 }
 if( crc == 0xaf2bbcbc		// Mach Rider(JU)
- || crc == 0x3acd4bf1		// Mach Rider(Alt)(JU) ������p�b�`(^^;
+ || crc == 0x3acd4bf1		// Mach Rider(Alt)(JU) –³—–î—ƒpƒbƒ`(^^;
  || crc == 0x8bbe9bec ) {
 	lpPRG[0x090D] = 0x6E;
 	lpPRG[0x7FDF] = 0xFF;
@@ -40,7 +40,7 @@ if( crc == 0xe16bb5fe ) {	// Zippy Race(J)
 	header.control1 &= 0xf6;
 }
 if( crc == 0x85534474 ) {	// Lode Runner(J)
-	lpPRG[0x29E9] = 0xEA;	// �Z�[�u���j���[���o���p�b�`
+	lpPRG[0x29E9] = 0xEA;	// ƒZ[ƒuƒƒjƒ…[‚ðo‚·ƒpƒbƒ`
 	lpPRG[0x29EA] = 0xEA;
 	lpPRG[0x29F8] = 0xEA;
 	lpPRG[0x29F9] = 0xEA;
@@ -61,21 +61,21 @@ if( crc == 0x7831b2ff		// America Daitouryou Senkyo(J)
  || crc == 0x1e0c7ea3 ) {	// AD&D Dragons of Flame(J)
 	header.control1 |= ROM_SAVERAM;
 }
-if( crc == 0x1995ac4e ) {	// Ferrari Grand Prix Challenge(J) ������p�b�`(^^;
+if( crc == 0x1995ac4e ) {	// Ferrari Grand Prix Challenge(J) –³—–î—ƒpƒbƒ`(^^;
 	lpPRG[0x1F7AD] = 0xFF;
 	lpPRG[0x1F7BC] = 0x00;
 }
 
-if( crc == 0x20d22251 ) {	// Top rider(J) ������p�b�`(^^;
+if( crc == 0x20d22251 ) {	// Top rider(J) –³—–î—ƒpƒbƒ`(^^;
 	lpPRG[0x1F17E] = 0xEA;
 	lpPRG[0x1F17F] = 0xEA;
 }
 
-if( crc == 0x11469ce3 ) {	// Viva! Las Vegas(J) ������p�b�`(^^;
+if( crc == 0x11469ce3 ) {	// Viva! Las Vegas(J) –³—–î—ƒpƒbƒ`(^^;
 	lpCHR[0x0000] = 0x01;
 }
 
-if( crc == 0x3fccdc7b ) {	// Baseball Star - Mezase Sankanou!!(J) ������p�b�`(^^;
+if( crc == 0x3fccdc7b ) {	// Baseball Star - Mezase Sankanou!!(J) –³—–î—ƒpƒbƒ`(^^;
 	lpPRG[0x0F666] = 0x9D;
 }
 
@@ -329,6 +329,16 @@ if( crc == 0xca85e56d ) {	// VS Mighty Bomb Jack(J)
 	header.control1 |= ROM_4SCREEN;
 }
 
+// This fixes VS Super Mario Bros to use the correct mapper
+//
+if (crc == 0x737dd1bf		// VS Super Mario Bros
+ || crc == 0x4bf3972d		// VS Super Mario Bros
+ || crc == 0x8b60cc58		// VS Super Mario Bros
+ || crc == 0x8192c804		// VS Super Mario Bros
+)
+{
+	mapper = 99;
+}
 
 if( crc == 0xeb2dba63		// VS TKO Boxing
  || crc == 0x9818f656		// VS TKO Boxing
