@@ -17,6 +17,8 @@ using namespace std;
 
 #pragma pack( push, 1 )
 
+extern const char* img_fname;	//for bbk
+
 typedef	struct	tagNESHEADER {
 	BYTE	ID[4];
 	BYTE	PRG_PAGE_SIZE;
@@ -95,6 +97,9 @@ public:
 
 	// Mapper
 	INT	GetMapperNo() { return mapper; }
+	BOOL IsUnifMapper(){ return bUnif;}
+	INT	GetUnifBoard(){return board;}
+	CHAR * GetBoardName(){return pboardname;}
 
 	// Disks
 	INT	GetDiskNo() { return diskno; }
@@ -132,6 +137,9 @@ protected:
 
 	INT		mapper;
 	INT		diskno;
+	INT		board;
+	BOOL	bUnif;
+	CHAR	pboardname[MAX_PATH];
 
 	// For PAL(Database)
 	BOOL		bPAL;
