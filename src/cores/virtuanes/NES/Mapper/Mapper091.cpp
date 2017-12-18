@@ -27,9 +27,11 @@ void	Mapper091::WriteLow( WORD addr, BYTE data )
 			break;
 
 		case	0x7000:
+			DEBUGOUT( "(7000)dat = %3x\n", data );
 			SetPROM_8K_Bank( 4, data );
 			break;
 		case	0x7001:
+			DEBUGOUT( "(7001)dat = %3x\n", data );
 			SetPROM_8K_Bank( 5, data );
 			break;
 

@@ -76,17 +76,17 @@ void	Mapper190::Write( WORD addr, BYTE data )
 					SetPROM_8K_Bank( 7, 0x1F );
 					break;
 				case	0x2A:
-					SetPROM_8K_Bank( 4, 0x1F );
-					SetPROM_8K_Bank( 5, 0x0F );
-					SetPROM_8K_Bank( 6, 0x17 );
-					SetPROM_8K_Bank( 7, 0x1F );
-					break;
+					 SetPROM_8K_Bank( 4, 0x1F );
+					 SetPROM_8K_Bank( 5, 0x0F );
+					 SetPROM_8K_Bank( 6, 0x17 );
+					 SetPROM_8K_Bank( 7, 0x1F );
+					 break;
 				case 0x06:
-					SetPROM_8K_Bank( 4, 0x1E );
-					SetPROM_8K_Bank( 5, 0x1F );
-					SetPROM_8K_Bank( 6, 0x1F );
-					SetPROM_8K_Bank( 7, 0x1F );
-					break;	
+					 SetPROM_8K_Bank( 4, 0x1E );
+					 SetPROM_8K_Bank( 5, 0x1F );
+					 SetPROM_8K_Bank( 6, 0x1F );
+					 SetPROM_8K_Bank( 7, 0x1F );
+					 break;	
 			}
 			break;
 		case	0x8001:

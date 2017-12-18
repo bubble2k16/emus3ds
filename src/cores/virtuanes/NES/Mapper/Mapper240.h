@@ -8,7 +8,9 @@ public:
 
 	void	Reset();
 	void	WriteLow(WORD addr, BYTE data);
+	void	Write(WORD addr, BYTE data);
 
 protected:
+	BYTE	KT_Piracy;
 private:
 };

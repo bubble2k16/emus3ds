@@ -23,6 +23,7 @@ public:
 
 protected:
 	BYTE	patch;
+	BYTE	SP_rom;
 
 	BYTE	reg[2];
 	BYTE	chr01, chr23, chr4, chr5, chr6, chr7;

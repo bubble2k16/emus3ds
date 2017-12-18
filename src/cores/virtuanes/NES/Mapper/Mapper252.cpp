@@ -3,6 +3,8 @@
 //////////////////////////////////////////////////////////////////////////
 void	Mapper252::Reset()
 {
+	nes->ppu->SetVromWrite(1);
+
 	for( INT i = 0; i < 8; i++ ) {
 		reg[i] = i;
 	}
@@ -30,6 +32,13 @@ void	Mapper252::Write( WORD addr, BYTE data )
 		SetPROM_8K_Bank( 5, data );
 		return;
 	}
+/*	if( addr == 0x9400 ) {
+		data &= 0x03;
+		if( data == 0 )	     SetVRAM_Mirror( VRAM_VMIRROR );
+		else if( data == 1 ) SetVRAM_Mirror( VRAM_HMIRROR );
+		else if( data == 2 ) SetVRAM_Mirror( VRAM_MIRROR4L );
+		else		     SetVRAM_Mirror( VRAM_MIRROR4H );
+	}*/
 	switch( addr & 0xF00C ) {
 		case 0xB000:
 			reg[0] = (reg[0] & 0xF0) | (data & 0x0F);
