@@ -93,8 +93,8 @@ extern SMenuItem emulatorMenu[];
 // Load the ROM and reset the CPU.
 //-------------------------------------------------------
 
-bool emulatorSettingsLoad(bool, bool);
-bool emulatorSettingsSave(bool, bool);
+bool emulatorSettingsLoad(bool, bool, bool);
+bool emulatorSettingsSave(bool, bool, bool);
 
 bool emulatorLoadRom()
 {
@@ -103,7 +103,7 @@ bool emulatorLoadRom()
     char romFileNameFullPathOriginal[_MAX_PATH];
     strncpy(romFileNameFullPathOriginal, romFileNameFullPath, _MAX_PATH - 1);
 
-    emulatorSettingsSave(false, false);
+    //emulatorSettingsSave(true, true, false);
     snprintf(romFileNameFullPath, _MAX_PATH, "%s%s", file3dsGetCurrentDir(), romFileName);
 
     char romFileNameFullPath2[_MAX_PATH];
@@ -111,7 +111,7 @@ bool emulatorLoadRom()
 
     // Load up the new ROM settings first.
     //
-    emulatorSettingsLoad(true, false);
+    emulatorSettingsLoad(false, true, false);
     impl3dsApplyAllSettings();
     
     if (!impl3dsLoadROM(romFileNameFullPath2))
@@ -121,7 +121,7 @@ bool emulatorLoadRom()
         strncpy(romFileNameFullPath, romFileNameFullPathOriginal, _MAX_PATH - 1);
         
         // 2. Reload original settings
-        emulatorSettingsLoad(true, false);
+        //emulatorSettingsLoad(false, true, false);
         impl3dsApplyAllSettings();
         
         menu3dsHideDialog();
@@ -147,7 +147,7 @@ bool emulatorLoadRom()
 //----------------------------------------------------------------------
 // Menus
 //----------------------------------------------------------------------
-#define MAX_FILES 500
+#define MAX_FILES 1000
 SMenuItem fileMenu[MAX_FILES + 1];
 //char romFileNames[MAX_FILES][_MAX_PATH];
 // By changing the romFileNames to fileList (strings allocated on demand)
@@ -175,7 +175,7 @@ void fileGetAllFiles(void)
         fileMenu[i].ID = i;
         fileMenu[i].Text = fileList[i].c_str();
     }
-    fileMenu[fileList.size()].Type = MENUITEM_LASTITEM;
+    fileMenu[totalRomFileCount].Type = MENUITEM_LASTITEM;
 }
 
 
@@ -197,16 +197,22 @@ int fileFindLastSelectedFile()
 //----------------------------------------------------------------------
 // Load global settings, and game-specific settings.
 //----------------------------------------------------------------------
-bool emulatorSettingsLoad(bool includeGameSettings, bool showMessage = true)
+bool emulatorSettingsLoad(bool includeGlobalSettings, bool includeGameSettings, bool showMessage = true)
 {
-    bool success = impl3dsReadWriteSettingsGlobal(false);
-    if (!success)
-        return false;
-    impl3dsApplyAllSettings(false);
+    if (includeGlobalSettings)
+    {
+        bool success = impl3dsReadWriteSettingsGlobal(false);
+        if (!success)
+        {
+            impl3dsInitializeDefaultSettingsGlobal();
+            return false;
+        }
+        impl3dsApplyAllSettings(false);
+    }
 
     if (includeGameSettings)
     {
-        success = impl3dsReadWriteSettingsByGame(false);
+        bool success = impl3dsReadWriteSettingsByGame(false);
         if (success)
         {
             impl3dsApplyAllSettings();
@@ -216,7 +222,7 @@ bool emulatorSettingsLoad(bool includeGameSettings, bool showMessage = true)
         }
         else
         {
-            impl3dsInitializeDefaultSettings();
+            impl3dsInitializeDefaultSettingsByGame();
 
             impl3dsApplyAllSettings();
 
@@ -231,7 +237,7 @@ bool emulatorSettingsLoad(bool includeGameSettings, bool showMessage = true)
 //----------------------------------------------------------------------
 // Save global settings, and game-specific settings.
 //----------------------------------------------------------------------
-bool emulatorSettingsSave(bool includeGameSettings, bool showMessage)
+bool emulatorSettingsSave(bool includeGlobalSettings, bool includeGameSettings, bool showMessage)
 {
     if (showMessage)
     {
@@ -243,7 +249,9 @@ bool emulatorSettingsSave(bool includeGameSettings, bool showMessage)
     if (includeGameSettings)
         impl3dsReadWriteSettingsByGame(true);
 
-    impl3dsReadWriteSettingsGlobal(true);
+    if (includeGlobalSettings)
+        impl3dsReadWriteSettingsGlobal(true);
+
     if (showMessage)
     {
         ui3dsDrawRect(50, 140, 270, 154, 0x000000);
@@ -381,7 +389,7 @@ void menuPause()
     
     bool settingsUpdated = false;
     bool cheatsUpdated = false;
-    bool loadRomBeforeExit = false;
+    bool settingsSaved = false;
     bool returnToEmulation = false;
 
 
@@ -472,7 +480,10 @@ void menuPause()
                     // your new ROM.
                     //
                     if (impl3dsCopyMenuToOrFromSettings(true))
-                        emulatorSettingsSave(true, true);
+                    {
+                        emulatorSettingsSave(true, true, true);
+                        settingsSaved = true;
+                    }
                     
                     if (!emulatorLoadRom())
                     {
@@ -613,8 +624,8 @@ void menuPause()
 
     // Save settings and cheats
     //
-    if (impl3dsCopyMenuToOrFromSettings(true))
-        emulatorSettingsSave(true, true);
+    if (!settingsSaved && impl3dsCopyMenuToOrFromSettings(true))
+        emulatorSettingsSave(true, true, true);
     impl3dsApplyAllSettings();
 
     cheat3dsSaveCheatTextFile (file3dsReplaceFilenameExtension(romFileNameFullPath, ".chx"));
@@ -709,7 +720,7 @@ void emulatorInitialize()
 
     enableExitHook();
 
-    emulatorSettingsLoad(false, true);
+    emulatorSettingsLoad(true, false, true);
 
     // Do this one more time.
     if (file3dsGetCurrentDir()[0] == 0)
