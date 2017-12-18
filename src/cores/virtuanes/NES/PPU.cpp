@@ -207,6 +207,11 @@ BYTE	data = 0x00;
 				}
 				addr &= 0xEFFF;
 			}
+
+			if( bChrLatch ) {
+				nes->mapper->PPU_ChrLatch( addr );
+			}
+
 			PPU7_Temp = PPU_MEM_BANK[addr>>10][addr&0x03FF];
 	}
 
@@ -224,7 +229,29 @@ void	PPU::Write( WORD addr, BYTE data )
 	}
 
 	switch( addr ) {
-		// Read only Register
+		case	0x2008:
+			//for SB2000
+			break;
+		case	0x2010:
+		case	0x2011:
+		case	0x2012:
+		case	0x2013:
+		case	0x2014:
+		case	0x2015:
+		case	0x2016:
+		case	0x2017:
+		case	0x2018:
+		case	0x2019:
+		case	0x201A:
+		case	0x201B:
+		case	0x201C:
+		case	0x201D:
+		case	0x201E:
+		case	0x201F:
+			nes->mapper->WriteExPPU(addr, data);
+			break;
+			
+			// Read only Register
 		case	0x2002: // PPU Status register(R)
 			break;
 		// Write Register
@@ -321,8 +348,15 @@ void	PPU::Write( WORD addr, BYTE data )
 				}
 				vaddr &= 0xEFFF;
 			}
-			if( PPU_MEM_TYPE[vaddr>>10] != BANKTYPE_VROM ) {
-				PPU_MEM_BANK[vaddr>>10][vaddr&0x03FF] = data;
+
+			int bank = vaddr>>10;
+			vaddr &= 0x03ff;
+
+			if( PPU_MEM_TYPE[bank] != BANKTYPE_VROM ){
+				PPU_MEM_BANK[bank][vaddr] = data;
+			}else if( bVromWe ) {
+				PPU_MEM_BANK[bank][vaddr] = data;
+				VROM_WRITED[PPU_MEM_PAGE[bank]] = 1;
 			}
 			break;
 	}
