@@ -126,7 +126,7 @@ BOOL	APU::GetQueueDAC( u64 writetime, QUEUEDATA& ret )
 	if( queueDAC.wrptr == queueDAC.rdptr ) {
 		return	FALSE;
 	}
-	if( queueDAC.data[queueDAC.rdptr].time <= writetime ) {
+	if( queueDAC.data[queueDAC.rdptr].time <= writetime || writetime == 0x7fffffffffffffff ) {
 		ret = queueDAC.data[queueDAC.rdptr];
 		queueDAC.rdptr++;
 		queueDAC.rdptr&=QUEUE_LENGTH-1;
@@ -351,7 +351,7 @@ void	APU::WriteExProcess( WORD addr, BYTE data )
 	}
 }
 
-void	APU::Process( LPBYTE lpBuffer, DWORD dwSize )
+void	APU::Process( LPBYTE lpBuffer, DWORD dwSize, bool fastForwarding )
 {
 INT	nBits = Config.sound.nBits;
 
@@ -460,7 +460,10 @@ INT	nFilterType = Config.sound.nFilterType;
 
 		// We handle writes to the DAC here
 		//
-		while( GetQueueDAC( writetime, q ) ) {
+		u64 wtime = writetime;
+		if (fastForwarding)
+			wtime = 0x7fffffffffffffff;
+		while( GetQueueDAC( wtime, q ) ) {
 			if (q.addr == 0x4011)
 				WriteProcess( q.addr, q.data );
 			if (q.addr == 0x5011)
