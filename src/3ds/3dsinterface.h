@@ -273,11 +273,19 @@ extern SSettings3DS settings3DS;
 
 
 //---------------------------------------------------------
-// Initializes the default global and game-specifi
+// Initializes the default global and game-specific
 // settings. This method is called everytime a game is
 // loaded, but the configuration file does not exist.
 //---------------------------------------------------------
-void impl3dsInitializeDefaultSettings();
+void impl3dsInitializeDefaultSettingsGlobal();
+
+
+//---------------------------------------------------------
+// Initializes the default global and game-specific
+// settings. This method is called everytime a game is
+// loaded, but the configuration file does not exist.
+//---------------------------------------------------------
+void impl3dsInitializeDefaultSettingsByGame();
 
 
 //----------------------------------------------------------------------

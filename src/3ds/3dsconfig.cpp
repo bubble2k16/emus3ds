@@ -45,6 +45,7 @@ void config3dsCloseFile()
 }
 
 
+
 //----------------------------------------------------------------------
 // Load / Save an int32 value specific to game.
 //----------------------------------------------------------------------
@@ -110,16 +111,30 @@ void config3dsReadWriteString(char *writeFormat, char *readFormat, char *value)
     
     if (WriteMode)
     {
+        char tempBuffer[1024] = { 0 };
         if (value != NULL)
         {
             //printf ("Writing %s %d\n", format, *value);
-        	fprintf(fp, writeFormat, value);
+        	//fprintf(fp, writeFormat, value);
+            snprintf(tempBuffer, 1023, writeFormat, value);
+            
         }
         else
         {
             //printf ("Writing %s\n", format);
-        	fprintf(fp, writeFormat);
+        	//fprintf(fp, writeFormat);
+            snprintf(tempBuffer, 1023, writeFormat);
         }
+
+        // Flush the text buffer to disk
+        //
+        if (strlen(fileBuffer) + strlen(tempBuffer) > 4096)
+        {
+            fprintf(fp, fileBuffer);
+            fileBuffer[0] = 0;
+        }
+        strcat(fileBuffer, tempBuffer);
+        
     }
     else
     {
