@@ -164,11 +164,11 @@ SMenuItem optionsForRendering[] =
 
 SMenuItem optionsForBIOS[] =
 {
-    MENU_MAKE_DIALOG_ACTION (2, "CD-ROM v1",             "/3ds/syscards/syscard1.pce"),
-    MENU_MAKE_DIALOG_ACTION (1, "CD-ROM v2",             "/3ds/syscards/syscard2.pce"),
-    MENU_MAKE_DIALOG_ACTION (0, "CD-ROM v3",             "/3ds/syscards/syscard3.pce"),
-    MENU_MAKE_DIALOG_ACTION (3, "Arcade CD",             "/3ds/syscards/syscard3.pce"),
-    MENU_MAKE_DIALOG_ACTION (4, "Games Express",         "/3ds/syscards/games_express.pce"),
+    MENU_MAKE_DIALOG_ACTION (2, "CD-ROM v1",             "/3ds/temperpce_3ds/syscards/syscard1.pce"),
+    MENU_MAKE_DIALOG_ACTION (1, "CD-ROM v2",             "/3ds/temperpce_3ds/syscards/syscard2.pce"),
+    MENU_MAKE_DIALOG_ACTION (0, "CD-ROM v3",             "/3ds/temperpce_3ds/syscards/syscard3.pce"),
+    MENU_MAKE_DIALOG_ACTION (3, "Arcade CD",             "/3ds/temperpce_3ds/syscards/syscard3.pce"),
+    MENU_MAKE_DIALOG_ACTION (4, "Games Express",         "/3ds/temperpce_3ds/syscards/games_express.pce"),
     MENU_MAKE_LASTITEM  ()  
 };
 
@@ -193,7 +193,7 @@ SMenuItem optionMenu[] = {
     MENU_MAKE_PICKER    (22000, "  CPU Core", "Change to the original core if your game freezes.", optionsForCPUCore, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (20000, "  Idle Loop Patching", "You must reload the ROM after changing this.", optionsForIdleLoopPatch, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (10000, "  Frameskip", "Try changing this if the game runs slow. Skipping frames help it run faster but less smooth.", optionsForFrameskip, DIALOGCOLOR_CYAN),
-    MENU_MAKE_PICKER    (21000, "  BIOS", "The BIOS must be in your /3ds/syscards folder. Re-load ROM after changing.", optionsForBIOS, DIALOGCOLOR_CYAN),
+    MENU_MAKE_PICKER    (21000, "  BIOS", "The BIOS must be in your /3ds/temperpce_3ds/syscards folder. Re-load ROM after changing.", optionsForBIOS, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (16000, "  In-Frame Palette Changes", "Try changing this if some colours in the game look off.", optionsForPaletteFix, DIALOGCOLOR_CYAN),
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("AUDIO"),
@@ -1381,31 +1381,26 @@ bool impl3dsOnMenuSelectedChanged(int ID, int value)
 }
 
 
+
 //---------------------------------------------------------
-// Initializes the default global and game-specifi
-// settings. This method is called everytime a game is
-// loaded, but the configuration file does not exist.
+// Initializes the default global settings. 
+// This method is called everytime if the global settings
+// file does not exist.
 //---------------------------------------------------------
-void impl3dsInitializeDefaultSettings()
+void impl3dsInitializeDefaultSettingsGlobal()
 {
-	settings3DS.MaxFrameSkips = 1;
-	settings3DS.ForceFrameRate = 0;
-	settings3DS.Volume = 4;
 	settings3DS.GlobalVolume = 4;
 
-	for (int i = 0; i < 6; i++)     // and clear all turbo buttons.
+	for (int i = 0; i < 8; i++)     // and clear all turbo buttons.
     {
-		settings3DS.Turbo[i] = 0;
 		settings3DS.GlobalTurbo[i] = 0;
     }
-	settings3DS.ButtonMapping[0][0] = IO_BUTTON_I;
-	settings3DS.ButtonMapping[1][0] = IO_BUTTON_II;
-	settings3DS.ButtonMapping[2][0] = IO_BUTTON_III;
-	settings3DS.ButtonMapping[3][0] = IO_BUTTON_IV;
-	settings3DS.ButtonMapping[4][0] = IO_BUTTON_V;
-	settings3DS.ButtonMapping[5][0] = IO_BUTTON_VI;
-	settings3DS.ButtonMapping[8][0] = IO_BUTTON_SELECT;
-	settings3DS.ButtonMapping[9][0] = IO_BUTTON_RUN;
+    for (int i = 0; i < 10; i++)
+        for (int j = 0; j < 4; j++)
+        {
+            settings3DS.GlobalButtonMapping[i][j] = 0;
+        }
+    
 	settings3DS.GlobalButtonMapping[0][0] = IO_BUTTON_I;
 	settings3DS.GlobalButtonMapping[1][0] = IO_BUTTON_II;
 	settings3DS.GlobalButtonMapping[2][0] = IO_BUTTON_III;
@@ -1414,6 +1409,39 @@ void impl3dsInitializeDefaultSettings()
 	settings3DS.GlobalButtonMapping[5][0] = IO_BUTTON_VI;
 	settings3DS.GlobalButtonMapping[8][0] = IO_BUTTON_SELECT;
 	settings3DS.GlobalButtonMapping[9][0] = IO_BUTTON_RUN;
+
+}
+
+
+//---------------------------------------------------------
+// Initializes the default global and game-specifi
+// settings. This method is called everytime a game is
+// loaded, but the configuration file does not exist.
+//---------------------------------------------------------
+void impl3dsInitializeDefaultSettingsByGame()
+{
+	settings3DS.MaxFrameSkips = 1;
+	settings3DS.ForceFrameRate = 0;
+	settings3DS.Volume = 4;
+
+	for (int i = 0; i < 8; i++)     // and clear all turbo buttons.
+    {
+		settings3DS.Turbo[i] = 0;
+    }
+    for (int i = 0; i < 10; i++)
+        for (int j = 0; j < 4; j++)
+        {
+            settings3DS.ButtonMapping[i][j] = 0;
+        }
+    
+	settings3DS.ButtonMapping[0][0] = IO_BUTTON_I;
+	settings3DS.ButtonMapping[1][0] = IO_BUTTON_II;
+	settings3DS.ButtonMapping[2][0] = IO_BUTTON_III;
+	settings3DS.ButtonMapping[3][0] = IO_BUTTON_IV;
+	settings3DS.ButtonMapping[4][0] = IO_BUTTON_V;
+	settings3DS.ButtonMapping[5][0] = IO_BUTTON_VI;
+	settings3DS.ButtonMapping[8][0] = IO_BUTTON_SELECT;
+	settings3DS.ButtonMapping[9][0] = IO_BUTTON_RUN;
 
     settings3DS.OtherOptions[SETTINGS_IDLELOOPPATCH] = 0;	
     settings3DS.OtherOptions[SETTINGS_SOFTWARERENDERING] = 0;	
@@ -1517,7 +1545,6 @@ bool impl3dsReadWriteSettingsByGame(bool writeMode)
         }
     }
     config3dsReadWriteInt32("ButtonMappingDisableFramelimitHold=%d\n", &settings3DS.ButtonHotkeyDisableFramelimit);
-    config3dsReadWriteInt32("ButtonMappingOpenEmulatorMenu=%d\n", &settings3DS.ButtonHotkeyOpenMenu);
     config3dsReadWriteInt32("ButtonMappingOpenEmulatorMenu=%d\n", &settings3DS.ButtonHotkeyOpenMenu);
     config3dsReadWriteInt32("PalFix=%d\n", &settings3DS.PaletteFix, 0, 1);
 
