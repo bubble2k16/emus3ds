@@ -334,7 +334,7 @@ char *impl3dsTitleImage = "./virtuanes_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "VirtuaNES for 3DS v1.00b";
+char *impl3dsTitleText = "VirtuaNES for 3DS v1.00";
 
 //---------------------------------------------------------
 // Initializes the emulator core.
@@ -484,9 +484,6 @@ bool impl3dsLoadROM(char *romFilePath)
 	if (nes)
 		delete nes;
 
-    //CLEAR_BOTTOM_SCREEN
-    //CLEAR_BOTTOM_SCREEN
-
 	nes = new NES(romFilePath);
 	if (nes->error)
 		return false;
@@ -496,8 +493,18 @@ bool impl3dsLoadROM(char *romFilePath)
 
 	// compute a sample rate closes to 32000 kHz.
 	//
+    int nesSampleRate = 32000;
+    u8 new3DS = false;
+    APT_CheckNew3DS(&new3DS);
+
+    // Lagrange Point and Old 3DS, we need to use a lower sample rate
+    // because the 2nd core is not fast enough to generate VRC7 sounds.
+    //
+    if (nes->rom->GetMapperNo() == 85 && !new3DS)   
+        nesSampleRate = 20000;
+
     int numberOfGenerationsPerSecond = nes->nescfg->FrameRate * 2;
-    soundSamplesPerGeneration = 32000 / numberOfGenerationsPerSecond;
+    soundSamplesPerGeneration = nesSampleRate / numberOfGenerationsPerSecond;
 	soundSamplesPerSecond = soundSamplesPerGeneration * numberOfGenerationsPerSecond;
 	snd3dsSetSampleRate(
 		false,
@@ -1348,6 +1355,22 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
     //
     ui3dsSetFont(settings3DS.Font);
 
+    // update global volume
+    //
+    if (settings3DS.Volume < 0)
+        settings3DS.Volume = 0;
+    if (settings3DS.Volume > 8)
+        settings3DS.Volume = 8;
+    if (settings3DS.GlobalVolume < 0)
+        settings3DS.GlobalVolume = 0;
+    if (settings3DS.GlobalVolume > 8)
+        settings3DS.GlobalVolume = 8;
+    
+    int vol[9] = { 100, 125, 150, 175, 200, 250, 300, 350, 400 };
+    Config.sound.nVolume[0] = vol[settings3DS.Volume];
+    if (settings3DS.UseGlobalVolume)
+        Config.sound.nVolume[0] = vol[settings3DS.GlobalVolume];
+
     if (updateGameSettings)
     {
         if (settings3DS.ForceFrameRate == 0)
@@ -1358,19 +1381,6 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
 
         else if (settings3DS.ForceFrameRate == 2)
             settings3DS.TicksPerFrame = TICKS_PER_FRAME_NTSC;
-
-        // update global volume
-        //
-        if (settings3DS.Volume < 0)
-            settings3DS.Volume = 0;
-        if (settings3DS.Volume > 8)
-            settings3DS.Volume = 8;
-        
-        int vol[9] = { 100, 125, 150, 175, 200, 250, 300, 350, 400 };
-        Config.sound.nVolume[0] = vol[settings3DS.Volume];
-        if (settings3DS.UseGlobalVolume)
-            Config.sound.nVolume[0] = vol[settings3DS.GlobalVolume];
-            
 
         Config.graphics.bAllSprite = settings3DS.OtherOptions[SETTINGS_ALLSPRITES];
     }
@@ -1458,8 +1468,6 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
         UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_INSERTCOIN1], -1, 23004);
     }
     
-    UPDATE_SETTINGS(settings3DS.PaletteFix, -1, 16000);
-    UPDATE_SETTINGS(settings3DS.SRAMSaveInterval, -1, 17000);
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_ALLSPRITES], -1, 19000);     // sprite flicker
 
     return settingsUpdated;
