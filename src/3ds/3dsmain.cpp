@@ -128,6 +128,7 @@ bool emulatorLoadRom()
 
         return false;
     }
+    impl3dsApplyAllSettings();
 
     if (settings3DS.AutoSavestate)
         impl3dsLoadState(0);
@@ -192,6 +193,11 @@ int fileFindLastSelectedFile()
     return -1;
 }
 
+#define CLEAR_BOTTOM_SCREEN2 \
+    gfxSetDoubleBuffering(GFX_BOTTOM,false); \
+    gfxSwapBuffers(); \
+    consoleInit(GFX_BOTTOM, NULL); \
+
 
 
 //----------------------------------------------------------------------
@@ -247,10 +253,14 @@ bool emulatorSettingsSave(bool includeGlobalSettings, bool includeGameSettings, 
     }
 
     if (includeGameSettings)
+    {
         impl3dsReadWriteSettingsByGame(true);
+    }
 
     if (includeGlobalSettings)
+    {
         impl3dsReadWriteSettingsGlobal(true);
+    }
 
     if (showMessage)
     {
@@ -479,7 +489,7 @@ void menuPause()
                     // Save settings and cheats, before loading
                     // your new ROM.
                     //
-                    if (impl3dsCopyMenuToOrFromSettings(true))
+                    //if (impl3dsCopyMenuToOrFromSettings(true))
                     {
                         emulatorSettingsSave(true, true, true);
                         settingsSaved = true;
@@ -625,7 +635,9 @@ void menuPause()
     // Save settings and cheats
     //
     if (!settingsSaved && impl3dsCopyMenuToOrFromSettings(true))
+    {
         emulatorSettingsSave(true, true, true);
+    }
     impl3dsApplyAllSettings();
 
     cheat3dsSaveCheatTextFile (file3dsReplaceFilenameExtension(romFileNameFullPath, ".chx"));
