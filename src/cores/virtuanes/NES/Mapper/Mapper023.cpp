@@ -27,7 +27,8 @@ void	Mapper023::Reset()
 
 	if( crc == 0x93794634		// Akumajou Special Boku Dracula Kun(J)
 	 || crc == 0xc7829dae		// Akumajou Special Boku Dracula Kun(T-Eng)
-	 || crc == 0xf82dc02f ) {	// Akumajou Special Boku Dracula Kun(T-Eng v1.02)
+	 || crc == 0xf82dc02f 		// Akumajou Special Boku Dracula Kun(T-Eng v1.02)
+	 || crc == 0x99580334 ) {	// Crisis Force (Japan)
 		addrmask = 0xF00C;
 		nes->SetRenderMethod( NES::PRE_ALL_RENDER );
 	}
