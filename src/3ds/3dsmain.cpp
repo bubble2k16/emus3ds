@@ -193,12 +193,6 @@ int fileFindLastSelectedFile()
     return -1;
 }
 
-#define CLEAR_BOTTOM_SCREEN2 \
-    gfxSetDoubleBuffering(GFX_BOTTOM,false); \
-    gfxSwapBuffers(); \
-    consoleInit(GFX_BOTTOM, NULL); \
-
-
 
 //----------------------------------------------------------------------
 // Load global settings, and game-specific settings.
@@ -489,11 +483,15 @@ void menuPause()
                     // Save settings and cheats, before loading
                     // your new ROM.
                     //
-                    //if (impl3dsCopyMenuToOrFromSettings(true))
+                    if (impl3dsCopyMenuToOrFromSettings(true))
                     {
                         emulatorSettingsSave(true, true, true);
-                        settingsSaved = true;
                     }
+                    else
+                    {
+                        emulatorSettingsSave(true, false, true);
+                    }
+                    settingsSaved = true;
                     
                     if (!emulatorLoadRom())
                     {
