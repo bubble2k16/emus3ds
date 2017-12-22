@@ -53,6 +53,19 @@ It also runs on your New 3DS as well!
 
 *VirtuaNES:*
 
+### v1.00
+- Added key mappings to fast forward (capped at 180 FPS), and open the emulator menu.
+- Updated configuration menu
+- Added feature to auto-save state
+- Migrated and fixed some mappers from VirtuaNESEx (thanks to the authors of VirtualNESEx) 
+- The following mappers are fixed/added: 4, 7, 16, 23, 34, 47, 49, 52, 65, 69, 71, 73, 74, 86, 91, 92, 121, 132, 141, 148, 150, 162, 163, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 189, 190, 194, 198, 199, 212, 235, 237, 240, 241, 252
+- Fixed VS mapper for Super Mario Bros
+- Added ability to map any 3DS key to insert coin for VS games
+- Fixed Lagrange Point VRC7 emulation for the Old 3DS by playing at 20KHz. The old 3DS was too slow to render sounds at 32KHz or even at 22KHz.
+- Minor optimizations for sound generation.
+- A number of games are fixed due to the mapper updates. Examples are: Crisis Force (Japan), Feng Yun (Ch), San Guo Zhi (Ch), and many others.
+
+
 ### v0.92
 
 - Migrated some mappers from VirtuaNES Up (thank you dragon2snow, and authors of VirtualNES Plus)
