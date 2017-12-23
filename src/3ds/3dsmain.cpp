@@ -374,7 +374,7 @@ bool menuSelectedChanged(int ID, int value)
     if (ID >= 50000 && ID <= 51000)
     {
         // Handle cheats
-        int enabled = menu3dsGetValueByID(2, ID);
+        int enabled = menu3dsGetValueByID(-1, ID);
         impl3dsSetCheatEnabledFlag(ID - 50000, enabled == 1);
         cheat3dsSetCheatEnabledFlag(ID - 50000, enabled == 1);
         return false;

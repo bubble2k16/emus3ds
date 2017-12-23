@@ -334,7 +334,7 @@ char *impl3dsTitleImage = "./virtuanes_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "VirtuaNES for 3DS v1.00";
+char *impl3dsTitleText = "VirtuaNES for 3DS v1.01";
 
 //---------------------------------------------------------
 // Initializes the emulator core.
@@ -838,6 +838,7 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
 #ifndef EMU_RELEASE
 if (frameCount60 == 59)
 {
+    printf ("control1: %d\n", nes->rom->GetNesHeader()->control1);
     printf ("Mapper  : %d\n", nes->rom->GetMapperNo());
     printf ("PROM CRC: %08X\n", nes->rom->GetPROM_CRC());
     printf ("CRC     : %08X\n", nes->rom->GetROM_CRC());
