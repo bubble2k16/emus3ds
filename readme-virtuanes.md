@@ -53,6 +53,10 @@ It also runs on your New 3DS as well!
 
 *VirtuaNES:*
 
+### v1.01
+- Fixed cheats (previously cheats couldn't be activated whatever you did)
+- Fixed mapper problem in Kabuki Quantum Fighter
+
 ### v1.00
 - Added key mappings to fast forward (capped at 180 FPS), and open the emulator menu.
 - Updated configuration menu
