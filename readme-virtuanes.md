@@ -69,7 +69,6 @@ It also runs on your New 3DS as well!
 - Minor optimizations for sound generation.
 - A number of games are fixed due to the mapper updates. Examples are: Crisis Force (Japan), Feng Yun (Ch), San Guo Zhi (Ch), and many others.
 
-
 ### v0.92
 
 - Migrated some mappers from VirtuaNES Up (thank you dragon2snow, and authors of VirtualNES Plus)
