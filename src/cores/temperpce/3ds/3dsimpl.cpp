@@ -164,11 +164,11 @@ SMenuItem optionsForRendering[] =
 
 SMenuItem optionsForBIOS[] =
 {
-    MENU_MAKE_DIALOG_ACTION (2, "CD-ROM v1",             "/3ds/temperpce_3ds/syscards/syscard1.pce"),
-    MENU_MAKE_DIALOG_ACTION (1, "CD-ROM v2",             "/3ds/temperpce_3ds/syscards/syscard2.pce"),
-    MENU_MAKE_DIALOG_ACTION (0, "CD-ROM v3",             "/3ds/temperpce_3ds/syscards/syscard3.pce"),
-    MENU_MAKE_DIALOG_ACTION (3, "Arcade CD",             "/3ds/temperpce_3ds/syscards/syscard3.pce"),
-    MENU_MAKE_DIALOG_ACTION (4, "Games Express",         "/3ds/temperpce_3ds/syscards/games_express.pce"),
+    MENU_MAKE_DIALOG_ACTION (2, "CD-ROM v1",             "syscard1.pce"),
+    MENU_MAKE_DIALOG_ACTION (1, "CD-ROM v2",             "syscard2.pce"),
+    MENU_MAKE_DIALOG_ACTION (0, "CD-ROM v3",             "syscard3.pce"),
+    MENU_MAKE_DIALOG_ACTION (3, "Arcade CD",             "syscard3.pce"),
+    MENU_MAKE_DIALOG_ACTION (4, "Games Express",         "games_express.pce"),
     MENU_MAKE_LASTITEM  ()  
 };
 
@@ -372,7 +372,7 @@ char *impl3dsTitleImage = "./temperpce_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "TemperPCE for 3DS v1.00";
+char *impl3dsTitleText = "TemperPCE for 3DS v1.01";
 
 
 int soundSamplesPerGeneration = 0;
