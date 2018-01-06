@@ -464,10 +464,18 @@ PICO_INTERNAL void PsndGetSamples(int y)
     //
     if (emulator.isReal3DS)
     {
-      for (int i = 0; i < Pico.snd.len; i++)
+      if (emulator.fastForwarding)
       {
-        dacQueueWaitUntilLength(&dacQueue, Pico.snd.len * 2, 32, 100000);
-        dacQueueAdd(&dacQueue, PicoIn.sndOut[i*2]);
+        for (int i = 0; i < Pico.snd.len; i++)
+          dacQueueAdd(&dacQueue, PicoIn.sndOut[i*2]);
+      }
+      else
+      {
+        for (int i = 0; i < Pico.snd.len; i++)
+        {
+          dacQueueWaitUntilLength(&dacQueue, Pico.snd.len * 2, 32, 100000);
+          dacQueueAdd(&dacQueue, PicoIn.sndOut[i*2]);
+        }
       }
     }
 
@@ -500,10 +508,18 @@ PICO_INTERNAL void PsndGetSamplesMS(void)
   //
   if (emulator.isReal3DS)
   {
-    for (int i = 0; i < Pico.snd.len; i++)
+    if (emulator.fastForwarding)
     {
-      dacQueueWaitUntilLength(&dacQueue, Pico.snd.len * 2, 32, 100000);
-      dacQueueAdd(&dacQueue, PicoIn.sndOut[i*2]);
+      for (int i = 0; i < Pico.snd.len; i++)
+        dacQueueAdd(&dacQueue, PicoIn.sndOut[i*2]);
+    }
+    else
+    {
+      for (int i = 0; i < Pico.snd.len; i++)
+      {
+        dacQueueWaitUntilLength(&dacQueue, Pico.snd.len * 2, 32, 100000);
+        dacQueueAdd(&dacQueue, PicoIn.sndOut[i*2]);
+      }
     }
   }
 
