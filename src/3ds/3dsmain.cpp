@@ -202,12 +202,18 @@ bool emulatorSettingsLoad(bool includeGlobalSettings, bool includeGameSettings, 
     if (includeGlobalSettings)
     {
         bool success = impl3dsReadWriteSettingsGlobal(false);
-        if (!success)
+        if (success)
+        {
+            input3dsSetDefaultButtonMappings(settings3DS.GlobalButtonMapping, settings3DS.GlobalTurbo, false);
+            impl3dsApplyAllSettings(false);
+        }
+        else
         {
             impl3dsInitializeDefaultSettingsGlobal();
+            input3dsSetDefaultButtonMappings(settings3DS.GlobalButtonMapping, settings3DS.GlobalTurbo, true);
+            impl3dsApplyAllSettings(false);
             return false;
         }
-        impl3dsApplyAllSettings(false);
     }
 
     if (includeGameSettings)
@@ -215,15 +221,14 @@ bool emulatorSettingsLoad(bool includeGlobalSettings, bool includeGameSettings, 
         bool success = impl3dsReadWriteSettingsByGame(false);
         if (success)
         {
+            input3dsSetDefaultButtonMappings(settings3DS.ButtonMapping, settings3DS.Turbo, false);
             impl3dsApplyAllSettings();
-            /*if (impl3dsApplyAllSettings())
-                emulatorSettingsSave(true, showMessage);*/
             return true;
         }
         else
         {
             impl3dsInitializeDefaultSettingsByGame();
-
+            input3dsSetDefaultButtonMappings(settings3DS.ButtonMapping, settings3DS.Turbo, true);
             impl3dsApplyAllSettings();
 
             //return emulatorSettingsSave(true, showMessage);

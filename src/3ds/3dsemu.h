@@ -49,8 +49,6 @@ typedef struct
     int                 emulatorState;
     int                 waitBehavior;
     bool                fastForwarding;
-
-int debugSoundThreadPoint;
 } SEmulator;
 
 extern SEmulator emulator;

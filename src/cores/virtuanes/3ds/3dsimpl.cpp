@@ -25,6 +25,7 @@
 #include "3dsopt.h"
 #include "3dsconfig.h"
 #include "3dsdbg.h"
+#include "3dsvideo.h"
 
 //---------------------------------------------------------
 // All other codes that you need here.
@@ -300,14 +301,9 @@ SMenuItem emulatorMenu[] = {
 //---------------------------------------------------------
 // Our textures
 //---------------------------------------------------------
-SGPUTexture *nesMainScreenTarget[2];
-//SGPUTexture *nesTileCacheTexture;
-//SGPUTexture *nesDepthForScreens;
-//SGPUTexture *nesDepthForOtherTextures;
 
 NES* nes = NULL;
 
-uint32 *bufferRGBA[2];
 unsigned char linecolor[256];
 
 
@@ -334,7 +330,34 @@ char *impl3dsTitleImage = "./virtuanes_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "VirtuaNES for 3DS v1.01";
+char *impl3dsTitleText = "VirtuaNES for 3DS v1.02";
+
+
+//---------------------------------------------------------
+// The bitmaps for the emulated console's UP, DOWN, LEFT, 
+// RIGHT keys.
+//---------------------------------------------------------
+u32 input3dsDKeys[4] = { BTNNES_UP, BTNNES_DOWN, BTNNES_LEFT, BTNNES_RIGHT };
+
+
+//---------------------------------------------------------
+// The list of valid joypad bitmaps for the emulated 
+// console.
+//
+// This should NOT include D-keys.
+//---------------------------------------------------------
+u32 input3dsValidButtonMappings[10] = { BTNNES_A, BTNNES_B, BTNNES_SELECT, BTNNES_START, 0, 0, 0, 0, 0, 0 };
+
+
+//---------------------------------------------------------
+// The maps for the 10 3DS keys to the emulated consoles
+// joypad bitmaps for the following 3DS keys (in order):
+//   A, B, X, Y, L, R, ZL, ZR, SELECT, START
+//
+// This should NOT include D-keys.
+//---------------------------------------------------------
+u32 input3dsDefaultButtonMappings[10] = { BTNNES_A, BTNNES_B, BTNNES_A, BTNNES_B, 0, 0, 0, 0, BTNNES_SELECT, BTNNES_START };
+
 
 //---------------------------------------------------------
 // Initializes the emulator core.
@@ -365,28 +388,9 @@ bool impl3dsInitializeCore()
     // Create all the necessary textures
     //
     //nesTileCacheTexture = gpu3dsCreateTextureInLinearMemory(1024, 1024, GPU_RGBA5551);
-
-    // Main screen 
-    nesMainScreenTarget[0] = gpu3dsCreateTextureInVRAM(512, 256, GPU_RGBA8);      // 0.250 MB
-    nesMainScreenTarget[1] = gpu3dsCreateTextureInVRAM(512, 256, GPU_RGBA8);      // 0.250 MB
-
-	// Depth textures, if required
-    //
-    //nesDepthForScreens = gpu3dsCreateTextureInVRAM(256, 256, GPU_RGBA8);       // 0.250 MB
-    //nesDepthForOtherTextures = gpu3dsCreateTextureInVRAM(256, 256, GPU_RGBA8); // 0.250 MB
-
-	bufferRGBA[0] = linearMemAlign(512*256*4, 0x80);
-	bufferRGBA[1] = linearMemAlign(512*256*4, 0x80);
-
-    if (//nesTileCacheTexture == NULL || 
-        nesMainScreenTarget[0] == NULL || 
-        nesMainScreenTarget[1] == NULL /*|| 
-        nesDepthForScreens == NULL  || 
-		nesDepthForOtherTextures == NULL*/)
-    {
-        printf ("Unable to allocate textures\n");
+ 
+    if (!video3dsInitializeSoftwareRendering(512, 256, GX_TRANSFER_FMT_RGBA8))
         return false;
-    }
 
 	// allocate all necessary vertex lists
 	//
@@ -421,18 +425,9 @@ bool impl3dsInitializeCore()
 //---------------------------------------------------------
 void impl3dsFinalize()
 {
-	//if (nesTileCacheTexture) gpu3dsDestroyTextureFromLinearMemory(nesTileCacheTexture);
-	if (nesMainScreenTarget[0]) gpu3dsDestroyTextureFromVRAM(nesMainScreenTarget[0]);
-	if (nesMainScreenTarget[1]) gpu3dsDestroyTextureFromVRAM(nesMainScreenTarget[1]);
-	//if (nesDepthForScreens) gpu3dsDestroyTextureFromVRAM(nesDepthForScreens);
-	//if (nesDepthForOtherTextures) gpu3dsDestroyTextureFromVRAM(nesDepthForOtherTextures);
-
-	if (bufferRGBA[0]) linearFree(bufferRGBA[0]);
-	if (bufferRGBA[1]) linearFree(bufferRGBA[1]);
+    video3dsFinalize();
 
 	if (nes) delete nes;
-		
-	
 }
 
 
@@ -447,7 +442,7 @@ short soundSamples[1000];
 // from the 2nd core before copying it to the actual
 // output buffer.
 //---------------------------------------------------------
-void impl3dsGenerateSoundSamples()
+void impl3dsGenerateSoundSamples(int numberOfSamples)
 {
 	if (nes && soundSamplesPerGeneration)
 	{
@@ -466,7 +461,7 @@ void impl3dsGenerateSoundSamples()
 // For a console with only MONO output, simply copy
 // the samples into the leftSamples buffer.
 //---------------------------------------------------------
-void impl3dsOutputSoundSamples(short *leftSamples, short *rightSamples)
+void impl3dsOutputSoundSamples(int numberOfSamples, short *leftSamples, short *rightSamples)
 {
 	for (int i = 0; i < soundSamplesPerGeneration; i++)
 	{
@@ -489,7 +484,7 @@ bool impl3dsLoadROM(char *romFilePath)
 		return false;
 
 	//nes->ppu->SetScreenPtr( NULL, linecolor );
-	nes->ppu->SetScreenRGBAPtr( bufferRGBA[0], linecolor );
+	nes->ppu->SetScreenRGBAPtr( video3dsGetCurrentSoftwareBuffer(), linecolor );
 
 	// compute a sample rate closes to 32000 kHz.
 	//
@@ -504,12 +499,12 @@ bool impl3dsLoadROM(char *romFilePath)
         nesSampleRate = 20000;
 
     int numberOfGenerationsPerSecond = nes->nescfg->FrameRate * 2;
-    soundSamplesPerGeneration = nesSampleRate / numberOfGenerationsPerSecond;
-	soundSamplesPerSecond = soundSamplesPerGeneration * numberOfGenerationsPerSecond;
+    soundSamplesPerGeneration = snd3dsComputeSamplesPerLoop(nesSampleRate, numberOfGenerationsPerSecond);
+	soundSamplesPerSecond = snd3dsComputeSampleRate(nesSampleRate, numberOfGenerationsPerSecond);
 	snd3dsSetSampleRate(
 		false,
-		soundSamplesPerSecond, 
-		soundSamplesPerGeneration, 
+		nesSampleRate, 
+		numberOfGenerationsPerSecond, 
 		true);
 	
 	Config.sound.nRate = soundSamplesPerSecond;
@@ -582,6 +577,8 @@ void impl3dsPrepareForNewFrame()
 	gpu3dsSwapVertexListForNextFrame(&GPU3DSExt.quadVertexes);
     gpu3dsSwapVertexListForNextFrame(&GPU3DSExt.tileVertexes);
     gpu3dsSwapVertexListForNextFrame(&GPU3DSExt.rectangleVertexes);
+
+    video3dsStartNewSoftwareRenderedFrame();
 }
 
 
@@ -616,108 +613,19 @@ void impl3dsEmulationBegin()
 	//	gpu3dsWaitForPreviousFlush();
 }
 
+
+
+
+//---------------------------------------------------------
+// Polls and get the emulated console's joy pad.
+//---------------------------------------------------------
 u32 insertCoin1 = 0;
 u32 insertCoin2 = 0;
 
-u32 prevConsoleJoyPad;
-u32 prevConsoleButtonPressed[10];
-u32 buttons3dsPressed[10];
 void impl3dsEmulationPollInput()
 {
-	u32 keysHeld3ds = input3dsGetCurrentKeysHeld();
-    u32 consoleJoyPad = 0;
-
-    if (keysHeld3ds & KEY_UP) consoleJoyPad |= BTNNES_UP;
-    if (keysHeld3ds & KEY_DOWN) consoleJoyPad |= BTNNES_DOWN;
-    if (keysHeld3ds & KEY_LEFT) consoleJoyPad |= BTNNES_LEFT;
-    if (keysHeld3ds & KEY_RIGHT) consoleJoyPad |= BTNNES_RIGHT;
-
-
-	#define SET_CONSOLE_JOYPAD(i, mask, buttonMapping) 				\
-		buttons3dsPressed[i] = (keysHeld3ds & mask);				\
-		if (keysHeld3ds & mask) 									\
-			consoleJoyPad |= 										\
-				buttonMapping[i][0] |								\
-				buttonMapping[i][1] |								\
-				buttonMapping[i][2] |								\
-				buttonMapping[i][3];								\
-
-	if (settings3DS.UseGlobalButtonMappings)
-	{
-		SET_CONSOLE_JOYPAD(BTN3DS_L, KEY_L, settings3DS.GlobalButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_R, KEY_R, settings3DS.GlobalButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_A, KEY_A, settings3DS.GlobalButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_B, KEY_B, settings3DS.GlobalButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_X, KEY_X, settings3DS.GlobalButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_Y, KEY_Y, settings3DS.GlobalButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_SELECT, KEY_SELECT, settings3DS.GlobalButtonMapping);
-		SET_CONSOLE_JOYPAD(BTN3DS_START, KEY_START, settings3DS.GlobalButtonMapping);
-		SET_CONSOLE_JOYPAD(BTN3DS_ZL, KEY_ZL, settings3DS.GlobalButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_ZR, KEY_ZR, settings3DS.GlobalButtonMapping)
-	}
-	else
-	{
-		SET_CONSOLE_JOYPAD(BTN3DS_L, KEY_L, settings3DS.ButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_R, KEY_R, settings3DS.ButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_A, KEY_A, settings3DS.ButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_B, KEY_B, settings3DS.ButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_X, KEY_X, settings3DS.ButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_Y, KEY_Y, settings3DS.ButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_SELECT, KEY_SELECT, settings3DS.ButtonMapping);
-		SET_CONSOLE_JOYPAD(BTN3DS_START, KEY_START, settings3DS.ButtonMapping);
-		SET_CONSOLE_JOYPAD(BTN3DS_ZL, KEY_ZL, settings3DS.ButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_ZR, KEY_ZR, settings3DS.ButtonMapping)
-	}
-
-
-    // Handle turbo / rapid fire buttons.
-    //
-    int *turbo = settings3DS.Turbo;
-    if (settings3DS.UseGlobalTurbo)
-        turbo = settings3DS.GlobalTurbo;
-    
-    #define HANDLE_TURBO(i, buttonMapping) 										\
-		if (turbo[i] && buttons3dsPressed[i]) { 		\
-			if (!prevConsoleButtonPressed[i]) 						\
-			{ 														\
-				prevConsoleButtonPressed[i] = 11 - turbo[i]; 		\
-			} 														\
-			else 													\
-			{ 														\
-				prevConsoleButtonPressed[i]--; 						\
-				consoleJoyPad &= ~(									\
-				buttonMapping[i][0] |								\
-				buttonMapping[i][1] |								\
-				buttonMapping[i][2] |								\
-				buttonMapping[i][3]									\
-				); \
-			} \
-		} \
-
-	if (settings3DS.UseGlobalButtonMappings)
-	{
-		HANDLE_TURBO(BTN3DS_A, settings3DS.GlobalButtonMapping);
-		HANDLE_TURBO(BTN3DS_B, settings3DS.GlobalButtonMapping);
-		HANDLE_TURBO(BTN3DS_X, settings3DS.GlobalButtonMapping);
-		HANDLE_TURBO(BTN3DS_Y, settings3DS.GlobalButtonMapping);
-		HANDLE_TURBO(BTN3DS_L, settings3DS.GlobalButtonMapping);
-		HANDLE_TURBO(BTN3DS_R, settings3DS.GlobalButtonMapping);
-		HANDLE_TURBO(BTN3DS_ZL, settings3DS.GlobalButtonMapping);
-		HANDLE_TURBO(BTN3DS_ZR, settings3DS.GlobalButtonMapping);
-	}
-	else
-	{
-		HANDLE_TURBO(BTN3DS_A, settings3DS.ButtonMapping);
-		HANDLE_TURBO(BTN3DS_B, settings3DS.ButtonMapping);
-		HANDLE_TURBO(BTN3DS_X, settings3DS.ButtonMapping);
-		HANDLE_TURBO(BTN3DS_Y, settings3DS.ButtonMapping);
-		HANDLE_TURBO(BTN3DS_L, settings3DS.ButtonMapping);
-		HANDLE_TURBO(BTN3DS_R, settings3DS.ButtonMapping);
-		HANDLE_TURBO(BTN3DS_ZL, settings3DS.ButtonMapping);
-		HANDLE_TURBO(BTN3DS_ZR, settings3DS.ButtonMapping);
-	}
-
-    prevConsoleJoyPad = consoleJoyPad;
+    u32 keysHeld3ds = input3dsGetCurrentKeysHeld();
+    u32 consoleJoyPad = input3dsProcess3dsKeys();
 
     if (nes)
 		nes->pad->SetSyncData(consoleJoyPad);
@@ -748,27 +656,8 @@ int lastWait = 0;
 #define WAIT_PPF		1
 #define WAIT_P3D		2
 
-int currentFrameIndex = 0;
 
-
-void impl3dsRenderTransferNESScreenToTexture(u32 *buffer, int textureIndex)
-{
-	t3dsStartTiming(11, "FlushDataCache");
-	GSPGPU_FlushDataCache(buffer, 512*240*4);
-	t3dsEndTiming(11);
-
-	t3dsStartTiming(12, "DisplayTransfer");
-	GX_DisplayTransfer(
-		(uint32 *)(buffer), GX_BUFFER_DIM(512, 240),
-		(uint32 *)(nesMainScreenTarget[textureIndex]->PixelData), GX_BUFFER_DIM(512, 240),
-		GX_TRANSFER_OUT_TILED(1) |
-		GX_TRANSFER_FLIP_VERT(1) |
-		0
-	);
-	t3dsEndTiming(12);
-}
-
-void impl3dsRenderDrawTextureToMainScreen(int textureIndex)
+void impl3dsRenderDrawTextureToFrameBuffer()
 {
 	t3dsStartTiming(14, "Draw Texture");	
 
@@ -782,8 +671,8 @@ void impl3dsRenderDrawTextureToMainScreen(int textureIndex)
             gpu3dsDrawRectangle(328, 0, 400, 240, 0, 0x000000ff);
 
             gpu3dsSetTextureEnvironmentReplaceTexture0();
-            gpu3dsBindTextureMainScreen(nesMainScreenTarget[textureIndex], GPU_TEXUNIT0);
-			gpu3dsAddQuadVertexes(72, 0, 328, 240, 8, 0 + 16, 264, 240 + 16, 0);
+            gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
+			gpu3dsAddQuadVertexes(72, 0, 328, 240, 8, 0, 264, 240, 0);
 			break;
 		case 1:
             gpu3dsSetTextureEnvironmentReplaceColor();
@@ -791,13 +680,13 @@ void impl3dsRenderDrawTextureToMainScreen(int textureIndex)
             gpu3dsDrawRectangle(360, 0, 400, 240, 0, 0x000000ff);
 
             gpu3dsSetTextureEnvironmentReplaceTexture0();
-            gpu3dsBindTextureMainScreen(nesMainScreenTarget[textureIndex], GPU_TEXUNIT0);
-			gpu3dsAddQuadVertexes(40, 0, 360, 240, 8.2, 0 + 16, 263.8, 240 + 16, 0);
+            gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
+			gpu3dsAddQuadVertexes(40, 0, 360, 240, 8.2, 0, 263.8, 240, 0);
 			break;
 		case 2:
             gpu3dsSetTextureEnvironmentReplaceTexture0();
-            gpu3dsBindTextureMainScreen(nesMainScreenTarget[textureIndex], GPU_TEXUNIT0);
-			gpu3dsAddQuadVertexes(0, 0, 400, 240, 8.2, 0 + 16, 263.8, 240 + 16, 0);
+            gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
+			gpu3dsAddQuadVertexes(0, 0, 400, 240, 8.2, 0, 263.8, 240, 0);
 			break;
 		case 3:
             gpu3dsSetTextureEnvironmentReplaceColor();
@@ -805,13 +694,13 @@ void impl3dsRenderDrawTextureToMainScreen(int textureIndex)
             gpu3dsDrawRectangle(360, 0, 400, 240, 0, 0x000000ff);
 
             gpu3dsSetTextureEnvironmentReplaceTexture0();
-            gpu3dsBindTextureMainScreen(nesMainScreenTarget[textureIndex], GPU_TEXUNIT0);
-			gpu3dsAddQuadVertexes(40, 0, 360, 240, 8.2 + 8, 0 + 16 + 8, 263.8 - 8, 240 + 16 - 8, 0);
+            gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
+			gpu3dsAddQuadVertexes(40, 0, 360, 240, 8.2 + 8, 0 + 8, 263.8 - 8, 240 - 8, 0);
 			break;
 		case 4:
             gpu3dsSetTextureEnvironmentReplaceTexture0();
-            gpu3dsBindTextureMainScreen(nesMainScreenTarget[textureIndex], GPU_TEXUNIT0);
-			gpu3dsAddQuadVertexes(0, 0, 400, 240, 8.2 + 8, 0 + 16 + 8, 263.8 - 8, 240 + 16 - 8, 0);
+            gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
+			gpu3dsAddQuadVertexes(0, 0, 400, 240, 8.2 + 8, 0 + 8, 263.8 - 8, 240 - 8, 0);
 			break;
 	}
     gpu3dsDrawVertexes();
@@ -845,6 +734,9 @@ if (frameCount60 == 59)
 }
 #endif
 
+	if (!skipDrawingPreviousFrame)
+        video3dsTransferFrameBufferToScreenAndSwap();
+
 	t3dsStartTiming(10, "EmulateFrame");
 	if (nes)
 	{
@@ -856,48 +748,21 @@ if (frameCount60 == 59)
 		}
 		else
 		{
-			currentFrameIndex ^= 1;
-			nes->ppu->SetScreenRGBAPtr( bufferRGBA[currentFrameIndex], linecolor );
+            nes->ppu->SetScreenRGBAPtr( video3dsGetCurrentSoftwareBuffer(), linecolor );
 			nes->EmulateFrame(true);
-
 		}
 	}
 	t3dsEndTiming(10);
 
-
-	//impl3dsGenerateSoundSamples();
-
-	if (!skipDrawingPreviousFrame)
-	{
-		t3dsStartTiming(16, "Transfer");
-		// GPU3DS.frameBuffer -> gfxGetFramebuffer(TOP)
-		gpu3dsTransferToScreenBuffer();	
-		t3dsEndTiming(16);
-
-		t3dsStartTiming(19, "SwapBuffers");
-		gpu3dsSwapScreenBuffers();
-		t3dsEndTiming(19);
-	}
-
 	if (!skipDrawingFrame)
-	{
-		// Transfer current screen to the texture
-		impl3dsRenderTransferNESScreenToTexture(
-			bufferRGBA[currentFrameIndex], currentFrameIndex);
-	}
+        video3dsCopySoftwareBufferToTexture();
 
 	if (!skipDrawingPreviousFrame)
-	{
-		// nesMainScreenTarget[prev] -> GPU3DS.framebuffer (not flushed)
-		impl3dsRenderDrawTextureToMainScreen(currentFrameIndex ^ 1);	
-	}
+		impl3dsRenderDrawTextureToFrameBuffer();	
 
 	skipDrawingPreviousFrame = skipDrawingFrame;
 	t3dsEndTiming(1);
 
-    //double cpucycles = nes->cpu->GetTotalCycles();
-    //double apucycles = nes->apu->elapsed_time;
-    //printf ("%8f\n", cpucycles - apucycles);
 }
 
 
@@ -1084,26 +949,6 @@ bool impl3dsOnMenuSelectedChanged(int ID, int value)
 void impl3dsInitializeDefaultSettingsGlobal()
 {
 	settings3DS.GlobalVolume = 4;
-	for (int i = 0; i < 8; i++)     // and clear all turbo buttons.
-    {
-		settings3DS.Turbo[i] = 0;
-    }
-    for (int i = 0; i < 10; i++)
-        for (int j = 0; j < 4; j++)
-        {
-            settings3DS.ButtonMapping[i][j] = 0;
-        }
-            
-	settings3DS.GlobalButtonMapping[0][0] = BTNNES_A;
-	settings3DS.GlobalButtonMapping[1][0] = BTNNES_B;
-	settings3DS.GlobalButtonMapping[2][0] = BTNNES_A;
-	settings3DS.GlobalButtonMapping[3][0] = BTNNES_B;
-	settings3DS.GlobalButtonMapping[4][0] = 0;
-	settings3DS.GlobalButtonMapping[5][0] = 0;	
-	settings3DS.GlobalButtonMapping[6][0] = 0;	
-	settings3DS.GlobalButtonMapping[7][0] = 0;	
-	settings3DS.GlobalButtonMapping[8][0] = BTNNES_SELECT;	
-	settings3DS.GlobalButtonMapping[9][0] = BTNNES_START;
 	settings3DS.OtherOptions[SETTINGS_GLOBALINSERTCOIN1] = 0;	
 	settings3DS.OtherOptions[SETTINGS_GLOBALINSERTCOIN2] = 0;	
 }
@@ -1119,63 +964,11 @@ void impl3dsInitializeDefaultSettingsByGame()
 	settings3DS.ForceFrameRate = 0;
 	settings3DS.Volume = 4;
 
-	for (int i = 0; i < 8; i++)     // and clear all turbo buttons.
-    {
-		settings3DS.Turbo[i] = 0;
-    }
-    for (int i = 0; i < 10; i++)
-        for (int j = 0; j < 4; j++)
-        {
-            settings3DS.ButtonMapping[i][j] = 0;
-        }
-            
-	settings3DS.ButtonMapping[0][0] = BTNNES_A;
-	settings3DS.ButtonMapping[1][0] = BTNNES_B;
-	settings3DS.ButtonMapping[2][0] = BTNNES_A;
-	settings3DS.ButtonMapping[3][0] = BTNNES_B;
-	settings3DS.ButtonMapping[4][0] = 0;
-	settings3DS.ButtonMapping[5][0] = 0;	
-	settings3DS.ButtonMapping[6][0] = 0;	
-	settings3DS.ButtonMapping[7][0] = 0;	
-	settings3DS.ButtonMapping[8][0] = BTNNES_SELECT;	
-	settings3DS.ButtonMapping[9][0] = BTNNES_START;	
 	settings3DS.OtherOptions[SETTINGS_INSERTCOIN1] = 0;	
 	settings3DS.OtherOptions[SETTINGS_INSERTCOIN2] = 0;	
 }
 
 
-//----------------------------------------------------------------------
-// Set default buttons mapping
-//----------------------------------------------------------------------
-void setDefaultButtonMapping(int buttonMapping[8][4])
-{
-    uint32 defaultButtons[] = 
-    { BTNNES_A, BTNNES_B, BTNNES_A, BTNNES_B, 0, 0, 0, 0, BTNNES_SELECT, BTNNES_START };
-
-    for (int i = 0; i < 10; i++)
-    {
-        bool allZero = true;
-
-        for (int j = 0; j < 4; j++)
-        {
-            // Validates all button mapping input,
-            // assign to zero, if invalid.
-            //
-            if (buttonMapping[i][j] != BTNNES_A &&
-                buttonMapping[i][j] != BTNNES_B &&
-                buttonMapping[i][j] != BTNNES_SELECT &&
-                buttonMapping[i][j] != BTNNES_START &&
-                buttonMapping[i][j] != 0)
-                buttonMapping[i][j] = 0;
-
-            if (buttonMapping[i][j])
-                allZero = false;
-        }
-        if (allZero)
-            buttonMapping[i][0] = defaultButtons[i];
-    }
-
-}
 
 
 //----------------------------------------------------------------------
@@ -1236,9 +1029,6 @@ bool impl3dsReadWriteSettingsByGame(bool writeMode)
     config3dsReadWriteInt32("ButtonMappingInsertCoin1=%d\n", &settings3DS.OtherOptions[SETTINGS_INSERTCOIN1]);
     config3dsReadWriteInt32("ButtonMappingInsertCoin2=%d\n", &settings3DS.OtherOptions[SETTINGS_INSERTCOIN2]);
     config3dsReadWriteInt32("PalFix=%d\n", &settings3DS.PaletteFix, 0, 1);
-
-    if (!writeMode)
-        setDefaultButtonMapping(settings3DS.ButtonMapping);
 
     // All new options should come here!
 
@@ -1306,9 +1096,6 @@ bool impl3dsReadWriteSettingsGlobal(bool writeMode)
     config3dsReadWriteInt32("ButtonMappingOpenEmulatorMenu_0=%d\n", &settings3DS.GlobalButtonHotkeyOpenMenu);
     config3dsReadWriteInt32("ButtonMappingInsertCoin1=%d\n", &settings3DS.OtherOptions[SETTINGS_GLOBALINSERTCOIN1]);
     config3dsReadWriteInt32("ButtonMappingInsertCoin2=%d\n", &settings3DS.OtherOptions[SETTINGS_GLOBALINSERTCOIN2]);
-
-    if (!writeMode)
-        setDefaultButtonMapping(settings3DS.GlobalButtonMapping);
 
     // All new options should come here!
 

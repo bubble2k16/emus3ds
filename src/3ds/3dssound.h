@@ -34,6 +34,26 @@ typedef struct
 extern SSND3DS snd3DS;
 
 //---------------------------------------------------------
+// Computes the truncated number of samples per loop by
+// dividing the the ideal sample rate by the total
+// number of loops to be executed per second. 
+//
+// Usually loopsPerSecond is the frame rate. If you want
+// to generate samples twice per frame, then this value
+// will be the frame rate x 2.
+//---------------------------------------------------------
+int snd3dsComputeSamplesPerLoop(int idealSampleRate, int loopsPerSecond);
+
+
+//---------------------------------------------------------
+// Computes the final sample rate by taking the 
+// samples generate per loop multiplying by the 
+// number of loops in a second.
+//---------------------------------------------------------
+int snd3dsComputeSampleRate(int idealSampleRate, int loopsPerSecond);
+
+
+//---------------------------------------------------------
 // Set the sampling rate.
 //
 // This function should be called by the 

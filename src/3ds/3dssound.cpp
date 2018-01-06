@@ -30,6 +30,32 @@ bool snd3dsSpawnMixingThread = true;
 
 
 //---------------------------------------------------------
+// Computes the truncated number of samples per loop by
+// dividing the the ideal sample rate by the total
+// number of loops to be executed per second. 
+//
+// Usually loopsPerSecond is the frame rate. If you want
+// to generate samples twice per frame, then this value
+// will be the frame rate x 2.
+//---------------------------------------------------------
+int snd3dsComputeSamplesPerLoop(int idealSampleRate, int loopsPerSecond)
+{
+    return idealSampleRate / loopsPerSecond;
+}
+
+
+//---------------------------------------------------------
+// Computes the final sample rate by taking the 
+// samples generate per loop multiplying by the 
+// number of loops in a second.
+//---------------------------------------------------------
+int snd3dsComputeSampleRate(int idealSampleRate, int loopsPerSecond)
+{
+	return (idealSampleRate / loopsPerSecond) * loopsPerSecond;
+}
+
+
+//---------------------------------------------------------
 // Gets the current playing sample position.
 //
 // The problem is that the existing CSND library
@@ -68,7 +94,7 @@ void snd3dsMixSamples()
     bool generateSound = false;
     if (snd3DS.isPlaying)
     {
-        impl3dsGenerateSoundSamples();
+        impl3dsGenerateSoundSamples(snd3dsSamplesPerLoop);
         generateSound = true;
     }
     t3dsEndTiming(44);
@@ -121,7 +147,7 @@ void snd3dsMixSamples()
     {
         if (generateSound)
         {
-            impl3dsOutputSoundSamples(&snd3DS.leftBuffer[p], &snd3DS.rightBuffer[p]);
+            impl3dsOutputSoundSamples(snd3dsSamplesPerLoop, &snd3DS.leftBuffer[p], &snd3DS.rightBuffer[p]);
         }
         else
         {
@@ -291,15 +317,15 @@ void snd3dsStopPlaying()
 //---------------------------------------------------------
 void snd3dsSetSampleRate(
     bool isStereo, 
-    int sampleRate, 
-    int samplesPerLoop, 
+    int idealSampleRate, 
+    int loopsPerSecond, 
     bool spawnMixingThread)
 {
     snd3dsIsStereo = isStereo;
-    snd3dsSampleRate = sampleRate;
-    if (snd3dsSampleRate > 44100)
-        snd3dsSampleRate = 44100;
-    snd3dsSamplesPerLoop = samplesPerLoop;
+    if (idealSampleRate > 44100)
+        idealSampleRate = 44100;
+    snd3dsSampleRate = snd3dsComputeSampleRate(idealSampleRate, loopsPerSecond);
+    snd3dsSamplesPerLoop = snd3dsComputeSamplesPerLoop(idealSampleRate, loopsPerSecond);
     snd3dsSpawnMixingThread = spawnMixingThread;
 }
 
@@ -376,7 +402,6 @@ bool snd3dsInitialize()
             {
                 printf("Unable to start Mix thread: %x\n", ret);
                 snd3dsFinalize();
-                DEBUG_WAIT_L_KEY
                 return false;
             }
 #ifndef EMU_RELEASE

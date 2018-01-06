@@ -375,6 +375,34 @@ char *impl3dsTitleImage = "./temperpce_3ds_top.png";
 char *impl3dsTitleText = "TemperPCE for 3DS v1.01";
 
 
+//---------------------------------------------------------
+// The bitmaps for the emulated console's UP, DOWN, LEFT, 
+// RIGHT keys.
+//---------------------------------------------------------
+u32 input3dsDKeys[4] = { IO_BUTTON_UP, IO_BUTTON_DOWN, IO_BUTTON_LEFT, IO_BUTTON_RIGHT };
+
+
+//---------------------------------------------------------
+// The list of valid joypad bitmaps for the emulated 
+// console.
+//
+// This should NOT include D-keys.
+//---------------------------------------------------------
+u32 input3dsValidButtonMappings[10] = { IO_BUTTON_I, IO_BUTTON_II, IO_BUTTON_III, IO_BUTTON_IV, IO_BUTTON_V, IO_BUTTON_VI, IO_BUTTON_SELECT, IO_BUTTON_RUN, 0, 0 };
+
+
+//---------------------------------------------------------
+// The maps for the 10 3DS keys to the emulated consoles
+// joypad bitmaps for the following 3DS keys (in order):
+//   A, B, X, Y, L, R, ZL, ZR, SELECT, START
+//
+// This should NOT include D-keys.
+//---------------------------------------------------------
+u32 input3dsDefaultButtonMappings[10] = { IO_BUTTON_I, IO_BUTTON_II, IO_BUTTON_III, IO_BUTTON_IV, IO_BUTTON_V, IO_BUTTON_VI, 0, 0, IO_BUTTON_SELECT, IO_BUTTON_RUN };
+
+
+
+
 int soundSamplesPerGeneration = 0;
 int soundSamplesPerSecond = 0;
 
@@ -389,8 +417,8 @@ bool impl3dsInitializeCore()
 	// compute a sample rate closes to 44100 kHz.
 	//
     int numberOfGenerationsPerSecond = 60 * 1;
-    soundSamplesPerGeneration = 44100 / numberOfGenerationsPerSecond;
-	soundSamplesPerSecond = soundSamplesPerGeneration * numberOfGenerationsPerSecond;
+    soundSamplesPerGeneration = snd3dsComputeSamplesPerLoop(44100, 60);
+	soundSamplesPerSecond = snd3dsComputeSampleRate(44100, 60);
     audio.output_frequency = soundSamplesPerSecond;
 
     config.per_game_bram = 1;
@@ -512,7 +540,7 @@ void impl3dsFinalize()
 // from the 2nd core before copying it to the actual
 // output buffer.
 //---------------------------------------------------------
-void impl3dsGenerateSoundSamples()
+void impl3dsGenerateSoundSamples(int numberOfSamples)
 {
     if (!emulator.fastForwarding)
         render_psg(soundSamplesPerGeneration, false);
@@ -531,7 +559,7 @@ void impl3dsGenerateSoundSamples()
 // For a console with only MONO output, simply copy
 // the samples into the leftSamples buffer.
 //---------------------------------------------------------
-void impl3dsOutputSoundSamples(short *leftSamples, short *rightSamples)
+void impl3dsOutputSoundSamples(int numberOfSamples, short *leftSamples, short *rightSamples)
 {
     static int volumeMul[] = { 16, 20, 24, 28, 32, 40, 48, 56, 64 };
     int volume = volumeMul[settings3DS.Volume];
@@ -671,8 +699,8 @@ bool impl3dsLoadROM(char *romFilePath)
 
 	snd3dsSetSampleRate(
 		true,
-		soundSamplesPerSecond, 
-		soundSamplesPerGeneration, 
+		44100, 
+		60, 
 		true);
 
 	return true;
@@ -768,104 +796,12 @@ void impl3dsEmulationBegin()
 }
 
 
-u32 prevConsoleJoyPad;
-u32 prevConsoleButtonPressed[10];
-u32 buttons3dsPressed[10];
+//---------------------------------------------------------
+// Polls and get the emulated console's joy pad.
+//---------------------------------------------------------
 void impl3dsEmulationPollInput()
 {
-	u32 keysHeld3ds = input3dsGetCurrentKeysHeld();
-    u32 consoleJoyPad = 0;
-
-    if (keysHeld3ds & KEY_UP) consoleJoyPad |= IO_BUTTON_UP;
-    if (keysHeld3ds & KEY_DOWN) consoleJoyPad |= IO_BUTTON_DOWN;
-    if (keysHeld3ds & KEY_LEFT) consoleJoyPad |= IO_BUTTON_LEFT;
-    if (keysHeld3ds & KEY_RIGHT) consoleJoyPad |= IO_BUTTON_RIGHT;
-
-	#define SET_CONSOLE_JOYPAD(i, mask, buttonMapping) 				\
-		buttons3dsPressed[i] = (keysHeld3ds & mask);				\
-		if (keysHeld3ds & mask) 									\
-			consoleJoyPad |= 										\
-				buttonMapping[i][0] |								\
-				buttonMapping[i][1] |								\
-				buttonMapping[i][2] |								\
-				buttonMapping[i][3];								\
-
-	if (settings3DS.UseGlobalButtonMappings)
-	{
-		SET_CONSOLE_JOYPAD(BTN3DS_L, KEY_L, settings3DS.GlobalButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_R, KEY_R, settings3DS.GlobalButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_A, KEY_A, settings3DS.GlobalButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_B, KEY_B, settings3DS.GlobalButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_X, KEY_X, settings3DS.GlobalButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_Y, KEY_Y, settings3DS.GlobalButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_SELECT, KEY_SELECT, settings3DS.GlobalButtonMapping);
-		SET_CONSOLE_JOYPAD(BTN3DS_START, KEY_START, settings3DS.GlobalButtonMapping);
-		SET_CONSOLE_JOYPAD(BTN3DS_ZL, KEY_ZL, settings3DS.GlobalButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_ZR, KEY_ZR, settings3DS.GlobalButtonMapping)
-	}
-	else
-	{
-		SET_CONSOLE_JOYPAD(BTN3DS_L, KEY_L, settings3DS.ButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_R, KEY_R, settings3DS.ButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_A, KEY_A, settings3DS.ButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_B, KEY_B, settings3DS.ButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_X, KEY_X, settings3DS.ButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_Y, KEY_Y, settings3DS.ButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_SELECT, KEY_SELECT, settings3DS.ButtonMapping);
-		SET_CONSOLE_JOYPAD(BTN3DS_START, KEY_START, settings3DS.ButtonMapping);
-		SET_CONSOLE_JOYPAD(BTN3DS_ZL, KEY_ZL, settings3DS.ButtonMapping)
-		SET_CONSOLE_JOYPAD(BTN3DS_ZR, KEY_ZR, settings3DS.ButtonMapping)
-	}
-
-
-    // Handle turbo / rapid fire buttons.
-    //
-    int *turbo = settings3DS.Turbo;
-    if (settings3DS.UseGlobalTurbo)
-        turbo = settings3DS.GlobalTurbo;
-    
-    #define HANDLE_TURBO(i, buttonMapping) 										\
-		if (turbo[i] && buttons3dsPressed[i]) { 		\
-			if (!prevConsoleButtonPressed[i]) 						\
-			{ 														\
-				prevConsoleButtonPressed[i] = 11 - turbo[i]; 		\
-			} 														\
-			else 													\
-			{ 														\
-				prevConsoleButtonPressed[i]--; 						\
-				consoleJoyPad &= ~(									\
-				buttonMapping[i][0] |								\
-				buttonMapping[i][1] |								\
-				buttonMapping[i][2] |								\
-				buttonMapping[i][3]									\
-				); \
-			} \
-		} \
-
-	if (settings3DS.UseGlobalButtonMappings)
-	{
-		HANDLE_TURBO(BTN3DS_A, settings3DS.GlobalButtonMapping);
-		HANDLE_TURBO(BTN3DS_B, settings3DS.GlobalButtonMapping);
-		HANDLE_TURBO(BTN3DS_X, settings3DS.GlobalButtonMapping);
-		HANDLE_TURBO(BTN3DS_Y, settings3DS.GlobalButtonMapping);
-		HANDLE_TURBO(BTN3DS_L, settings3DS.GlobalButtonMapping);
-		HANDLE_TURBO(BTN3DS_R, settings3DS.GlobalButtonMapping);
-		HANDLE_TURBO(BTN3DS_ZL, settings3DS.GlobalButtonMapping);
-		HANDLE_TURBO(BTN3DS_ZR, settings3DS.GlobalButtonMapping);
-	}
-	else
-	{
-		HANDLE_TURBO(BTN3DS_A, settings3DS.ButtonMapping);
-		HANDLE_TURBO(BTN3DS_B, settings3DS.ButtonMapping);
-		HANDLE_TURBO(BTN3DS_X, settings3DS.ButtonMapping);
-		HANDLE_TURBO(BTN3DS_Y, settings3DS.ButtonMapping);
-		HANDLE_TURBO(BTN3DS_L, settings3DS.ButtonMapping);
-		HANDLE_TURBO(BTN3DS_R, settings3DS.ButtonMapping);
-		HANDLE_TURBO(BTN3DS_ZL, settings3DS.ButtonMapping);
-		HANDLE_TURBO(BTN3DS_ZR, settings3DS.ButtonMapping);
-	}
-
-    prevConsoleJoyPad = consoleJoyPad;
+    u32 consoleJoyPad = input3dsProcess3dsKeys();
 
     io.button_status[0] = consoleJoyPad ^ 0xFFF;
 }
@@ -1390,26 +1326,6 @@ bool impl3dsOnMenuSelectedChanged(int ID, int value)
 void impl3dsInitializeDefaultSettingsGlobal()
 {
 	settings3DS.GlobalVolume = 4;
-
-	for (int i = 0; i < 8; i++)     // and clear all turbo buttons.
-    {
-		settings3DS.GlobalTurbo[i] = 0;
-    }
-    for (int i = 0; i < 10; i++)
-        for (int j = 0; j < 4; j++)
-        {
-            settings3DS.GlobalButtonMapping[i][j] = 0;
-        }
-    
-	settings3DS.GlobalButtonMapping[0][0] = IO_BUTTON_I;
-	settings3DS.GlobalButtonMapping[1][0] = IO_BUTTON_II;
-	settings3DS.GlobalButtonMapping[2][0] = IO_BUTTON_III;
-	settings3DS.GlobalButtonMapping[3][0] = IO_BUTTON_IV;
-	settings3DS.GlobalButtonMapping[4][0] = IO_BUTTON_V;
-	settings3DS.GlobalButtonMapping[5][0] = IO_BUTTON_VI;
-	settings3DS.GlobalButtonMapping[8][0] = IO_BUTTON_SELECT;
-	settings3DS.GlobalButtonMapping[9][0] = IO_BUTTON_RUN;
-
 }
 
 
@@ -1424,68 +1340,12 @@ void impl3dsInitializeDefaultSettingsByGame()
 	settings3DS.ForceFrameRate = 0;
 	settings3DS.Volume = 4;
 
-	for (int i = 0; i < 8; i++)     // and clear all turbo buttons.
-    {
-		settings3DS.Turbo[i] = 0;
-    }
-    for (int i = 0; i < 10; i++)
-        for (int j = 0; j < 4; j++)
-        {
-            settings3DS.ButtonMapping[i][j] = 0;
-        }
-    
-	settings3DS.ButtonMapping[0][0] = IO_BUTTON_I;
-	settings3DS.ButtonMapping[1][0] = IO_BUTTON_II;
-	settings3DS.ButtonMapping[2][0] = IO_BUTTON_III;
-	settings3DS.ButtonMapping[3][0] = IO_BUTTON_IV;
-	settings3DS.ButtonMapping[4][0] = IO_BUTTON_V;
-	settings3DS.ButtonMapping[5][0] = IO_BUTTON_VI;
-	settings3DS.ButtonMapping[8][0] = IO_BUTTON_SELECT;
-	settings3DS.ButtonMapping[9][0] = IO_BUTTON_RUN;
-
     settings3DS.OtherOptions[SETTINGS_IDLELOOPPATCH] = 0;	
     settings3DS.OtherOptions[SETTINGS_SOFTWARERENDERING] = 0;	
     settings3DS.OtherOptions[SETTINGS_BIOS] = 0;
     settings3DS.OtherOptions[SETTINGS_CPUCORE] = 1;
 }
 
-
-//----------------------------------------------------------------------
-// Set default buttons mapping
-//----------------------------------------------------------------------
-void setDefaultButtonMapping(int buttonMapping[8][4])
-{
-    uint32 defaultButtons[] = 
-    { IO_BUTTON_I, IO_BUTTON_II, IO_BUTTON_III, IO_BUTTON_IV, IO_BUTTON_V, IO_BUTTON_VI, 0, 0, IO_BUTTON_SELECT, IO_BUTTON_RUN };
-
-    for (int i = 0; i < 10; i++)
-    {
-        bool allZero = true;
-
-        for (int j = 0; j < 4; j++)
-        {
-            // Validates all button mapping input,
-            // assign to zero, if invalid.
-            //
-            if (buttonMapping[i][j] != IO_BUTTON_I &&
-                buttonMapping[i][j] != IO_BUTTON_II &&
-                buttonMapping[i][j] != IO_BUTTON_III &&
-                buttonMapping[i][j] != IO_BUTTON_IV &&
-                buttonMapping[i][j] != IO_BUTTON_V &&
-                buttonMapping[i][j] != IO_BUTTON_VI &&
-                buttonMapping[i][j] != IO_BUTTON_SELECT &&
-                buttonMapping[i][j] != IO_BUTTON_RUN &&
-                buttonMapping[i][j] != 0)
-                buttonMapping[i][j] = 0;
-
-            if (buttonMapping[i][j])
-                allZero = false;
-        }
-        if (allZero)
-            buttonMapping[i][0] = defaultButtons[i];
-    }
-
-}
 
 
 //----------------------------------------------------------------------
@@ -1547,9 +1407,6 @@ bool impl3dsReadWriteSettingsByGame(bool writeMode)
     config3dsReadWriteInt32("ButtonMappingDisableFramelimitHold=%d\n", &settings3DS.ButtonHotkeyDisableFramelimit);
     config3dsReadWriteInt32("ButtonMappingOpenEmulatorMenu=%d\n", &settings3DS.ButtonHotkeyOpenMenu);
     config3dsReadWriteInt32("PalFix=%d\n", &settings3DS.PaletteFix, 0, 1);
-
-    if (!writeMode)
-        setDefaultButtonMapping(settings3DS.ButtonMapping);
 
     config3dsCloseFile();
     return true;
@@ -1617,9 +1474,6 @@ bool impl3dsReadWriteSettingsGlobal(bool writeMode)
     config3dsReadWriteInt32("UseGlobalEmuControlKeys=%d\n", &settings3DS.UseGlobalEmuControlKeys, 0, 1);
     config3dsReadWriteInt32("ButtonMappingDisableFramelimitHold_0=%d\n", &settings3DS.GlobalButtonHotkeyDisableFramelimit);
     config3dsReadWriteInt32("ButtonMappingOpenEmulatorMenu_0=%d\n", &settings3DS.GlobalButtonHotkeyOpenMenu);
-
-    if (!writeMode)
-        setDefaultButtonMapping(settings3DS.GlobalButtonMapping);
 
     config3dsCloseFile();
     return true;

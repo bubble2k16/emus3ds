@@ -118,6 +118,32 @@ extern char *impl3dsTitleText;
 
 
 //---------------------------------------------------------
+// The bitmaps for the emulated console's UP, DOWN, LEFT, 
+// RIGHT keys.
+//---------------------------------------------------------
+extern u32 input3dsDKeys[4];
+
+
+//---------------------------------------------------------
+// The list of valid joypad bitmaps for the emulated 
+// console.
+//
+// This should NOT include D-keys.
+//---------------------------------------------------------
+extern u32 input3dsValidButtonMappings[10];
+
+
+//---------------------------------------------------------
+// The maps for the 10 3DS keys to the emulated consoles
+// joypad bitmaps for the following 3DS keys (in order):
+//   A, B, X, Y, L, R, ZL, ZR, SELECT, START
+//
+// This should NOT include D-keys.
+//---------------------------------------------------------
+extern u32 input3dsDefaultButtonMappings[10];
+
+
+//---------------------------------------------------------
 // Initializes the emulator core.
 //
 // You must call snd3dsSetSampleRate here to set 
@@ -139,7 +165,7 @@ void impl3dsFinalize();
 // from the 2nd core before copying it to the actual
 // output buffer.
 //---------------------------------------------------------
-void impl3dsGenerateSoundSamples();
+void impl3dsGenerateSoundSamples(int numberOfSamples);
 
 
 //---------------------------------------------------------
@@ -149,7 +175,7 @@ void impl3dsGenerateSoundSamples();
 // from the 2nd core before copying it to the actual
 // output buffer.
 //---------------------------------------------------------
-void impl3dsOutputSoundSamples(short *leftSamples, short *rightSamples);
+void impl3dsOutputSoundSamples(int numberOfSamples, short *leftSamples, short *rightSamples);
 
 
 

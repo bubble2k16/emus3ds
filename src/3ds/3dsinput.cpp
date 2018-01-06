@@ -4,6 +4,7 @@
 #include "3dsgpu.h"
 #include "3dsmain.h"
 #include "3dssound.h"
+#include "3dsinput.h"
 
 #include "3dsinterface.h"
 
@@ -78,6 +79,160 @@ u32 input3dsScanInputForEmulation()
     lastKeysHeld = currKeysHeld;
     return keysDown;
 
+}
+
+
+u32 prevConsoleJoyPad;
+u32 prevConsoleButtonPressed[10];
+u32 buttons3dsPressed[10];
+
+//---------------------------------------------------------
+// Processes inputs and maps to the console's
+// joy pad keys.
+//
+// Returns a u32 bitmap containing the keys pressed.
+//---------------------------------------------------------
+u32 input3dsProcess3dsKeys()
+{
+	u32 keysHeld3ds = input3dsGetCurrentKeysHeld();
+    u32 consoleJoyPad = 0;
+
+    if (keysHeld3ds & KEY_UP) consoleJoyPad |= input3dsDKeys[0];
+    if (keysHeld3ds & KEY_DOWN) consoleJoyPad |= input3dsDKeys[1];
+    if (keysHeld3ds & KEY_LEFT) consoleJoyPad |= input3dsDKeys[2];
+    if (keysHeld3ds & KEY_RIGHT) consoleJoyPad |= input3dsDKeys[3];
+
+	#define SET_CONSOLE_JOYPAD(i, mask, buttonMapping) 				\
+		buttons3dsPressed[i] = (keysHeld3ds & mask);				\
+		if (keysHeld3ds & mask) 									\
+			consoleJoyPad |= 										\
+				buttonMapping[i][0] |								\
+				buttonMapping[i][1] |								\
+				buttonMapping[i][2] |								\
+				buttonMapping[i][3];								\
+
+	if (settings3DS.UseGlobalButtonMappings)
+	{
+		SET_CONSOLE_JOYPAD(BTN3DS_L, KEY_L, settings3DS.GlobalButtonMapping)
+		SET_CONSOLE_JOYPAD(BTN3DS_R, KEY_R, settings3DS.GlobalButtonMapping)
+		SET_CONSOLE_JOYPAD(BTN3DS_A, KEY_A, settings3DS.GlobalButtonMapping)
+		SET_CONSOLE_JOYPAD(BTN3DS_B, KEY_B, settings3DS.GlobalButtonMapping)
+		SET_CONSOLE_JOYPAD(BTN3DS_X, KEY_X, settings3DS.GlobalButtonMapping)
+		SET_CONSOLE_JOYPAD(BTN3DS_Y, KEY_Y, settings3DS.GlobalButtonMapping)
+		SET_CONSOLE_JOYPAD(BTN3DS_SELECT, KEY_SELECT, settings3DS.GlobalButtonMapping);
+		SET_CONSOLE_JOYPAD(BTN3DS_START, KEY_START, settings3DS.GlobalButtonMapping);
+		SET_CONSOLE_JOYPAD(BTN3DS_ZL, KEY_ZL, settings3DS.GlobalButtonMapping)
+		SET_CONSOLE_JOYPAD(BTN3DS_ZR, KEY_ZR, settings3DS.GlobalButtonMapping)
+	}
+	else
+	{
+		SET_CONSOLE_JOYPAD(BTN3DS_L, KEY_L, settings3DS.ButtonMapping)
+		SET_CONSOLE_JOYPAD(BTN3DS_R, KEY_R, settings3DS.ButtonMapping)
+		SET_CONSOLE_JOYPAD(BTN3DS_A, KEY_A, settings3DS.ButtonMapping)
+		SET_CONSOLE_JOYPAD(BTN3DS_B, KEY_B, settings3DS.ButtonMapping)
+		SET_CONSOLE_JOYPAD(BTN3DS_X, KEY_X, settings3DS.ButtonMapping)
+		SET_CONSOLE_JOYPAD(BTN3DS_Y, KEY_Y, settings3DS.ButtonMapping)
+		SET_CONSOLE_JOYPAD(BTN3DS_SELECT, KEY_SELECT, settings3DS.ButtonMapping);
+		SET_CONSOLE_JOYPAD(BTN3DS_START, KEY_START, settings3DS.ButtonMapping);
+		SET_CONSOLE_JOYPAD(BTN3DS_ZL, KEY_ZL, settings3DS.ButtonMapping)
+		SET_CONSOLE_JOYPAD(BTN3DS_ZR, KEY_ZR, settings3DS.ButtonMapping)
+	}
+
+
+    // Handle turbo / rapid fire buttons.
+    //
+    int *turbo = settings3DS.Turbo;
+    if (settings3DS.UseGlobalTurbo)
+        turbo = settings3DS.GlobalTurbo;
+    
+    #define HANDLE_TURBO(i, buttonMapping) 										\
+		if (turbo[i] && buttons3dsPressed[i]) { 		\
+			if (!prevConsoleButtonPressed[i]) 						\
+			{ 														\
+				prevConsoleButtonPressed[i] = 11 - turbo[i]; 		\
+			} 														\
+			else 													\
+			{ 														\
+				prevConsoleButtonPressed[i]--; 						\
+				consoleJoyPad &= ~(									\
+				buttonMapping[i][0] |								\
+				buttonMapping[i][1] |								\
+				buttonMapping[i][2] |								\
+				buttonMapping[i][3]									\
+				); \
+			} \
+		} \
+
+	if (settings3DS.UseGlobalButtonMappings)
+	{
+		HANDLE_TURBO(BTN3DS_A, settings3DS.GlobalButtonMapping);
+		HANDLE_TURBO(BTN3DS_B, settings3DS.GlobalButtonMapping);
+		HANDLE_TURBO(BTN3DS_X, settings3DS.GlobalButtonMapping);
+		HANDLE_TURBO(BTN3DS_Y, settings3DS.GlobalButtonMapping);
+		HANDLE_TURBO(BTN3DS_L, settings3DS.GlobalButtonMapping);
+		HANDLE_TURBO(BTN3DS_R, settings3DS.GlobalButtonMapping);
+		HANDLE_TURBO(BTN3DS_ZL, settings3DS.GlobalButtonMapping);
+		HANDLE_TURBO(BTN3DS_ZR, settings3DS.GlobalButtonMapping);
+	}
+	else
+	{
+		HANDLE_TURBO(BTN3DS_A, settings3DS.ButtonMapping);
+		HANDLE_TURBO(BTN3DS_B, settings3DS.ButtonMapping);
+		HANDLE_TURBO(BTN3DS_X, settings3DS.ButtonMapping);
+		HANDLE_TURBO(BTN3DS_Y, settings3DS.ButtonMapping);
+		HANDLE_TURBO(BTN3DS_L, settings3DS.ButtonMapping);
+		HANDLE_TURBO(BTN3DS_R, settings3DS.ButtonMapping);
+		HANDLE_TURBO(BTN3DS_ZL, settings3DS.ButtonMapping);
+		HANDLE_TURBO(BTN3DS_ZR, settings3DS.ButtonMapping);
+	}
+
+    prevConsoleJoyPad = consoleJoyPad;
+    return consoleJoyPad;
+}
+
+
+//---------------------------------------------------------
+// Sets the default buttons / turbo values.
+//
+// Pass the settings3DS.GlobalButtonMapping or 
+// settings3DS.ButtonMapping into the first parameter.
+//
+// Pass the settings3DS.GlobalTurbo or 
+// settings3DS.Turbo into the second parameter.
+//---------------------------------------------------------
+void input3dsSetDefaultButtonMappings(int buttonMapping[10][4], int turbo[8], bool overwrite)
+{
+    for (int i = 0; i < 10; i++)
+    {
+        bool allZero = true;
+
+        for (int j = 0; j < 4; j++)
+        {
+            // Validates all button mapping input,
+            // assign to zero, if invalid.
+            //
+            bool isValid = false;
+            for (int k = 0; k < 10; k++)
+                if (buttonMapping[i][j] == input3dsValidButtonMappings[k])
+                {
+                    isValid = true;
+                    break;
+                }
+            if (!isValid)
+                buttonMapping[i][j] = 0;
+
+            if (buttonMapping[i][j])
+                allZero = false;
+        }
+        if (allZero || overwrite)
+            buttonMapping[i][0] = input3dsDefaultButtonMappings[i];
+    }
+
+    if (overwrite)
+    {
+        for (int i = 0; i < 8; i++)
+            turbo[i] = 0;
+    }
 }
 
 
