@@ -36,7 +36,7 @@ https://github.com/bubble2k16/emus3ds/blob/master/readme-temperpce.md
 
 ## PicoDrive (Sega Master System / Mega Drive) core
 
-This is a port of notaz's PicoDrive emulator to the old 3DS and old 2DS. 
+This is a port of notaz's PicoDrive emulator to the old 3DS and old 2DS. Currently supports Sega Master System and Mega Drive games only. CD and 32X support will be added later.
 
 ### Download
 

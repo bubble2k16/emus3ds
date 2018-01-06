@@ -1,12 +1,17 @@
 ## Emus for 3DS (PicoDrive Sega Master System / Mega Drive core)
 
-This is a port of notaz's PicoDrive emulator to the old 3DS and old 2DS. Although PicoDrive is already highly optimized for ARM processors, if ported as is, it still doesn't run full speed for all Mega Drive games, as it's evident in the RetroArch's version. So this port heavily relies on the 3DS's 2nd core to generate the FM synthesized music for the YM2612 FM chip to achieve 60 FPS. But the 2nd core on the old 3DS is not fast enough to generate the FM synthesized music at 44100Hz, so sounds are generated at 30000Hz on an Old 3DS. It sounds ok for many games, except for those that use high pitched noises.
+This is a port of notaz's PicoDrive emulator to the old 3DS / 2DS. Although PicoDrive is already highly optimized for ARM processors, if ported as is, it still doesn't run full speed for all Mega Drive games on the old 3DS / 2DS, as it's evident in the RetroArch's version. So this port heavily relies on the 3DS's 2nd core to emulate the FM synthesized music for the YM2612 FM chip to achieve 60 FPS. But the 2nd core on the old 3DS is unfortunately not fast enough to generate the FM synthesized music at a full 44100Hz, so sounds are generated at 30000Hz on an Old 3DS. It sounds ok for many games, except for those that use high-pitched notes or sound samples.
 
-The screen rendering is done completely with the original PicoDrive's highly optimized renderer. 
+The screen rendering is done completely using the original PicoDrive's ARM processor-optimized renderer. 
 
-This version currently does not support CD or 32X games yet.
+This version currently does not support CD or 32X games yet. Support will be added later.
 
-This emulator bears the same user interface as VirtuaNES for 3DS and Snes9x for 3DS. It will run better on the New 3DS as usual, where all sounds will be generated at 44100Hz.
+The default maps for the controls are: 
+1. 3DS' Y Button -> MD's A Button, 
+2. 3DS' B Button -> MD's B Button,
+3. 3DS' A Button -> MD's C Button,
+
+This emulator uses the same user interface as VirtuaNES for 3DS, TemperPCE for 3DS, Snes9x for 3DS. It will run better on the New 3DS as usual, where all music and sound samples will be generated at 44100Hz.
 
 https://github.com/bubble2k16/picodrive_3ds/releases
 
