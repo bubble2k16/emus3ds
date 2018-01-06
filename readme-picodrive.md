@@ -4,7 +4,7 @@ This is a port of notaz's PicoDrive emulator to the old 3DS / 2DS. Although Pico
 
 The screen rendering is done completely using the original PicoDrive's ARM processor-optimized renderer. 
 
-This version currently does not support CD or 32X games yet. Support will be added later.
+You can play Master System and Mega Drive games, but not support CD or 32X games yet. Support will be added later. Meanwhile the Retroarch versions will serve you will. :)
 
 The default maps for the controls are: 
 1. 3DS' Y Button -> MD's A Button, 
