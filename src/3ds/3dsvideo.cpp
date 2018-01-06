@@ -1,5 +1,6 @@
 
 #include "stdio.h"
+#include "string.h"
 #include "3ds.h"
 #include "3dsgpu.h"
 #include "3dsopt.h"
@@ -12,6 +13,7 @@ typedef struct
 } SDrawToScreenVertex;
 
 
+//-----------------------------------------------------------------------------
 static int                      videoBufferIndex = 0;
 static int                      videoBufferWidth = 0;
 static int                      videoBufferHeight = 0;
@@ -27,11 +29,14 @@ static SDrawToScreenVertex      *videoVertices[2] = { videoVertices0, videoVerti
 static SGPUTexture              *videoScreenTexture[2] = { NULL, NULL };
 SGPUTexture                     *videoHardwareScreenTexture = NULL;
 SGPUTexture                     *videoHardwareScreenDepth = NULL;
- void                     *videoSoftwareBuffer[2] = { NULL, NULL };
+void                            *videoSoftwareBuffer[2] = { NULL, NULL };
 
 static bool                     videoSkipPreviousFrame = false;
 
 
+//-----------------------------------------------------------------------------
+// Initialize textures for hardware rendering.
+//-----------------------------------------------------------------------------
 bool video3dsInitializeHardwareRendering(int width, int height)
 {
     video3dsFinalize();
@@ -51,6 +56,9 @@ bool video3dsInitializeHardwareRendering(int width, int height)
     return true;
 }
 
+//-----------------------------------------------------------------------------
+// Initialize textures and buffers for software rendering.
+//-----------------------------------------------------------------------------
 bool video3dsInitializeSoftwareRendering(int width, int height, GX_TRANSFER_FORMAT bufferFormat)
 {
     video3dsFinalize();
@@ -103,31 +111,58 @@ bool video3dsInitializeSoftwareRendering(int width, int height, GX_TRANSFER_FORM
     return true;
 }
 
+//-----------------------------------------------------------------------------
+// Get the previous screen texture.
+//-----------------------------------------------------------------------------
 SGPUTexture *video3dsGetPreviousScreenTexture()
 {
     return videoScreenTexture[videoBufferIndex ^ 1];
 }
 
+//-----------------------------------------------------------------------------
+// Get the current screen texture.
+//-----------------------------------------------------------------------------
 SGPUTexture *video3dsGetCurrentScreenTexture()
 {
     return videoScreenTexture[videoBufferIndex];
 }
 
+//-----------------------------------------------------------------------------
+// Clear the software buffers.
+//-----------------------------------------------------------------------------
+void *video3dsClearAllSoftwareBuffers()
+{
+    memset(videoSoftwareBuffer[0], 0, videoBufferWidth * videoBufferHeight * videoSoftwareBufferBitDepth / 8);    
+    memset(videoSoftwareBuffer[1], 0, videoBufferWidth * videoBufferHeight * videoSoftwareBufferBitDepth / 8);    
+}
+
+//-----------------------------------------------------------------------------
+// Get the previous software screen buffers.
+//-----------------------------------------------------------------------------
 void *video3dsGetPreviousSoftwareBuffer()
 {
     return videoSoftwareBuffer[videoBufferIndex ^ 1];
 }
 
+//-----------------------------------------------------------------------------
+// Get the current software screen buffers.
+//-----------------------------------------------------------------------------
 void *video3dsGetCurrentSoftwareBuffer()
 {
     return videoSoftwareBuffer[videoBufferIndex];
 }
 
+//-----------------------------------------------------------------------------
+// Swaps the software buffers and textures.
+//-----------------------------------------------------------------------------
 void video3dsStartNewSoftwareRenderedFrame()
 {
     videoBufferIndex = videoBufferIndex ^ 1;
 }
 
+//-----------------------------------------------------------------------------
+// Swaps the software buffers and textures.
+//-----------------------------------------------------------------------------
 void video3dsStartNewHardwareRenderedFrame()
 {
     videoBufferIndex = videoBufferIndex ^ 1;
@@ -136,6 +171,10 @@ void video3dsStartNewHardwareRenderedFrame()
 }
 
 
+//-----------------------------------------------------------------------------
+// Transfer the screen from the frame buffer and swap. 
+// This should be called as soon as possible in impl3dsEmulationRunOneFrame.
+//-----------------------------------------------------------------------------
 void video3dsTransferFrameBufferToScreenAndSwap()
 {
     t3dsStartTiming(16, "Transfer");
@@ -147,6 +186,10 @@ void video3dsTransferFrameBufferToScreenAndSwap()
     t3dsEndTiming(19);
 }
 
+//-----------------------------------------------------------------------------
+// Performs a transfer from the software buffer to the hardware texture,
+// which will then be used to draw to the frame buffer later on.
+//-----------------------------------------------------------------------------
 void video3dsCopySoftwareBufferToTexture()
 {
     t3dsStartTiming(11, "FlushDataCache");
@@ -166,6 +209,9 @@ void video3dsCopySoftwareBufferToTexture()
     t3dsEndTiming(12);
 }
 
+//-----------------------------------------------------------------------------
+// Frees up all buffers and textures.
+//-----------------------------------------------------------------------------
 void video3dsFinalize()
 {
 	if (videoSoftwareBuffer[0]) linearFree(videoSoftwareBuffer[0]);
