@@ -1,6 +1,6 @@
 ## Emus for 3DS (PicoDrive Sega Master System / Mega Drive core)
 
-This is a port of notaz's PicoDrive emulator to the old 3DS and old 2DS. Although PicoDrive is already highly optimized for ARM processors, it still doesn't run full speed for all Mega Drive games. So this port heavily relies on the 3DS's 2nd core to generate the FM synthesized music for the YM2612 FM chip to achieve 60 FPS. But the 2nd core on the old 3DS is not fast enough to generate the FM synthesized music at 44100Hz, so on the old 3DS, all sounds are generated at 30000Hz. It sounds ok for many games, except for those that use high pitched noises.
+This is a port of notaz's PicoDrive emulator to the old 3DS and old 2DS. Although PicoDrive is already highly optimized for ARM processors, if ported as is, it still doesn't run full speed for all Mega Drive games, as it's evident in the RetroArch's version. So this port heavily relies on the 3DS's 2nd core to generate the FM synthesized music for the YM2612 FM chip to achieve 60 FPS. But the 2nd core on the old 3DS is not fast enough to generate the FM synthesized music at 44100Hz, so sounds are generated at 30000Hz on an Old 3DS. It sounds ok for many games, except for those that use high pitched noises.
 
 The screen rendering is done completely with the original PicoDrive's highly optimized renderer. 
 

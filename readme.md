@@ -33,3 +33,19 @@ https://github.com/bubble2k16/emus3ds/blob/master/readme-temperpce.md
 ![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE01.bmp)
 
 ![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/TemperPCE04.bmp)
+
+## PicoDrive (Sega Master System / Mega Drive) core
+
+This is a port of notaz's PicoDrive emulator to the old 3DS and old 2DS. 
+
+### Download
+
+https://github.com/bubble2k16/picodrive_3ds/releases
+
+### Details
+
+https://github.com/bubble2k16/emus3ds/blob/master/readme-picodrive.md
+
+![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/PicoDrive01.bmp)
+
+![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/PicoDrive02.bmp)
