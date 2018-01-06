@@ -85,7 +85,8 @@ SMenuItem optionsForFont[] = {
 };
 
 SMenuItem optionsForStretch[] = {
-    MENU_MAKE_DIALOG_ACTION (0, "No Stretch",               "No stretch at 320x240"),
+    MENU_MAKE_DIALOG_ACTION (0, "No Stretch",               "No stretch"),
+    MENU_MAKE_DIALOG_ACTION (1, "4:3 Fit",                  "Stretch to 320x240"),
     MENU_MAKE_DIALOG_ACTION (2, "Fullscreen",               "Stretch to 400x240"),
     MENU_MAKE_DIALOG_ACTION (3, "Cropped 4:3 Fit",          "Crop & Stretch to 320x240"),
     MENU_MAKE_DIALOG_ACTION (4, "Cropped Fullscreen",       "Crop & Stretch to 400x240"),
@@ -602,6 +603,8 @@ bool impl3dsLoadROM(char *romFilePath)
 	default:
 		break;
 	}
+
+    video3dsClearAllSoftwareBuffers();
     
     int sampleRate = 30000;
     int soundLoopsPerSecond = (Pico.m.pal ? 50 : 60);
@@ -746,7 +749,17 @@ void impl3dsRenderDrawTextureToFrameBuffer()
     gpu3dsUseShader(0);
     gpu3dsSetRenderTargetToTopFrameBuffer();
     
-    float tx1 = 0, ty1 = 0, tx2 = 320, ty2 = 240;
+    // 320x224
+    float tx1 = 0, ty1 = 8;         
+    float tx2 = 320, ty2 = 232;
+
+    if (PicoIn.AHW & PAHW_SMS)
+    {
+        // 256x192
+        tx1 += 32; tx2 -= 32;
+        ty1 += 16; ty2 -= 16;
+    }
+
 	switch (settings3DS.ScreenStretch)
 	{
 		case 0:
@@ -756,17 +769,26 @@ void impl3dsRenderDrawTextureToFrameBuffer()
 
             gpu3dsSetTextureEnvironmentReplaceTexture0();
             gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
+			gpu3dsAddQuadVertexes(40, 0, 360, 240, 0, 0, 320, 240, 0);
+			break;
+		case 1:
+            gpu3dsSetTextureEnvironmentReplaceColor();
+            gpu3dsDrawRectangle(0, 0, 40, 240, 0, 0x000000ff);
+            gpu3dsDrawRectangle(360, 0, 400, 240, 0, 0x000000ff);
+
+            gpu3dsSetTextureEnvironmentReplaceTexture0();
+            gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
 			gpu3dsAddQuadVertexes(40, 0, 360, 240, tx1, ty1, tx2, ty2, 0);
 			break;
 		case 2:
             gpu3dsSetTextureEnvironmentReplaceTexture0();
             gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
-			gpu3dsAddQuadVertexes(40, 0, 360, 240, tx1, ty1, tx2, ty2, 0);
+			gpu3dsAddQuadVertexes(0, 0, 400, 240, tx1, ty1, tx2, ty2, 0);
 			break;
 		case 3:
             gpu3dsSetTextureEnvironmentReplaceColor();
-            gpu3dsDrawRectangle(0, 0, 72, 240, 0, 0x000000ff);
-            gpu3dsDrawRectangle(328, 0, 400, 240, 0, 0x000000ff);
+            gpu3dsDrawRectangle(0, 0, 40, 240, 0, 0x000000ff);
+            gpu3dsDrawRectangle(360, 0, 400, 240, 0, 0x000000ff);
 
             gpu3dsSetTextureEnvironmentReplaceTexture0();
             gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
@@ -775,13 +797,11 @@ void impl3dsRenderDrawTextureToFrameBuffer()
 		case 4:
             gpu3dsSetTextureEnvironmentReplaceTexture0();
             gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
-			gpu3dsAddQuadVertexes(40, 0, 360, 240, tx1 + 8, ty1 + 8, tx2 - 8, ty2 - 8, 0);
+			gpu3dsAddQuadVertexes(0, 0, 400, 240, tx1 + 8, ty1 + 8, tx2 - 8, ty2 - 8, 0);
 			break;
 	}
     
     gpu3dsDrawVertexes();
-    gpu3dsDrawRectangle(0, 0, 1, 1, 0, 0x000000ff);
-    
 	t3dsEndTiming(14);
 
 	t3dsStartTiming(15, "Flush");
