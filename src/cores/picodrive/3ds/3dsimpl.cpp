@@ -55,6 +55,7 @@ SSettings3DS settings3DS;
 #define SETTINGS_IDLELOOPPATCH          1
 #define SETTINGS_BIOS                   2
 #define SETTINGS_CPUCORE                3
+#define SETTINGS_LOWPASSFILTER          4
 
 
 //----------------------------------------------------------------------
@@ -197,6 +198,7 @@ SMenuItem optionMenu[] = {
     MENU_MAKE_PICKER    (19000, "  Flickering Sprites", "Sprites on real hardware flicker. You can disable for better visuals.", optionsForSpriteFlicker, DIALOGCOLOR_CYAN),
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("AUDIO"),
+    MENU_MAKE_CHECKBOX  (20000, "  Low-pass filter", 0),
     MENU_MAKE_CHECKBOX  (50002, "  Apply volume to all games", 0),
     MENU_MAKE_GAUGE     (14000, "  Volume Amplification", 0, 8, 4),
     MENU_MAKE_LASTITEM  ()
@@ -347,7 +349,7 @@ extern SSettings3DS settings3DS;
 //---------------------------------------------------------
 // Provide a comma-separated list of file extensions
 //---------------------------------------------------------
-char *impl3dsRomExtensions = "sms,md";
+char *impl3dsRomExtensions = "sms,md,smd,gen,rom,bin";
 
 
 //---------------------------------------------------------
@@ -360,7 +362,7 @@ char *impl3dsTitleImage = "./picodrive_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "PicoDrive for 3DS v0.90";
+char *impl3dsTitleText = "PicoDrive for 3DS v0.91";
 
 
 //---------------------------------------------------------
@@ -825,7 +827,6 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
 	if (!skipDrawingPreviousFrame)
         video3dsTransferFrameBufferToScreenAndSwap();
 
-
 	t3dsStartTiming(10, "EmulateFrame");
 	{
         // Let's try to keep the digital sample queue filled with some data
@@ -996,6 +997,7 @@ bool impl3dsOnMenuSelectedChanged(int ID, int value)
 void impl3dsInitializeDefaultSettingsGlobal()
 {
 	settings3DS.GlobalVolume = 4;
+    settings3DS.OtherOptions[SETTINGS_LOWPASSFILTER] = 1;
 }
 
 
@@ -1014,6 +1016,7 @@ void impl3dsInitializeDefaultSettingsByGame()
     settings3DS.OtherOptions[SETTINGS_IDLELOOPPATCH] = 0;	
     settings3DS.OtherOptions[SETTINGS_BIOS] = 0;
     settings3DS.OtherOptions[SETTINGS_CPUCORE] = 1;
+    settings3DS.OtherOptions[SETTINGS_LOWPASSFILTER] = 1;
 }
 
 
@@ -1120,6 +1123,7 @@ bool impl3dsReadWriteSettingsGlobal(bool writeMode)
     config3dsReadWriteInt32("UseGlobalEmuControlKeys=%d\n", &settings3DS.UseGlobalEmuControlKeys, 0, 1);
     config3dsReadWriteInt32("ButtonMappingDisableFramelimitHold_0=%d\n", &settings3DS.GlobalButtonHotkeyDisableFramelimit);
     config3dsReadWriteInt32("ButtonMappingOpenEmulatorMenu_0=%d\n", &settings3DS.GlobalButtonHotkeyOpenMenu);
+    config3dsReadWriteInt32("LowPassFilter=%d\n", &settings3DS.OtherOptions[SETTINGS_LOWPASSFILTER]);
 
     // New options come here.
 
@@ -1164,6 +1168,14 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
         settings3DS.StretchHeight = 240;
         settings3DS.CropPixels = 0;
     }
+
+	// compute a sample rate closes to 30000 kHz for old 3DS, and 44100 Khz for new 3DS.
+	//
+    u8 new3DS = false;
+    APT_CheckNew3DS(&new3DS);
+    PicoIn.lowPassFilter = 0;
+    if (settings3DS.OtherOptions[SETTINGS_LOWPASSFILTER])
+        PicoIn.lowPassFilter = new3DS ? 4 : 3;
 
     // Update the screen font
     //
@@ -1288,6 +1300,7 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
     UPDATE_SETTINGS(settings3DS.PaletteFix, -1, 16000);
 
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_ALLSPRITES], -1, 19000);     // sprite flicker
+    UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_LOWPASSFILTER], -1, 20000);  // low pass filter
 
     return settingsUpdated;
 	

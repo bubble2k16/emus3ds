@@ -101,6 +101,7 @@ typedef struct
 	int sndRate;                   // rate in Hz
 	short *sndOut;                 // PCM output buffer
 	int sndVolumeMul;              // volume multiplier (3DS)
+	int lowPassFilter;             // enable low pass filter (3DS)
 	
 	void (*writeSound)(int len);   // write .sndOut callback, called once per frame
 

@@ -86,10 +86,22 @@ static void dac_recalculate(void)
 }
 
 
+int lowpass_counter = 0;
+int prev_l1, prev_r1;
+int prev_l2, prev_r2;
+int prev_l3, prev_r3;
+
 PICO_INTERNAL void PsndReset(void)
 {
   // PsndRerate calls YM2612Init, which also resets
   PsndRerate(0);
+  prev_l1 = 0;
+  prev_r1 = 0;
+  prev_l2 = 0;
+  prev_r2 = 0;
+  prev_l3 = 0;
+  prev_r3 = 0;
+  lowpass_counter = 0;
   timers_reset();
 }
 
@@ -353,26 +365,126 @@ int PsndRender3DS(short *leftBuffer, short *rightBuffer, int length)
   int l, r;
   int count = length;
   int *src = buf32;
-	for (; count > 0; count--)
-	{
-		l = *src++;
-		r = *src++;
-    
-    short sample = 0;
-    int hasDAC = dacQueueRead(&dacQueue, &sample);
-    if (hasDAC)
-    {
-      l += sample;
-      r += sample;
-    }
-    l = l * PicoIn.sndVolumeMul / 32;
-    r = r * PicoIn.sndVolumeMul / 32;
 
-		Limit( l, MAXOUT, MINOUT );
-		Limit( r, MAXOUT, MINOUT );
-		*leftBuffer++ = l;
-		*rightBuffer++ = r;
-	}
+  if (PicoIn.lowPassFilter == 0)
+  {
+    // No low pass filter.
+    //
+    for (; count > 0; count--)
+    {
+      l = *src++;
+      r = *src++;
+      
+      short sample = 0;
+      int hasDAC = dacQueueRead(&dacQueue, &sample);
+      if (hasDAC)
+      {
+        l += sample;
+        r += sample;
+      }
+
+      l = l * PicoIn.sndVolumeMul / 32;
+      r = r * PicoIn.sndVolumeMul / 32;
+
+      Limit( l, MAXOUT, MINOUT );
+      Limit( r, MAXOUT, MINOUT );
+      *leftBuffer++ = l;
+      *rightBuffer++ = r;
+    }
+  }
+  else if (PicoIn.lowPassFilter == 3)
+  {
+    // Low pass filter for Old 3DS (30 KHz)
+    //
+    for (; count > 0; count--)
+    {
+      l = *src++;
+      r = *src++;
+      
+      short sample = 0;
+      int hasDAC = dacQueueRead(&dacQueue, &sample);
+      if (hasDAC)
+      {
+        l += sample;
+        r += sample;
+      }
+
+      // Simple low pass filter.
+      int cur_l = l;
+      int cur_r = r;
+      l = (l + prev_l1 + prev_l2) / 3;
+      r = (r + prev_r1 + prev_r2) / 3;
+      if (lowpass_counter == 0)
+      {
+        prev_l1 = cur_l;
+        prev_r1 = cur_r;
+        lowpass_counter = 1;
+      }
+      else if (lowpass_counter == 1)
+      {
+        prev_l2 = cur_l;
+        prev_r2 = cur_r;
+        lowpass_counter = 0;
+      }
+      
+      l = l * PicoIn.sndVolumeMul / 32;
+      r = r * PicoIn.sndVolumeMul / 32;
+
+      Limit( l, MAXOUT, MINOUT );
+      Limit( r, MAXOUT, MINOUT );
+      *leftBuffer++ = l;
+      *rightBuffer++ = r;
+    }
+  } 
+  else if (PicoIn.lowPassFilter == 4)
+  {
+    // Low pass filter for New 3DS (44 KHz)
+    for (; count > 0; count--)
+    {
+      l = *src++;
+      r = *src++;
+      
+      short sample = 0;
+      int hasDAC = dacQueueRead(&dacQueue, &sample);
+      if (hasDAC)
+      {
+        l += sample;
+        r += sample;
+      }
+
+      // Simple low pass filter.
+      int cur_l = l;
+      int cur_r = r;
+      l = (l + prev_l1 + prev_l2 + prev_l3) / 4;
+      r = (r + prev_r1 + prev_r2 + prev_l3) / 4;
+      if (lowpass_counter == 0)
+      {
+        prev_l1 = cur_l;
+        prev_r1 = cur_r;
+        lowpass_counter = 1;
+      }
+      else if (lowpass_counter == 1)
+      {
+        prev_l2 = cur_l;
+        prev_r2 = cur_r;
+        lowpass_counter = 2;
+      }
+      else if (lowpass_counter == 2)
+      {
+        prev_l3 = cur_l;
+        prev_r3 = cur_r;
+        lowpass_counter = 0;
+      }
+      
+      l = l * PicoIn.sndVolumeMul / 32;
+      r = r * PicoIn.sndVolumeMul / 32;
+
+      Limit( l, MAXOUT, MINOUT );
+      Limit( r, MAXOUT, MINOUT );
+      *leftBuffer++ = l;
+      *rightBuffer++ = r;
+    }    
+  }
 
   pprof_end(sound);
 
