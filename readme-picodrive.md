@@ -56,6 +56,10 @@ https://github.com/bubble2k16/picodrive_3ds/releases
 
 ## Change History
 
+### v0.91
+- Added support for more extensions (.smd, .gen, .bin, .rom).
+- Added option to apply a low pass filter to the audio.
+
 ### v0.90
 - First release.
 
