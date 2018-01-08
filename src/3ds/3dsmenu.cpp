@@ -639,12 +639,12 @@ int menu3dsMenuSelectItem(bool (*itemChangedCallback)(int ID, int value))
             framesDKeyHeld ++;
         else
             framesDKeyHeld = 0;
-        if (keysDown & KEY_B)
+        if ((keysDown & KEY_B) || (keysDown & KEY_Y))
         {
             returnResult = -1;
             break;
         }
-        if ((keysDown & KEY_RIGHT) || (keysDown & KEY_R) || ((thisKeysHeld & KEY_RIGHT) && (framesDKeyHeld > 15) && (framesDKeyHeld % 2 == 0)))
+        if ((keysDown & KEY_RIGHT) || ((thisKeysHeld & KEY_RIGHT) && (framesDKeyHeld > 15) && (framesDKeyHeld % 2 == 0)))
         {
             if (!isDialog)
             {
@@ -663,12 +663,12 @@ int menu3dsMenuSelectItem(bool (*itemChangedCallback)(int ID, int value))
                 }
                 else
                 {
-                    if ((keysDown & KEY_RIGHT) || (keysDown & KEY_R))
+                    if (keysDown & KEY_RIGHT)
                         currentTab = menu3dsAnimateTab(+1);
                 }
             }
         }
-        if ((keysDown & KEY_LEFT) || (keysDown & KEY_L)|| ((thisKeysHeld & KEY_LEFT) && (framesDKeyHeld > 15) && (framesDKeyHeld % 2 == 0)))
+        if ((keysDown & KEY_LEFT) || ((thisKeysHeld & KEY_LEFT) && (framesDKeyHeld > 15) && (framesDKeyHeld % 2 == 0)))
         {
             if (!isDialog)
             {
@@ -687,12 +687,12 @@ int menu3dsMenuSelectItem(bool (*itemChangedCallback)(int ID, int value))
                 }
                 else
                 {
-                    if ((keysDown & KEY_LEFT) || (keysDown & KEY_L))
+                    if (keysDown & KEY_LEFT)
                         currentTab = menu3dsAnimateTab(-1);
                 }
             }
         }
-        if (keysDown & KEY_START || keysDown & KEY_A)
+        if (keysDown & KEY_START || keysDown & KEY_L || keysDown & KEY_A || keysDown & KEY_X)
         {
             if (currentTab->MenuItems[currentTab->SelectedItemIndex].Type == MENUITEM_ACTION)
             {
@@ -753,14 +753,14 @@ int menu3dsMenuSelectItem(bool (*itemChangedCallback)(int ID, int value))
 
             do
             {
-                if (thisKeysHeld & KEY_X)
+                /* if (thisKeysHeld & KEY_X)
                 {
                     currentTab->SelectedItemIndex -= 15;
                     if (currentTab->SelectedItemIndex < 0)
                         currentTab->SelectedItemIndex = 0;
                 }
                 else
-                {
+                { */
                     currentTab->SelectedItemIndex--;
                     if (currentTab->SelectedItemIndex < 0)
                     {
@@ -769,7 +769,7 @@ int menu3dsMenuSelectItem(bool (*itemChangedCallback)(int ID, int value))
                         if (currentTab->FirstItemIndex < 0)
                             currentTab->FirstItemIndex = 0;
                     }
-                }
+                // }
                 moveCursorTimes++;
             }
             while (
@@ -792,21 +792,21 @@ int menu3dsMenuSelectItem(bool (*itemChangedCallback)(int ID, int value))
             int moveCursorTimes = 0;
             do
             {
-                if (thisKeysHeld & KEY_X)
+                /* if (thisKeysHeld & KEY_X)
                 {
                     currentTab->SelectedItemIndex += 15;
                     if (currentTab->SelectedItemIndex >= currentTab->ItemCount)
                         currentTab->SelectedItemIndex = currentTab->ItemCount - 1;
                 }
                 else
-                {
+                { */
                     currentTab->SelectedItemIndex++;
                     if (currentTab->SelectedItemIndex >= currentTab->ItemCount)
                     {
                         currentTab->SelectedItemIndex = 0;
                         currentTab->FirstItemIndex = 0;
                     }
-                }
+                // }
                 moveCursorTimes++;
             }
             while (
