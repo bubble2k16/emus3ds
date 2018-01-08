@@ -11,4 +11,6 @@ void	Mapper242::Write( WORD addr, BYTE data )
 	if( addr & 0x01 ) {
 		SetPROM_32K_Bank( (addr&0xF8)>>3 );
 	}
+	if( (addr & 0x03)>>1 )	SetVRAM_Mirror( VRAM_HMIRROR );
+	else					SetVRAM_Mirror( VRAM_VMIRROR );
 }

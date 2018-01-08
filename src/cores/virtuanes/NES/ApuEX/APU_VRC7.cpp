@@ -9,7 +9,13 @@
 
 APU_VRC7::APU_VRC7()
 {
-	OPLL_init( 3579545, (uint32)22050 );	// ‰¼‚ÌƒTƒ“ƒvƒŠƒ“ƒOƒŒ[ƒg
+    u8 new3DS = false;
+    APT_CheckNew3DS(&new3DS);
+	int sampleRate = 32000;
+	if (!new3DS)
+		sampleRate = 20000;
+	
+	OPLL_init( 3579545, (uint32)sampleRate );	// ï¿½ï¿½ï¿½ÌƒTï¿½ï¿½ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½[ï¿½g
 	VRC7_OPLL = OPLL_new();
 
 	if( VRC7_OPLL ) {
@@ -18,8 +24,8 @@ APU_VRC7::APU_VRC7()
 		VRC7_OPLL->masterVolume = 128;
 	}
 
-	// ‰¼Ý’è
-	Reset( APU_CLOCK, 22050 );
+	// ï¿½ï¿½ï¿½Ý’ï¿½
+	Reset( APU_CLOCK, sampleRate );
 }
 
 APU_VRC7::~APU_VRC7()
@@ -27,7 +33,7 @@ APU_VRC7::~APU_VRC7()
 	if( VRC7_OPLL ) {
 		OPLL_delete( VRC7_OPLL );
 		VRC7_OPLL = NULL;
-//		OPLL_close();	// –³‚­‚Ä‚à—Ç‚¢(’†g–³‚µ)
+//		OPLL_close();	// ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½Ç‚ï¿½(ï¿½ï¿½ï¿½gï¿½ï¿½ï¿½ï¿½)
 	}
 }
 

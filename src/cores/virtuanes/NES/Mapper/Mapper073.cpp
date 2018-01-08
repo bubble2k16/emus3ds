@@ -29,22 +29,19 @@ void	Mapper073::Write( WORD addr, BYTE data )
 			irq_counter = (irq_counter & 0x0FFF) | ((data & 0x0F) << 12);
 			break;
 		case	0xC000:
-			irq_enable = data & 0x02;
-			nes->cpu->ClrIRQ( IRQ_MAPPER );
-			break;
-		case	0xD000:
-			nes->cpu->ClrIRQ( IRQ_MAPPER );
+			irq_enable = data;
 			break;
 	}
 }
 
 void	Mapper073::Clock( INT cycles )
 {
-	if( irq_enable ) {
+	if( irq_enable & 0x02 ) {
 		if( (irq_counter+=cycles) >= 0xFFFF ) {
 			irq_enable = 0;
 			irq_counter &= 0xFFFF;
-			nes->cpu->SetIRQ( IRQ_MAPPER );
+//			nes->cpu->IRQ_NotPending();
+			nes->cpu->SetIRQ( IRQ_TRIGGER );
 		}
 	}
 }

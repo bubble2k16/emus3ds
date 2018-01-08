@@ -707,7 +707,7 @@ void update_psg()
 }
 
 
-void render_psg(int num_samples)
+void render_psg(int num_samples, bool fastForward)
 {
   audio.buffer_index = 0;
   for (int i = 0; i < num_samples * 2; i++)
@@ -738,8 +738,12 @@ void render_psg(int num_samples)
         first_sample = false;
       }
 
-      if ((cpu_clock << step_fractional_bits_clock) > final_cpu_sync_cycles)
-        break;
+      // Let's speed up the writes if we are in fast-forward mode.
+      if (!fastForward)
+      {
+        if ((cpu_clock << step_fractional_bits_clock) > final_cpu_sync_cycles)
+          break;
+      }
 
       psgqueue_read_next(&cpu_clock, &psg_reg, &psg_value);
 
@@ -754,7 +758,8 @@ void render_psg(int num_samples)
 
 
   ignore_update_psg = false;
-  psg.cpu_sync_cycles = final_cpu_sync_cycles;
+  if (psg.cpu_sync_cycles < final_cpu_sync_cycles)
+    psg.cpu_sync_cycles = final_cpu_sync_cycles;
   update_psg();
 
 /*

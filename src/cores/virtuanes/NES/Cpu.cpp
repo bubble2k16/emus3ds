@@ -28,6 +28,7 @@
 
 #include "3dsemu.h"
 #include "3dsmain.h"
+#include "3dsdbg.h"
 
 /*--------------[ DEFINE                ]-------------------------------*/
 #define	DPCM_SYNCCLOCK	FALSE
@@ -37,11 +38,11 @@
 /*--------------[ CONST                 ]-------------------------------*/
 /*--------------[ PROTOTYPE             ]-------------------------------*/
 /*--------------[ PROGRAM               ]-------------------------------*/
-// �I�y�R�[�h
+// ƒIƒyƒR[ƒh
 //#define	OP6502(A)	RD6502((A))
 //#define	OP6502W(A)	RD6502W((A))
 
-// �[���y�[�W���[�h
+// ƒ[ƒƒy[ƒWƒŠ[ƒh
 #define	ZPRD(A)		(RAM[(BYTE)(A)])
 //#define	ZPRDW(A)	(*((LPWORD)&RAM[(BYTE)(A)]))
 #define	ZPRDW(A)	((WORD)RAM[(BYTE)(A)]+((WORD)RAM[(BYTE)((A)+1)]<<8))
@@ -49,26 +50,26 @@
 #define	ZPWR(A,V)	{ RAM[(BYTE)(A)]=(V); }
 #define	ZPWRW(A,V)	{ *((LPWORD)&RAM[(BYTE)(A)])=(WORD)(V); }
 
-// �T�C�N���J�E���^
+// ƒTƒCƒNƒ‹ƒJƒEƒ“ƒ^
 #define	ADD_CYCLE(V)	{ exec_cycles += (V); }
 //#define	ADD_CYCLE(V)	{}
 
-// EFFECTIVE ADDRESS�y�[�W���E�����`�F�b�N
+// EFFECTIVE ADDRESSƒy[ƒW‹«ŠE’´‚¦ƒ`ƒFƒbƒN
 #define	CHECK_EA()	{ if( (ET&0xFF00) != (EA&0xFF00) ) ADD_CYCLE(1); }
 //#define	CHECK_EA()	{ if( (R.PC&0xFF00) != (EA&0xFF00) ) ADD_CYCLE(1); }
 //#define	CHECK_EA()	{}
 
-// �t���O����
-// �[���^�l�K�e�B�u�t���O�̃`�F�b�N�Ɛݒ�
+// ƒtƒ‰ƒO‘€ì
+// ƒ[ƒ^ƒlƒKƒeƒBƒuƒtƒ‰ƒO‚Ìƒ`ƒFƒbƒN‚ÆÝ’è
 #define	SET_ZN_FLAG(A)	{ R.P &= ~(Z_FLAG|N_FLAG); R.P |= ZN_Table[(BYTE)(A)]; }
 
-// �t���O�Z�b�g
+// ƒtƒ‰ƒOƒZƒbƒg
 #define	SET_FLAG(V)	{ R.P |=  (V); }
-// �t���O�N���A
+// ƒtƒ‰ƒOƒNƒŠƒA
 #define	CLR_FLAG(V)	{ R.P &= ~(V); }
-// �t���O�e�X�g���Z�b�g�^�N���A
+// ƒtƒ‰ƒOƒeƒXƒg•ƒZƒbƒg^ƒNƒŠƒA
 #define	TST_FLAG(F,V)	{ R.P &= ~(V); if((F)) R.P |= (V); }
-// �t���O�`�F�b�N
+// ƒtƒ‰ƒOƒ`ƒFƒbƒN
 #define	CHK_FLAG(V)	(R.P&(V))
 
 // WT .... WORD TEMP
@@ -175,11 +176,11 @@
 #define	MW_ZP()		ZPWR(EA,DT)
 #define	MW_EA()		WR6502(EA,DT)
 
-// STACK����
+// STACK‘€ì
 #define	PUSH(V)		{ STACK[(R.S--)&0xFF]=(V); }
 #define	POP()		STACK[(++R.S)&0xFF]
 
-// �Z�p���Z�n
+// ŽZp‰‰ŽZŒn
 /* ADC (NV----ZC) */
 #define	ADC() {							\
 	WT = R.A+DT+(R.P&C_FLAG);				\
@@ -230,7 +231,7 @@
 	SET_ZN_FLAG(R.Y);	\
 }
 
-// �_�����Z�n
+// ˜_—‰‰ŽZŒn
 /* AND (N-----Z-) */
 #define	AND() {			\
 	R.A &= DT;		\
@@ -329,7 +330,7 @@
 	TST_FLAG( DT&0x40, V_FLAG );		\
 }
 
-// ���[�h�^�X�g�A�n
+// ƒ[ƒh^ƒXƒgƒAŒn
 /* LDA (N-----Z-) */
 #define	LDA()	{ R.A = DT; SET_ZN_FLAG(R.A); }
 /* LDX (N-----Z-) */
@@ -357,7 +358,7 @@
 /* TXS (--------) */
 #define	TXS()	{ R.S = R.X; }
 
-// ���r�n
+// ”äŠrŒn
 /* CMP (N-----ZC) */
 #define	CMP_() {				\
 	WT = (WORD)R.A - (WORD)DT;		\
@@ -377,7 +378,7 @@
 	SET_ZN_FLAG( (BYTE)WT );		\
 }
 
-// �W�����v�^���^�[���n
+// ƒWƒƒƒ“ƒv^ƒŠƒ^[ƒ“Œn
 #if	1
 #define	JMP_ID() {				\
 	WT = OP6502W(R.PC);			\
@@ -464,7 +465,7 @@
 #define	BVC()	{ if( !(R.P & V_FLAG) ) REL_JUMP(); }
 #define	BVS()	{ if(  (R.P & V_FLAG) ) REL_JUMP(); }
 
-// �t���O�����n
+// ƒtƒ‰ƒO§ŒäŒn
 #define	CLC()	{ R.P &= ~C_FLAG; }
 #define	CLD()	{ R.P &= ~D_FLAG; }
 #define	CLI()	{ R.P &= ~I_FLAG; }
@@ -473,7 +474,7 @@
 #define	SED()	{ R.P |= D_FLAG; }
 #define	SEI()	{ R.P |= I_FLAG; }
 
-// Unofficial����
+// Unofficial–½—ß
 #define	ANC()	{			\
 	R.A &= DT;			\
 	SET_ZN_FLAG( R.A );		\
@@ -600,7 +601,7 @@
 }
 
 //
-// �R���X�g���N�^/�f�X�g���N�^
+// ƒRƒ“ƒXƒgƒ‰ƒNƒ^/ƒfƒXƒgƒ‰ƒNƒ^
 //
 //CPU::CPU( NES* parent )
 CPU::CPU( NES* parent ) : nes(parent)
@@ -613,7 +614,7 @@ CPU::~CPU()
 {
 }
 
-// �������A�N�Z�X
+// ƒƒ‚ƒŠƒAƒNƒZƒX
 //#define	OP6502(A)	(CPU_MEM_BANK[(A)>>13][(A)&0x1FFF])
 //#define	OP6502W(A)	(*((WORD*)&CPU_MEM_BANK[(A)>>13][(A)&0x1FFF]))
 
@@ -692,7 +693,7 @@ inline	void	CPU::WR6502( WORD addr, BYTE data )
 */
 
 //
-// ���Z�b�g
+// ƒŠƒZƒbƒg
 //
 void	CPU::Reset()
 {
@@ -753,7 +754,7 @@ void	CPU::SetTotalCycles( INT cycles )
 }
 
 //
-// DMA�y���f�B���O�T�C�N���ݒ�
+// DMAƒyƒ“ƒfƒBƒ“ƒOƒTƒCƒNƒ‹Ý’è
 //
 void	CPU::DMA( INT cycles )
 {
@@ -763,7 +764,7 @@ void	CPU::DMA( INT cycles )
 static	int	nmicount;
 
 //
-// ���荞��
+// Š„‚èž‚Ý
 //
 void	CPU::NMI()
 {
@@ -1100,7 +1101,7 @@ char *CPU::Disassemble(int addr, uint8 *opcode) {
 }
 
 //
-// ���ߎ��s
+// –½—ßŽÀs
 //
 INT	CPU::EXEC( INT request_cycles )
 {
@@ -1124,7 +1125,7 @@ register BYTE	DT;
 				DMA_cycles -= request_cycles;
 				TOTAL_cycles += request_cycles;
 
-				// �N���b�N��������
+				// ƒNƒƒbƒN“¯Šúˆ—
 				mapper->Clock( request_cycles );
 #if	DPCM_SYNCCLOCK
 				apu->SyncDPCM( request_cycles );
@@ -1162,21 +1163,22 @@ register BYTE	DT;
 
 			//FILE *fp = fopen("cpudbg.txt", "a");
 			//fprintf (fp, 
-			printf(
-				"$%04X:%-54s A:%02X X:%02X Y:%02X S:%02X P:%s%s%s%s%s%s%s%s \n", 
-				R.PC - 1,
-				Disassemble(R.PC + opsz - 1, opcodefull), R.A, R.X, R.Y, R.S,
+			dbgprintf2("$%04X:%-54s ", R.PC - 1, Disassemble(R.PC + opsz - 1, opcodefull));
+			dbgprintf4("A:%02X X:%02X Y:%02X ", R.A, R.X, R.Y, R.S);
+			dbgprintf4("P:%s%s%s%s", 
 				(R.P & N_FLAG) ? "N" : "n",
 				(R.P & V_FLAG) ? "V" : "v",
 				(R.P & R_FLAG) ? "U" : "u",
-				(R.P & B_FLAG) ? "B" : "b",
+				(R.P & B_FLAG) ? "B" : "b"
+				);
+			dbgprintf4("%s%s%s%s\n", 
 				(R.P & D_FLAG) ? "D" : "d",
 				(R.P & I_FLAG) ? "I" : "i",
 				(R.P & Z_FLAG) ? "Z" : "z",
 				(R.P & C_FLAG) ? "C" : "c"
-				 );
+				);
+			
 			//fclose(fp);
-			DEBUG_WAIT_L_KEY
 		}
 		*/
 
@@ -1776,7 +1778,7 @@ register BYTE	DT;
 				ADD_CYCLE(6);
 				break;
 
-	// �t���O�����n
+	// ƒtƒ‰ƒO§ŒäŒn
 			case	0x18: // CLC
 				CLC();
 				ADD_CYCLE(2);
@@ -1807,7 +1809,7 @@ register BYTE	DT;
 				ADD_CYCLE(2);
 				break;
 
-	// �X�^�b�N�n
+	// ƒXƒ^ƒbƒNŒn
 			case	0x48: // PHA
 				PUSH( R.A );
 				ADD_CYCLE(3);
@@ -1826,7 +1828,7 @@ register BYTE	DT;
 				ADD_CYCLE(4);
 				break;
 
-	// ���̑�
+	// ‚»‚Ì‘¼
 			case	0x00: // BRK
 				BRK();
 				ADD_CYCLE(7);
@@ -1836,7 +1838,7 @@ register BYTE	DT;
 				ADD_CYCLE(2);
 				break;
 
-	// �����J���ߌQ
+	// –¢ŒöŠJ–½—ßŒQ
 			case	0x0B: // ANC #$??
 			case	0x2B: // ANC #$??
 				MR_IM(); ANC();
@@ -2197,7 +2199,7 @@ register BYTE	DT;
 		request_cycles -= exec_cycles;
 		TOTAL_cycles += exec_cycles;
 
-		// �N���b�N��������
+		// ƒNƒƒbƒN“¯Šúˆ—
 		mapper->Clock( exec_cycles );
 #if	DPCM_SYNCCLOCK
 		apu->SyncDPCM( exec_cycles );

@@ -59,12 +59,12 @@ class	PAD;
 class	Mapper;
 
 //
-// NES �N���X
+// NES ƒNƒ‰ƒX
 //
 class NES
 {
 public:
-// �����o�ϐ�
+// ƒƒ“ƒo•Ï”
 	CPU*	cpu;
 	PPU*	ppu;
 	APU*	apu;
@@ -124,7 +124,7 @@ public:
 	void	GetZapperPos( LONG&x, LONG&y )	{ x = ZapperX; y = ZapperY; }
 	void	SetZapperPos( LONG x, LONG y )	{ ZapperX = x; ZapperY = y; }
 
-	// �X�e�[�g�t�@�C��
+	// ƒXƒe[ƒgƒtƒ@ƒCƒ‹
 	// 0:ERROR 1:CRC OK -1:CRC ERR
 	static	INT	IsStateFile( const char* fname, ROM* rom );
 	BOOL	LoadState( const char* fname );
@@ -138,7 +138,7 @@ public:
 	void	SetVSDipSwitch( BYTE v )	{ m_VSDipValue = v; }
 	VSDIPSWITCH*	GetVSDipSwitchTable()	{ return m_VSDipTable; }
 
-	// �X�i�b�v�V���b�g
+	// ƒXƒiƒbƒvƒVƒ‡ƒbƒg
 	BOOL	Snapshot();
 
 	// For Movie
@@ -152,17 +152,17 @@ public:
 	BOOL	MovieRecAppend( const char* fname );
 	BOOL	MovieStop();
 
-	// ���̑��R���g���[��
+	// ‚»‚Ì‘¼ƒRƒ“ƒgƒ[ƒ‹
 	BOOL	IsDiskThrottle() { return m_bDiskThrottle; }
 //	BOOL	IsBraking() { return m_bBrake; }	// Debugger
 
-	// �`������
+	// •`‰æ•ûŽ®
 	enum RENDERMETHOD { 
-		POST_ALL_RENDER = 0, // �X�L�������C�����̖��ߎ��s���C�����_�����O
-		PRE_ALL_RENDER  = 1, // �����_�����O�̎��s���C�X�L�������C�����̖��ߎ��s
-		POST_RENDER     = 2, // �\�����ԕ��̖��ߎ��s���C�����_�����O
-		PRE_RENDER      = 3, // �����_�����O���s���C�\�����ԕ��̖��ߎ��s
-		TILE_RENDER     = 4  // �^�C���x�[�X�����_�����O
+		POST_ALL_RENDER = 0, // ƒXƒLƒƒƒ“ƒ‰ƒCƒ“•ª‚Ì–½—ßŽÀsŒãCƒŒƒ“ƒ_ƒŠƒ“ƒO
+		PRE_ALL_RENDER  = 1, // ƒŒƒ“ƒ_ƒŠƒ“ƒO‚ÌŽÀsŒãCƒXƒLƒƒƒ“ƒ‰ƒCƒ“•ª‚Ì–½—ßŽÀs
+		POST_RENDER     = 2, // •\Ž¦ŠúŠÔ•ª‚Ì–½—ßŽÀsŒãCƒŒƒ“ƒ_ƒŠƒ“ƒO
+		PRE_RENDER      = 3, // ƒŒƒ“ƒ_ƒŠƒ“ƒOŽÀsŒãC•\Ž¦ŠúŠÔ•ª‚Ì–½—ßŽÀs
+		TILE_RENDER     = 4  // ƒ^ƒCƒ‹ƒx[ƒXƒŒƒ“ƒ_ƒŠƒ“ƒO
 	};
 	void		SetRenderMethod( RENDERMETHOD type )	
 	{ 
@@ -266,12 +266,12 @@ public:
 	void	SaveSRAM();
 
 protected:
-// �����o�֐�
-	// �G�~�����[�V����
+// ƒƒ“ƒoŠÖ”
+	// ƒGƒ~ƒ…ƒŒ[ƒVƒ‡ƒ“
 	BYTE	ReadReg ( WORD addr );
 	void	WriteReg( WORD addr, BYTE data );
 
-	// �X�e�[�g�T�u
+	// ƒXƒe[ƒgƒTƒu
 	BOOL	ReadState( FILE* fp );
 	void	WriteState( FILE* fp );
 
@@ -285,7 +285,7 @@ protected:
 	void	SaveTurboFile();
 
 protected:
-// �����o�ϐ�
+// ƒƒ“ƒo•Ï”
 	INT	nIRQtype;
 	BOOL	bVideoMode;
 	BOOL	bFrameIRQ;

@@ -25,6 +25,13 @@ protected:
 	BYTE	chr01, chr23, chr4, chr5, chr6, chr7;
 	BYTE	we_sram;
 
+	BYTE	rom_type;	//for "Contra Fighter (Unl) [U]"
+	BYTE	security;
+
+	BYTE	KT_bank;	//for KT CN games
+
+	WORD	temp1;
+
 	BYTE	irq_type;
 	BYTE	irq_enable;
 	BYTE	irq_counter;
@@ -39,4 +46,5 @@ protected:
 private:
 	void	SetBank_CPU();
 	void	SetBank_PPU();
+	void	SetBank_PPUSUB( int bank, int page );
 };

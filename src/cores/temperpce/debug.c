@@ -34,8 +34,38 @@ void print_stack()
   print_segment(mpr_translate_offset(memory.mpr_translated[1], 0x2100));
 }
 
+#define load_mem_dbg(dest, address)                                               \
+{                                                                             \
+  u32 _address = address;                                                     \
+  u8 *mpr_translated_value = memory.mpr_translated[_address >> 13];           \
+                                                                              \
+  if(!mpr_check_ext(mpr_translated_value))                                    \
+  {                                                                           \
+    dest = mpr_translate(mpr_translated_value, _address);                     \
+  }                                                                           \
+  else                                                                        \
+  {                                                                           \
+    mpr_translate_ext_read(mpr_translated_value, _address, dest);             \
+  }                                                                           \
+}                                                                             \
+
+
 void print_debug(int a, int x, int y, int p, int s, int pc, u32 remaining)
 {
+  //return ;
+
+  u8 disasm_output[500];
+  int oldpc = pc;
+  disasm_instruction(disasm_output, &pc); 
+
+  if (1==1)
+  {
+    FILE *fp = fopen("out.txt", "a");
+    fprintf (fp, "%4x: %-15s A%02X X%02X Y%02X S%02X t:%d\n", oldpc, disasm_output, a, x, y, s, remaining); 
+    fclose (fp);
+  }
+
+  /*
   char disasm[128];
   char flags_str[] = "--------";
   char *flags_set = "nvtbdizc";
@@ -64,7 +94,7 @@ void print_debug(int a, int x, int y, int p, int s, int pc, u32 remaining)
   printf("\n%x instructions in (%d cycles until break) (line %d)"
    " (irq %x:%x)",
    debug.instruction_count, remaining, vce.frame_counter,
-   irq.status, cpu.irq_raised);
+   irq.status, cpu.irq_raised);*/
 }
 
 
@@ -111,8 +141,12 @@ u32 parse_commands(char *command, char **commands, u32 max_commands)
 #define lhex_arg(num)                                                         \
   strtoll(commands[num + 1], NULL, 16)                                        \
 
+extern int emulatorFrame;
 void step_debug(int a, int x, int y, int p, int s, int pc, int remaining)
 {
+  print_debug(a, x, y, p, s, pc, remaining);
+  return;
+  
   // Moved here for a slight speedup, but rearranging the header in the ASM
   // will help more.
 
@@ -184,7 +218,7 @@ void step_debug(int a, int x, int y, int p, int s, int pc, int remaining)
   if(should_print_debug)
   {
     print_debug(a, x, y, p, s, pc, remaining);
-    printf("\n");
+    //printf("\n");
   }
 
   if(should_break)

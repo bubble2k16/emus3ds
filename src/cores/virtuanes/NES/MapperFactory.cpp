@@ -103,6 +103,7 @@
 #include "Mapper113.h"
 #include "Mapper118.h"
 #include "Mapper119.h"
+#include "Mapper120.h"
 #include "Mapper122.h"
 #include "Mapper175.h"
 #include "Mapper180.h"
@@ -111,6 +112,7 @@
 #include "Mapper187.h"
 #include "Mapper188.h"
 #include "Mapper189.h"
+#include "Mapper206.h"
 #include "Mapper243.h"
 
 #include "MapperNSF.h"
@@ -189,11 +191,47 @@
 #include "Mapper061.h"
 
 #include "Mapper027.h"
-
+#include "Mapper148.h"
+#include "Mapper150.h"
+#include "Mapper132.h"
+#include "Mapper168.h"
+#include "Mapper166.h"
+#include "Mapper179.h"
+#include "Mapper174.h"
+#include "Mapper177.h"
+#include "Mapper178.h"
+#include "Mapper176.h"
+#include "Mapper169.h"
+#include "Mapper170.h"
+#include "Mapper171.h"
+#include "Mapper172.h"
+#include "Mapper237.h"
+#include "Mapper141.h"
+#include "Mapper121.h"
+#include "Mapper212.h"
+#include "Mapper049.h"
+#include "Mapper052.h"
+#include "Mapper173.h"
 #include "Mapper163.h"
 #include "Mapper164.h"
 #include "Mapper165.h"
 #include "Mapper167.h"
+
+#include "BoardSA9602B.h"
+#include "BoardBS5.h"
+#include "BoardCityFighter.h"
+#include "BoardCoolBoy.h"
+#include "BoardFK23C.h"
+#include "BoardDragonFighter.h"
+#include "BoardYoko.h"
+#include "BoardOneBus.h"
+#include "BoardMGC002.h"
+#include "BoardKS7010.h"
+#include "BoardUNL158B.h"
+#include "BoardKS7030.h"
+#include "BoardTH21311.h"
+#include "BoardUNL831128C.h"
+#include "BoardLB12IN1.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -355,16 +393,107 @@
 #include "Mapper061.cpp"
 
 #include "Mapper027.cpp"
+#include "Mapper148.cpp"
+#include "Mapper150.cpp"
+#include "Mapper132.cpp"
+#include "Mapper168.cpp"
+#include "Mapper166.cpp"
+#include "Mapper179.cpp"
+#include "Mapper174.cpp"
+#include "Mapper177.cpp"
+#include "Mapper178.cpp"
+#include "Mapper176.cpp"
+#include "Mapper169.cpp"
+#include "Mapper170.cpp"
+#include "Mapper171.cpp"
+#include "Mapper172.cpp"
+#include "Mapper237.cpp"
+#include "Mapper141.cpp"
+#include "Mapper121.cpp"
+#include "Mapper212.cpp"
+#include "Mapper049.cpp"
+#include "Mapper052.cpp"
+#include "Mapper173.cpp"
 
 #include "Mapper164.cpp"
 #include "Mapper165.cpp"
 #include "Mapper167.cpp"
+#include "BoardSA9602B.cpp"
+#include "BoardBS5.cpp"
+#include "BoardCityFighter.cpp"
+#include "BoardCoolBoy.cpp"
+#include "BoardFK23C.cpp"
+#include "BoardDragonFighter.cpp"
+#include "BoardYoko.cpp"
+#include "BoardOneBus.cpp"
+#include "BoardMGC002.cpp"
+#include "BoardKS7010.cpp"
+#include "BoardUNL158B.cpp"
+#include "BoardKS7030.cpp"
+#include "BoardTH21311.cpp"
+#include "BoardUNL831128C.cpp"
+#include "BoardLB12IN1.cpp"
+
+extern BOOL g_bSan2;
 
 //////////////////////////////////////////////////////////////////////////
 // Mapper Factory
 //////////////////////////////////////////////////////////////////////////
-Mapper*	CreateMapper( NES* parent, INT no )
+
+#include "BoardMMC3.h"
+#include "BoardMMC3.cpp"
+
+Mapper*	CreateMapper( NES* parent, INT no, BOOL bUnif )
 {
+
+	if( bUnif )
+	{
+		switch(no)
+		{
+			case CHINA_ER_SAN2://����־2-�����Ĵ�½(���ĺ�����)[����&������&��һ��]
+				g_bSan2 = TRUE;
+				return new Mapper019(parent);
+			case UNL_SA_9602B:
+				return new BoardSA9602B(parent);
+			case BENSHENG_BS5:
+				return new BoardBS5(parent);
+			case City_Fighter_IV:
+				return new BoardCityFighter(parent);
+			case BTL_6035052:
+				return new Mapper004(parent);
+			case COOLBOY:
+				return new BoardCoolBoy(parent);
+			case BMC_FK23C:
+			case BMC_FK23CA:
+				return new BoardFK23C(parent);
+			case Dragon_Fighter:
+				return new BoardDragonFighter(parent);
+			case UNL_YOKO:
+			case UNL_82112C:
+				return new BoardYoko(parent);
+			case OneBus:
+				return new BoardOneBus(parent);
+			case MGC_002:
+				return new BoardMGC002(parent);
+			case UNL_KS7010:
+				return new BoardKS7010(parent);
+			case UNL_KS7030:
+				return new BoardKS7030(parent);
+			case UNL_158B:
+				return new BoardUNL158B(parent);
+			case UNL_TH2131_1:
+				return new BoardTH21311(parent);
+			case UNL_831128C:
+				return new Board831128C(parent);
+			case BMC_LB12IN1:
+				return new BoardLB12IN1(parent);
+
+			case FF3_CN:
+//				g_bSan2 = TRUE;
+				return new Mapper004(parent);
+		}
+		return NULL;
+	}
 	switch( no ) {
 		case	0:
 			return new Mapper000(parent);
@@ -421,6 +550,7 @@ Mapper*	CreateMapper( NES* parent, INT no )
 				fceux_mapper028::M28Power, 
 				fceux_mapper028::M28Reset, 
 				fceux_mapper028::StateRestore,
+				NULL,
 				fceux_mapper028::StateRegs);
 		case	32:
 			return new Mapper032(parent);
@@ -435,6 +565,7 @@ Mapper*	CreateMapper( NES* parent, INT no )
 				fceux_mapper036::M36Power, 
 				NULL, 
 				fceux_mapper036::M36Restore,
+				NULL,
 				fceux_mapper036::StateRegs);
 		case	40:
 			return new Mapper040(parent);
@@ -525,14 +656,6 @@ Mapper*	CreateMapper( NES* parent, INT no )
 		case	122:
 		case	184:
 			return new Mapper122(parent);
-		case	175:
-			return new Mapper175(parent);
-		//case	176:
-		//	return new Mapper176(parent);
-		case	177:
-			return new Mapper177(parent);
-		case	178:
-			return new Mapper178(parent);		
 		case	180:
 			return new Mapper180(parent);
 		case	181:
@@ -592,6 +715,13 @@ Mapper*	CreateMapper( NES* parent, INT no )
 			return new Mapper116(parent);
 		case	117:
 			return new Mapper117(parent);
+		case	120:
+			return new MapperFCEUX(parent, 
+				fceux_mapper120::M120Power, 
+				NULL, 
+				fceux_mapper120::StateRestore,
+				NULL,
+				fceux_mapper120::StateRegs);
 		case	133:
 			return new Mapper133(parent);
 		case	134:
@@ -704,11 +834,30 @@ Mapper*	CreateMapper( NES* parent, INT no )
 		case	202:
 			return new Mapper202(parent);
 
+		case	206:
+			return new MapperFCEUX(parent, 
+				fceux_mapper206::M206Power, 
+				NULL, 
+				fceux_mapper206::StateRestore,
+				NULL,
+				fceux_mapper206::StateRegs);
+
 		case	61:
 			return new Mapper061(parent);
 
 		case	27:
 			return new Mapper027(parent);
+		case	148:
+			return new Mapper148(parent);
+
+		case	150:
+			return new Mapper150(parent);
+
+		case	132:
+			return new Mapper132(parent);
+
+		case	168:
+			return new Mapper168(parent);
 
 		case	163:
 			return new Mapper163(parent);
@@ -716,8 +865,58 @@ Mapper*	CreateMapper( NES* parent, INT no )
 			return new Mapper164(parent);
 		case	165:
 			return new Mapper165(parent);
+		case	166:
+			return new Mapper166(parent);
 		case	167:
 			return new Mapper167(parent);
+		case	179:
+			return new Mapper179(parent);
+
+		case	174:
+			return new Mapper174(parent);
+
+		case	177:
+			return new Mapper177(parent);
+
+		case	178:
+			return new Mapper178(parent);
+
+		case	176:
+			return new Mapper176(parent);
+//			return new BoardFK23C(parent);
+
+		case	169:
+			return new Mapper169(parent);
+
+		case	170:
+			return new Mapper170(parent);
+
+		case	171:
+			return new Mapper171(parent);
+
+		case	172:
+			return new Mapper172(parent);
+
+		case	237:
+			return new Mapper237(parent);
+
+		case	141:
+			return new Mapper141(parent);
+
+		case	121:
+			return new Mapper121(parent);
+
+		case	212:
+			return new Mapper212(parent);
+
+
+		case	49:
+			return new Mapper049(parent);
+		case	52:
+			return new Mapper052(parent);
+
+		case	173:
+			return new Mapper173(parent);
 
 		default:
 			break;

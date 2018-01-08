@@ -2,7 +2,7 @@
 
 #ifndef _3DSASYNC_H_
 #define _3DSASYNC_H_
-
+/*
 typedef struct
 {
     int     param1;
@@ -70,5 +70,5 @@ void async3dsScheduleTask(FAsyncTask task, int param1, int param2, int param3, i
 // This should be called only by the app core.
 //---------------------------------------------------------
 void async3dsWaitTasks();
-
+*/
 #endif

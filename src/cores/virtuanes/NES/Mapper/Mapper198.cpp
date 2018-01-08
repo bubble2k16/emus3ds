@@ -3,12 +3,15 @@
 //////////////////////////////////////////////////////////////////////////
 void	Mapper198::Reset()
 {
+	
 	for( INT i = 0; i < 8; i++ ) {
 		reg[i] = 0x00;
 	}
 
 	prg0 = 0;
 	prg1 = 1;
+	prg2 = PROM_8K_SIZE-2;
+	prg3 = PROM_8K_SIZE-1;
 	SetBank_CPU();
 
 	chr01 = 0;
@@ -18,18 +21,67 @@ void	Mapper198::Reset()
 	chr6  = 6;
 	chr7  = 7;
 	SetBank_PPU();
+
+	reg6800 = 0;
+	reg6803 = 0;
+
+	DWORD	crc = nes->rom->GetPROM_CRC();
+	if( crc == 0x935F2119 ) {	//[ES-1110] Cheng Ji Si Han (C)
+		sp_rom = 1;
+		nes->SetSAVERAM_SIZE( 16*1024 );
+		wram_bank  = 0;
+		wram_count = 0;
+	}
+
 }
 
 void	Mapper198::WriteLow( WORD addr, BYTE data )
 {
-	if( addr>0x4018 && addr<0x6000 )
+
+//	if((addr!=0x7FA2)&&(addr!=0x7FA3)&&(addr>=0x6000)) DEBUGOUT("Address=%04X Data=%02X\n", addr&0xFFFF, data&0xFF );
+//	 DEBUGOUT("Address=%04X Data=%02X\n", addr&0xFFFF, data&0xFF );
+
+	if(nes->rom->GetPROM_CRC()==0x2779bb41){
+		switch( addr ) {	//[NJ064] Sudoku (C)
+			case	0x6800:
+				reg6800 = data;
+				break;
+			case	0x6803:
+				reg6803 = data;
+				if((reg6800==0xe0)&&(reg6803==0x97)){
+					prg0 = (PROM_8K_SIZE>>1)-4;
+					prg1 = (PROM_8K_SIZE>>1)-3;
+					prg2 = (PROM_8K_SIZE>>1)-2;
+					prg3 = (PROM_8K_SIZE>>1)-1;
+					SetBank_CPU();
+				}
+				if((reg6800==0xe1)&&(reg6803==0x97)){
+					prg0 = (PROM_8K_SIZE>>2)-4;
+					prg1 = (PROM_8K_SIZE>>2)-3;
+					prg2 = (PROM_8K_SIZE>>2)-2;
+					prg3 = (PROM_8K_SIZE>>2)-1;
+					SetBank_CPU();
+				}
+				break;
+		}
+	}
+
+	if((sp_rom==1)&&(addr==0x5226)) {
+		if( data ) {
+			SetPROM_Bank( 3, &WRAM[0x0000], BANKTYPE_RAM );
+		} else {
+			SetPROM_Bank( 3, &WRAM[0x2000], BANKTYPE_RAM );
+		}
+	}
+
+	if( (addr>0x4018 && addr<0x6000)||(sp_rom==1) )
 		CPU_MEM_BANK[addr>>13][addr&0x1FFF] = data;
 	else
 		adr5000buf[addr&0xFFF] = data;
 }
 BYTE	Mapper198::ReadLow( WORD addr )
 {
-	if( addr>0x4018 && addr<0x6000 )
+	if( (addr>0x4018 && addr<0x6000)||(sp_rom==1) )
 		return	CPU_MEM_BANK[addr>>13][addr&0x1FFF];
 	else
 		return	adr5000buf[addr&0xFFF];
@@ -37,6 +89,9 @@ BYTE	Mapper198::ReadLow( WORD addr )
 
 void	Mapper198::Write( WORD addr, BYTE data )
 {
+
+//	DEBUGOUT("Address=%04X Data=%02X\n", addr&0xFFFF, data&0xFF );
+
 	switch( addr & 0xE001 ) {
 		case	0x8000:
 			reg[0] = data;
@@ -110,9 +165,9 @@ void	Mapper198::Write( WORD addr, BYTE data )
 void	Mapper198::SetBank_CPU()
 {
 	if( reg[0] & 0x40 ) {
-		SetPROM_32K_Bank( PROM_8K_SIZE-2, prg1, prg0, PROM_8K_SIZE-1 );
+		SetPROM_32K_Bank( prg2, prg1, prg0, prg3 );
 	} else {
-		SetPROM_32K_Bank( prg0, prg1, PROM_8K_SIZE-2, PROM_8K_SIZE-1 );
+		SetPROM_32K_Bank( prg0, prg1, prg2, prg3 );
 	}
 }
 

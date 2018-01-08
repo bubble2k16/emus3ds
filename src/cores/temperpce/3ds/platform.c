@@ -17,7 +17,7 @@ config_struct config =
   0,                 // u32 show_fps;
   1,                 // u32 enable_sound;
   0,                 // u32 fast_forward;
-  32000,             // u32 audio_output_frequency;
+  44100,             // u32 audio_output_frequency;
   1,                 // u32 patch_idle_loops;
   SS_SNAPSHOT_OFF,   // u32 snapshot_format;
   0,                 // u32 force_usa;
@@ -93,7 +93,7 @@ void save_state(char *file_name, u16 *snapshot)
   u8 *savestate_buffer = malloc(SAVESTATE_MAX_SIZE);
   u32 snapshot_length = 0;
 
-  printf("saving state to file named %s\n", path);
+  //printf("saving state to file named %s\n", path);
 
   file_write_mem_open(savestate_file, path, savestate_buffer);
   savestate_header_struct savestate_header;
@@ -230,17 +230,17 @@ savestate_extension_enum load_state(char *file_name, u8 *in_memory_state,
 
   if(in_memory_state)
   {
-    printf("loading state from memory.\n");
+    //printf("loading state from memory.\n");
   }
   else
   {
-    printf("loading state %s\n", path);
+    //printf("loading state %s\n", path);
     //netplay_send_savestate(file_name);
   }
 
   if(file_read_mem_invalid(savestate_file))
   {
-    printf("savestate %s does not exist\n", path);
+    //printf("savestate %s does not exist\n", path);
     free(savestate_buffer);
     return SS_EXT_INVALID;
   }

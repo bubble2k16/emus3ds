@@ -43,5 +43,6 @@ void	Mapper003::WriteLow( WORD addr, BYTE data )
 
 void	Mapper003::Write( WORD addr, BYTE data )
 {
+//DEBUGOUT( "MAP3 WR $%04X=$%02X L=%d\n", addr, data, nes->GetScanline() );
 	SetVROM_8K_Bank( data );
 }

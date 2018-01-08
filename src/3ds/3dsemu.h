@@ -20,20 +20,38 @@
 
 
 
-#define DEBUG_WAIT_L_KEY 	\
-    { \
-        uint32 prevkey = 0; \
-        while (aptMainLoop()) \ 
-        {  \
-            hidScanInput(); \ 
-            uint32 key = hidKeysHeld(); \
-            if (key == KEY_L) break; \
-            if (key == KEY_SELECT) { emulator.enableDebug = !emulator.enableDebug; break; } \
-            if (key == KEY_TOUCH) break; \
-            if (prevkey != 0 && key == 0) \
-                break;  \
-            prevkey = key; \
-        } \ 
+#define DEBUG_WAIT_L_KEY 	                                                \
+    {                                                                       \
+        hidScanInput();                                                     \
+        uint32 prevkey = hidKeysHeld();                                     \
+        while (aptMainLoop())                                               \
+        {                                                                   \
+            hidScanInput();                                                 \
+            uint32 key = hidKeysHeld();                                     \
+            if (key == KEY_L) break;                                        \
+            if (key == KEY_TOUCH) break;                                    \
+            if (prevkey == 0 && key != 0)                                   \
+                break;                                                      \
+            if (key == KEY_SELECT)                                          \
+                { emulator.enableDebug = !emulator.enableDebug; break; }    \
+            prevkey = key;                                                  \
+        }                                                                   \ 
     }
+
+
+//---------------------------------------------------------
+// Information about the emulator.
+//---------------------------------------------------------
+typedef struct
+{
+    bool                isReal3DS;
+    bool                enableDebug;
+    int                 emulatorState;
+    int                 waitBehavior;
+    bool                fastForwarding;
+} SEmulator;
+
+extern SEmulator emulator;
+    
 
 #endif

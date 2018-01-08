@@ -71,7 +71,7 @@ void	Mapper016::Reset()
 		eeprom_type = 1;
 	}
 
-	// DATACH�n
+	// DATACHŒn
 	if( crc == 0x0be0a328 		// Datach - SD Gundam - Gundam Wars(J)
 	 || crc == 0x19e81461		// Datach - Dragon Ball Z - Gekitou Tenkaichi Budou Kai(J)
 	 || crc == 0x5b457641		// Datach - Ultraman Club - Supokon Fight!(J)
@@ -102,6 +102,7 @@ void	Mapper016::Reset()
 
 BYTE	Mapper016::ReadLow( WORD addr )
 {
+//	DEBUGOUT( "ReadLow  - addr= %04x ; dat= %03x\n", addr, Mapper::ReadLow( addr ) );
 	if( patch ) {
 		return	Mapper::ReadLow( addr );
 	} else {
@@ -124,6 +125,7 @@ BYTE	Mapper016::ReadLow( WORD addr )
 
 void	Mapper016::WriteLow( WORD addr, BYTE data )
 {
+//	DEBUGOUT( "WriteLow - addr= %04x ; dat= %03x\n", addr, data );
 	if( !patch ) {
 		WriteSubA( addr, data );
 	} else {
@@ -133,6 +135,7 @@ void	Mapper016::WriteLow( WORD addr, BYTE data )
 
 void	Mapper016::Write( WORD addr, BYTE data )
 {
+//	DEBUGOUT( "Write - addr= %04x ; dat= %03x\n", addr, data );
 	if( !patch ) {
 		WriteSubA( addr, data );
 	} else {
@@ -176,15 +179,18 @@ void	Mapper016::WriteSubA( WORD addr, BYTE data )
 			break;
 
 		case	0x000A:
+	DEBUGOUT( "Write - addr= %04x ; dat= %03x\n", addr, data );
 			irq_enable = data & 0x01;
 			irq_counter = irq_latch;
 			nes->cpu->ClrIRQ( IRQ_MAPPER );
 			break;
 		case	0x000B:
+	DEBUGOUT( "Write - addr= %04x ; dat= %03x\n", addr, data );
 			irq_latch = (irq_latch & 0xFF00) | data;
 			irq_counter = (irq_counter & 0xFF00) | data;
 			break;
 		case	0x000C:
+	DEBUGOUT( "Write - addr= %04x ; dat= %03x\n", addr, data );
 			irq_latch = ((INT)data << 8) | (irq_latch & 0x00FF);
 			irq_counter = ((INT)data << 8) | (irq_counter & 0x00FF);
 			break;

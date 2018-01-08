@@ -1071,7 +1071,7 @@ BYTE	NES::ReadReg( WORD addr )
 			if( rom->IsVSUNISYSTEM() ) {
 				return	pad->Read( addr );
 			} else {
-				return	pad->Read( addr ) | apu->Read( addr );
+				return	pad->Read( addr )/* | apu->Read( addr )*/;
 			}
 			break;
 		default:

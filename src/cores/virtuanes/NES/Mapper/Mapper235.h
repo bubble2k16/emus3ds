@@ -10,5 +10,6 @@ public:
 	void	Write(WORD addr, BYTE data);
 
 protected:
+	BYTE    dip_s;
 private:
 };
