@@ -35,11 +35,11 @@ typedef struct
     int     UseGlobalVolume = 0;            // Use global button mappings for all games
                                             // 0 - no, 1 - yes
 
-    int     GlobalButtonMapping[10][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};  
+    int     GlobalButtonMapping[6] = {0, 0, 0, 0, 0, 0};  
                                             // Button Mapping using 3DS buttons: 0 - A, 1 - B, 2 - X, 3 - Y, 4 - L, 5 - R, 6 - ZL, 7 - ZR
                                             // Values: Specific to each core.
 
-    int     GlobalTurbo[8] = {0, 0, 0, 0, 0, 0, 0, 0};  
+    int     GlobalTurbo[6] = {0, 0, 0, 0, 0, 0};  
                                             // Turbo buttons: 0 - No turbo, 1 - Release/Press every alt frame.
                                             // Indexes for 3DS buttons: 0 - A, 1 - B, 2 - X, 3 - Y, 4 - L, 5 - R
 
@@ -57,11 +57,10 @@ typedef struct
 
     int     ForceFrameRate = 0;             // 0 - Use ROM's Region, 1 - Force 50 fps, 2 - Force 60 fps
 
-    int     Turbo[8] = {0, 0, 0, 0, 0, 0, 0, 0};  
-                                            // Turbo buttons: 0 - No turbo, 1 - Release/Press every alt frame.
+    int     Turbo[6] = {0, 0, 0, 0, 0, 0};  // Turbo buttons: 0 - No turbo, 1 - Release/Press every alt frame.
                                             // Indexes for 3DS buttons: 0 - A, 1 - B, 2 - X, 3 - Y, 4 - L, 5 - R
 
-    int     ButtonMapping[10][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};  
+    int     ButtonMapping[6] = {0, 0, 0, 0, 0, 0};  
                                             // Button Mapping using 3DS buttons: 0 - A, 1 - B, 2 - X, 3 - Y, 4 - L, 5 - R, 6 - ZL, 7 - ZR
                                             // Values: Specific to each core.
 
@@ -76,24 +75,9 @@ typedef struct
 
     int     PaletteFix;                     // Palette Fixes Changes (if applicable)
 
-    int     AutoSavestate = 0;              // Automatically save the the current state when the emulator is closed
-                                            // or the game is changed, and load it again when the game is loaded.
-                                            //   0 - Disabled
-                                            //   1 - Enabled
-
     int     SRAMSaveInterval;               // SRAM Save Interval (if applicable)
 
     int     OtherOptions[50];               // Use this to store other options.
-
-    int     UseGlobalEmuControlKeys = 0;    // Use global emulator control keys for all games
-
-    int     ButtonHotkeyOpenMenu;           // Stores button that can be held to open the menu.
-
-    int     ButtonHotkeyDisableFramelimit;  // Stores button that can be held to disable the frame limit.
-
-    int     GlobalButtonHotkeyOpenMenu;     // Stores button that can be held to open the menu.
-
-    int     GlobalButtonHotkeyDisableFramelimit; // Stores button that can be held to disable the frame limit.
 
 } SSettings3DS;
 
@@ -118,32 +102,6 @@ extern char *impl3dsTitleText;
 
 
 //---------------------------------------------------------
-// The bitmaps for the emulated console's UP, DOWN, LEFT, 
-// RIGHT keys.
-//---------------------------------------------------------
-extern u32 input3dsDKeys[4];
-
-
-//---------------------------------------------------------
-// The list of valid joypad bitmaps for the emulated 
-// console.
-//
-// This should NOT include D-keys.
-//---------------------------------------------------------
-extern u32 input3dsValidButtonMappings[10];
-
-
-//---------------------------------------------------------
-// The maps for the 10 3DS keys to the emulated consoles
-// joypad bitmaps for the following 3DS keys (in order):
-//   A, B, X, Y, L, R, ZL, ZR, SELECT, START
-//
-// This should NOT include D-keys.
-//---------------------------------------------------------
-extern u32 input3dsDefaultButtonMappings[10];
-
-
-//---------------------------------------------------------
 // Initializes the emulator core.
 //
 // You must call snd3dsSetSampleRate here to set 
@@ -165,7 +123,7 @@ void impl3dsFinalize();
 // from the 2nd core before copying it to the actual
 // output buffer.
 //---------------------------------------------------------
-void impl3dsGenerateSoundSamples(int numberOfSamples);
+void impl3dsGenerateSoundSamples();
 
 
 //---------------------------------------------------------
@@ -175,7 +133,7 @@ void impl3dsGenerateSoundSamples(int numberOfSamples);
 // from the 2nd core before copying it to the actual
 // output buffer.
 //---------------------------------------------------------
-void impl3dsOutputSoundSamples(int numberOfSamples, short *leftSamples, short *rightSamples);
+void impl3dsOutputSoundSamples(short *leftSamples, short *rightSamples);
 
 
 
@@ -262,13 +220,6 @@ extern SMenuItem optionMenu[];
 // This menu will be displayed when the emulator
 // is paused.
 //---------------------------------------------------------
-extern SMenuItem controlsMenu[];
-
-
-//---------------------------------------------------------
-// This menu will be displayed when the emulator
-// is paused.
-//---------------------------------------------------------
 extern SMenuItem cheatMenu[];
 
 
@@ -299,19 +250,11 @@ extern SSettings3DS settings3DS;
 
 
 //---------------------------------------------------------
-// Initializes the default global and game-specific
+// Initializes the default global and game-specifi
 // settings. This method is called everytime a game is
 // loaded, but the configuration file does not exist.
 //---------------------------------------------------------
-void impl3dsInitializeDefaultSettingsGlobal();
-
-
-//---------------------------------------------------------
-// Initializes the default global and game-specific
-// settings. This method is called everytime a game is
-// loaded, but the configuration file does not exist.
-//---------------------------------------------------------
-void impl3dsInitializeDefaultSettingsByGame();
+void impl3dsInitializeDefaultSettings();
 
 
 //----------------------------------------------------------------------

@@ -12,6 +12,8 @@ void	Mapper092::Reset()
 
 void	Mapper092::Write( WORD addr, BYTE data )
 {
+//DEBUGOUT( "A:%04X D:%02X\n", addr, data );
+
 	data = addr & 0xFF;
 
 	if( addr >= 0x9000 ) {

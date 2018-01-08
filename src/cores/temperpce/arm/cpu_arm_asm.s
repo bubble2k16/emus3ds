@@ -128,9 +128,10 @@
 #define sp_break_function       0x0
 #define sp_cycle_end_function   0x4
 #define sp_irq_check_function   0x8
-#define sp_resume_cycles        0xC
-#define sp_cpu_struct           0x10
-#define sp_irq_struct           0x14
+#define sp_irq_check_status     0xC
+#define sp_resume_cycles        0x10
+#define sp_cpu_struct           0x14
+#define sp_irq_struct           0x18
 
 #define ext_storage_save_r9     0x40
 #define ext_storage_txx_length  0x50
@@ -372,27 +373,13 @@
 #define fetch_8bit_ldrb(dest)                                                 \
   ldrb dest, [reg_code_page, reg_tr_pc, ror #19];                             \
   adds reg_tr_pc, reg_tr_pc, #(1 << 19);                                      \
-  /* critical bug fix: when there's an overflow, bl destroys r14, which       \
-     some instructions like op_jmp uses (reg_t1) to fetch_16bit!              \
-     Games like 1943 Kai locks up due to this bug. */                         \
-  bcc 0f;                                                                     \
-  stmdb sp!, { r14 };                                                         \
-  bl adjust_pc_plus;                                                          \
-  ldmia sp!, { r14 };                                                         \
-0:                                                                            \
+  blcs adjust_pc_plus                                                         \
 
 #define fetch_8bit_ldrsb(dest)                                                \
   add dest, reg_code_page, reg_tr_pc, ror #19;                                \
   ldrsb dest, [dest];                                                         \
   adds reg_tr_pc, reg_tr_pc, #(1 << 19);                                      \
-  /* critical bug fix: when there's an overflow, bl destroys r14, which       \
-     some instructions like op_jmp uses (reg_t1) to fetch_16bit!              \
-     Games like 1943 Kai locks up due to this bug. */                         \
-  bcc 0f;                                                                     \
-  stmdb sp!, { r14 };                                                         \
-  blcs adjust_pc_plus;                                                        \
-  ldmia sp!, { r14 };                                                          \
-0:                                                                            \
+  blcs adjust_pc_plus                                                         \
 
 #define fetch_8bit(dest, ld_type)                                             \
   fetch_8bit_##ld_type(dest)                                                  \
@@ -1559,8 +1546,6 @@
 
 #define op_transfer_check_boundary_dual_down(reg)                             \
   sub r0, reg, reg_length;                                                    \
-  /* critical bug fix, add 1 to r0 */                                         \
-  add r0, r0, #1;                                                             \
   eor r0, r0, reg;                                                            \
   tst r0, #0xe000;                                                            \
   blne transfer_fix_length_dual_##reg##_down                                  \
@@ -1723,177 +1708,125 @@ tai_ext_src_dest:                                                             \
                                                                               \
   op_transfer_recover_remaining_length(tai)                                   \
 
-/*---------------------------------------------------------------------------*/
-/* 
-  Defines for transfer operations
-*/
-#define op_transfer_read_normal_src(incr)                                     \
-  ldrb r0, [reg_src], #(incr);                                                \
 
-#define op_transfer_read_normal_src_alt()                                     \
-  tst reg_remaining_length, #0x80000000;                                      \
-  ldreqb r0, [reg_src, #0];                                                   \
-  ldrneb r0, [reg_src, #1];                                                   \
+@ Dest is assumed to always be ext, because memory makes little sense.
 
-#define op_transfer_read_ext_src(incr)                                        \
-  ldr r0, [reg_src], #(incr * 4);                                             \
-  bl_indirect(r0);                                                            \
-  
-#define op_transfer_read_ext_src_alt()                                        \
-  tst reg_remaining_length, #0x80000000;                                      \
-  ldreq r0, [reg_src, #0];                                                    \
-  ldrne r0, [reg_src, #4];                                                    \
-  bl_indirect(r0);                                                            \
-
-#define op_transfer_write_normal_dest(incr)                                   \
-  strb r0, [reg_dest], #(incr);                                               \
-
-#define op_transfer_write_normal_dest_alt()                                   \
-  tst reg_remaining_length, #0x80000000;                                      \
-  streqb r0, [reg_dest];                                                      \
-  strneb r0, [reg_dest, #1];                                                  \
-
-#define op_transfer_write_ext_dest(incr)                                      \
-  ldr r1, [reg_dest], #(incr * 4);                                            \
-  bl_indirect(r1)
-
-#define op_transfer_write_ext_dest_alt()                                      \
-  tst reg_remaining_length, #0x80000000;                                      \
-  ldreq r1, [reg_dest];                                                       \
-  ldrne r1, [reg_dest, #4];                                                   \
-  bl_indirect(r1);                                                            \
-
-/*---------------------------------------------------------------------------*/
-/* TIA                                                                       */
-/*---------------------------------------------------------------------------*/
 #define op_tia(address_mode, address_range)                                   \
   op_transfer_start(tia, reg_src, reg_dest, reg_length);                      \
   op_transfer_check_boundary_up(reg_src);                                     \
   sub reg_remaining_length, reg_remaining_length, reg_length;                 \
   op_transfer_prepare_address_src(reg_src, reg_t3);                           \
-  bcs tia2_ext_src;                                                           \
-                                                                              \
-tia2_normal_src:                                                              \
+  bcs tia_ext_src;                                                            \
   add reg_src, reg_t3, reg_src;                                               \
   op_transfer_prepare_address_dest(reg_dest, reg_t3);                         \
-  bcs tia2_normal_src_ext_dest;                                               \
-                                                                              \
-  /******* normal source, normal dest *******/                                \
-  op_transfer_take_cycles(reg_length);                                        \
-  add reg_dest, reg_t3, reg_dest;                                             \
-0:                                                                            \
-  op_transfer_read_normal_src(1);                                             \
-  op_transfer_write_normal_dest_alt();                                        \
-  eor reg_remaining_length, reg_remaining_length, #0x80000000;                \
-  subs reg_length, reg_length, #1;                                            \
-  bne 0b;                                                                     \
-  op_transfer_done(tia);                                                      \
-                                                                              \
-tia2_normal_src_ext_dest:                                                     \
-  /******* normal source, ext dest *******/                                   \
   op_transfer_take_cycles_ext(reg_dest, reg_length);                          \
-  add reg_dest, reg_t3, reg_dest, lsl #2;                                     \
-0:                                                                            \
-  op_transfer_read_normal_src(1);                                             \
-  op_transfer_write_ext_dest_alt();                                           \
-  eor reg_remaining_length, reg_remaining_length, #0x80000000;                \
-  subs reg_length, reg_length, #1;                                            \
-  bne 0b;                                                                     \
+  str reg_dest2, [sp, #-4]!;                                                  \
+  ldr reg_dest2, [reg_t3, reg_dest, lsl #2];                                  \
+  add reg_dest, reg_dest, #1;                                                 \
+  ldr reg_dest, [reg_t3, reg_dest, lsl #2];                                   \
+  sub reg_length, reg_length, #2;                                             \
+  tst reg_remaining_length, #0x80000000;                                      \
+  bic reg_remaining_length, reg_remaining_length, #0x80000000;                \
+  addne reg_length, reg_length, #1;                                           \
+  bne 2f;                                                                     \
+                                                                              \
+0:;                                                                           \
+  ldrb r0, [reg_src], #1;                                                     \
+  bl_indirect(reg_dest2);                                                     \
+2:;                                                                           \
+  ldrb r0, [reg_src], #1;                                                     \
+  bl_indirect(reg_dest);                                                      \
+  subs reg_length, reg_length, #2;                                            \
+  bpl 0b;                                                                     \
+                                                                              \
+  adds reg_length, reg_length, #1;                                            \
+  bne 1f;                                                                     \
+                                                                              \
+  ldrb r0, [reg_src];                                                         \
+  bl_indirect(reg_dest2);                                                     \
+  orr reg_remaining_length, reg_remaining_length, #0x80000000;                \
+                                                                              \
+1:;                                                                           \
+  ldr reg_dest2, [sp], #4;                                                    \
   op_transfer_done(tia);                                                      \
                                                                               \
-tia2_ext_src:                                                                 \
-  op_transfer_take_cycles_ext(reg_src, reg_length);                           \
+tia_ext_src:;                                                                 \
   add reg_src, reg_t3, reg_src, lsl #2;                                       \
-  op_transfer_prepare_address_dest(reg_dest, reg_t3);                         \
-  bcs tia2_ext_src_ext_dest;                                                  \
+  op_transfer_prepare_address_dest(reg_dest, reg_t2);                         \
+  op_transfer_take_cycles_ext(reg_dest, reg_length);                          \
+  str reg_dest2, [sp, #-4]!;                                                  \
+  ldr reg_dest2, [reg_t2, reg_dest, lsl #2];                                  \
+  add reg_dest, reg_dest, #1;                                                 \
+  ldr reg_dest, [reg_t2, reg_dest, lsl #2];                                   \
+  sub reg_length, reg_length, #2;                                             \
+  tst reg_remaining_length, #0x80000000;                                      \
+  bic reg_remaining_length, reg_remaining_length, #0x80000000;                \
+  addne reg_length, reg_length, #1;                                           \
+  bne 2f;                                                                     \
                                                                               \
-  /******* ext source, normal dest *******/                                   \
-  add reg_dest, reg_t3, reg_dest;                                             \
-0:                                                                            \
-  op_transfer_read_ext_src(1);                                                \
-  op_transfer_write_normal_dest_alt();                                        \
-  eor reg_remaining_length, reg_remaining_length, #0x80000000;                \
-  subs reg_length, reg_length, #1;                                            \
-  bne 0b;                                                                     \
-  op_transfer_done(tia);                                                      \
+0:;                                                                           \
+  ldr r0, [reg_src], #4;                                                      \
+  bl_indirect(r0);                                                            \
+  bl_indirect(reg_dest2);                                                     \
+2:;                                                                           \
+  ldr r0, [reg_src], #4;                                                      \
+  bl_indirect(r0);                                                            \
+  bl_indirect(reg_dest);                                                      \
+  subs reg_length, reg_length, #2;                                            \
+  bpl 0b;                                                                     \
                                                                               \
-tia2_ext_src_ext_dest:                                                        \
-  /******* ext source, ext dest *******/                                      \
-  add reg_dest, reg_t3, reg_dest, lsl #2;                                     \
-0:                                                                            \
-  op_transfer_read_ext_src(1);                                                \
-  op_transfer_write_ext_dest_alt();                                           \
-  eor reg_remaining_length, reg_remaining_length, #0x80000000;                \
-  subs reg_length, reg_length, #1;                                            \
-  bne 0b;                                                                     \
+  adds reg_length, reg_length, #1;                                            \
+  bne 1f;                                                                     \
+                                                                              \
+  ldr r0, [reg_src];                                                          \
+  bl_indirect(r0);                                                            \
+  bl_indirect(reg_dest2);                                                     \
+  orr reg_remaining_length, reg_remaining_length, #0x80000000;                \
+                                                                              \
+1:;                                                                           \
+  ldr reg_dest2, [sp], #4;                                                    \
   op_transfer_done(tia);                                                      \
                                                                               \
   op_transfer_recover_remaining_length(tia)                                   \
 
-/*---------------------------------------------------------------------------*/
-/* TIN                                                                       */
-/*---------------------------------------------------------------------------*/
+
+@ Like tia this assumes it's going to ext.
+
 #define op_tin(address_mode, address_range)                                   \
   op_transfer_start(tin, reg_src, reg_dest, reg_length);                      \
   op_transfer_check_boundary_up(reg_src);                                     \
   sub reg_remaining_length, reg_remaining_length, reg_length;                 \
   op_transfer_prepare_address_src(reg_src, reg_t3);                           \
-  bcs tin2_ext_src;                                                           \
-                                                                              \
-tin2_normal_src:                                                              \
+  bcs tin_ext_src;                                                            \
   add reg_src, reg_t3, reg_src;                                               \
   op_transfer_prepare_address_dest(reg_dest, reg_t3);                         \
-  bcs tin2_normal_src_ext_dest;                                               \
-                                                                              \
-  /******* normal source, normal dest *******/                                \
-  op_transfer_take_cycles(reg_length);                                        \
-  add reg_dest, reg_t3, reg_dest;                                             \
-0:                                                                            \
-  op_transfer_read_normal_src(1);                                             \
-  op_transfer_write_normal_dest(0);                                           \
-  subs reg_length, reg_length, #1;                                            \
-  bne 0b;                                                                     \
-  op_transfer_done(tin);                                                      \
-                                                                              \
-tin2_normal_src_ext_dest:                                                     \
-  /******* normal source, ext dest *******/                                   \
   op_transfer_take_cycles_ext(reg_dest, reg_length);                          \
-  add reg_dest, reg_t3, reg_dest, lsl #2;                                     \
-0:                                                                            \
-  op_transfer_read_normal_src(1);                                             \
-  op_transfer_write_ext_dest(0);                                              \
+  ldr reg_dest, [reg_t3, reg_dest, lsl #2];                                   \
+                                                                              \
+0:;                                                                           \
+  ldrb r0, [reg_src], #1;                                                     \
+  bl_indirect(reg_dest);                                                      \
   subs reg_length, reg_length, #1;                                            \
   bne 0b;                                                                     \
+                                                                              \
   op_transfer_done(tin);                                                      \
                                                                               \
-tin2_ext_src:                                                                 \
-  op_transfer_take_cycles_ext(reg_src, reg_length);                           \
+tin_ext_src:;                                                                 \
   add reg_src, reg_t3, reg_src, lsl #2;                                       \
-  op_transfer_prepare_address_dest(reg_dest, reg_t3);                         \
-  bcs tin2_ext_src_ext_dest;                                                  \
+  op_transfer_prepare_address_dest(reg_dest, reg_t2);                         \
+  op_transfer_take_cycles_ext(reg_dest, reg_length);                          \
+  ldr reg_dest, [reg_t2, reg_dest, lsl #2];                                   \
                                                                               \
-  /******* ext source, normal dest *******/                                   \
-  add reg_dest, reg_t3, reg_dest;                                             \
-0:                                                                            \
-  op_transfer_read_ext_src(1);                                                \
-  op_transfer_write_normal_dest(0);                                           \
+0:;                                                                           \
+  ldr r0, [reg_src], #4;                                                      \
+  bl_indirect(r0);                                                            \
+  bl_indirect(reg_dest);                                                      \
   subs reg_length, reg_length, #1;                                            \
   bne 0b;                                                                     \
-  op_transfer_done(tin);                                                      \
                                                                               \
-tin2_ext_src_ext_dest:                                                        \
-  /******* ext source, ext dest *******/                                      \
-  add reg_dest, reg_t3, reg_dest, lsl #2;                                     \
-0:                                                                            \
-  op_transfer_read_ext_src(1);                                                \
-  op_transfer_write_ext_dest(0);                                              \
-  subs reg_length, reg_length, #1;                                            \
-  bne 0b;                                                                     \
   op_transfer_done(tin);                                                      \
                                                                               \
   op_transfer_recover_remaining_length(tin)                                   \
-
-
 
 
 @ These assume that only src or dest will be ext, not both.
@@ -2010,8 +1943,8 @@ name##_ext_src_dest:;                                                         \
 /** Clockspeed operations ****************************************************/
 
 #define op_csh(address_mode, address_range)                                   \
-  ldr reg_t0, [sp, #sp_cpu_struct];         /* t0 = cpu                     */\
-  ldrb reg_t1, [reg_t0, #0x5];             /* t1 = cpu.cpu_divider          */\
+  ldr reg_t0, [sp, #sp_cpu_struct];        /* t0 = cpu                      */\
+  ldrb reg_t1, [reg_t0, #0xD];             /* t1 = cpu.cpu_divider          */\
   cmp reg_t1, #12;                         /* see if mode is already fast   */\
   bne 1f;                                                                     \
                                                                               \
@@ -2022,9 +1955,9 @@ name##_ext_src_dest:;                                                         \
   sub reg_t2, reg_t2, #1;                  /* fix offset                    */\
   and reg_cycles, reg_cycles, #0xFF;       /* set cycles                    */\
   orr reg_cycles, reg_cycles, reg_t2, lsl #8;                                 \
-  mov reg_t1, #3;                          /* set cpu_divider = 3           */\
-  strb reg_t1, [reg_t0, #0x5];                                                \
-  mov reg_t1, #0;                          /* set extra_cycles = 0          */\
+  mov reg_t1, #3;                          /* set cpu.cpu_divider = 3       */\
+  strb reg_t1, [reg_t0, #0xD];                                                \
+  mov reg_t1, #0;                          /* set cpu.extra_cycles = 0      */\
   str reg_t1, [reg_t0, #0x14];                                                \
   op_fetch_next_fixed(9);                                                     \
                                                                               \
@@ -2032,8 +1965,8 @@ name##_ext_src_dest:;                                                         \
   op_fetch_next_fixed(3)                                                      \
 
 #define op_csl(address_mode, address_range)                                   \
-  ldr reg_t0, [sp, #sp_cpu_struct];         /* t0 = cpu                     */\
-  ldrb reg_t1, [reg_t0, #0x5];             /* t1 = cpu.cpu_divider          */\
+  ldr reg_t0, [sp, #sp_cpu_struct];        /* t0 = cpu                      */\
+  ldrb reg_t1, [reg_t0, #0xD];             /* t1 = cpu.cpu_divider          */\
   cmp reg_t1, #3;                          /* see if mode is already slow   */\
   bne 1f;                                                                     \
                                                                               \
@@ -2046,7 +1979,7 @@ name##_ext_src_dest:;                                                         \
   and reg_cycles, reg_cycles, #0xFF;       /* set cycles                    */\
   orr reg_cycles, reg_cycles, reg_t1, lsl #8;                                 \
   mov reg_t1, #12;                                                            \
-  strb reg_t1, [reg_t0, #0x5];             /* cpu.cpu_divider = 12          */\
+  strb reg_t1, [reg_t0, #0xD];             /* cpu.cpu_divider = 12          */\
   op_fetch_next_fixed(0);                                                     \
                                                                               \
  1:;                                                                          \
@@ -2055,8 +1988,16 @@ name##_ext_src_dest:;                                                         \
 
 // Comment this in/out to enable/disable debugging
 
+#ifdef DEBUGGER_ON
+
 #define perform_step_debug()                                                  \
-   /*bl _step_debug*/                                                         \
+   bl _step_debug                                                             \
+
+#else
+
+#define perform_step_debug()                                                  \
+
+#endif
 
 // Defining op will specify what op_list should expand to when used
 // (op_list is defined in op_list.h)
@@ -2068,10 +2009,17 @@ name##_ext_src_dest:;                                                         \
 
 #define cycle_check_irq_main_undo_fetch_no()                                  \
 
-#define cycle_check_irq_main(undo_fetch)                                      \
-  ldr r14, [sp, #sp_irq_struct]            ;/* r14 = irq                    */\
+#define cycle_check_irq_main_use_delayed_status_yes()                         \
+  ldr r14, [sp, #sp_irq_check_status]                                         \
+
+#define cycle_check_irq_main_use_delayed_status_no()                          \
+  ldr r14, [r14, #0x4]                                                        \
+
+#define cycle_check_irq_main(undo_fetch, use_delayed_status)                  \
+  ldr r14, [sp, #sp_irq_struct]           ;/* r14 = irq                     */\
   ldr r1, [r14, #0x0]                     ;/* r1 = irq.enable               */\
-  ldr r14, [r14, #0x4]                    ;/* r14 = irq.status              */\
+  /* Load the IRQ status, either the real status or the delayed one.        */\
+  cycle_check_irq_main_use_delayed_status_##use_delayed_status();             \
   bic r14, r14, r1                        ;/* only look at enabled IRQs     */\
   tst r14, #(IRQ_VDC | IRQ_TIMER | IRQ_CD);/* see if an IRQ has been risen  */\
   beq 1f                                  ;/* if not abort                  */\
@@ -2127,9 +2075,14 @@ name##_ext_src_dest:;                                                         \
   sbcs reg_cycles, reg_cycles, #(((cycles) * 3) << 8);                        \
   op_branch_next()                                                            \
 
+// Load IRQ status from here, since that's what will be used in the check.
+
 #define op_fetch_next_fixed_i(cycles)                                         \
+  ldr reg_t1, [sp, #sp_irq_struct];                                           \
   subs reg_t0, reg_cycles, #(((cycles * 3) << 8));                            \
+  ldr reg_t1, [reg_t1, #0x4];                                                 \
   and reg_cycles, reg_cycles, #0xFF;                                          \
+  str reg_t1, [sp, #sp_irq_check_status];                                     \
   ldr reg_t1, [sp, #sp_irq_check_function];                                   \
   mov reg_t0, reg_t0, lsr #8;                                                 \
   str reg_t0, [sp, #sp_resume_cycles];                                        \
@@ -2166,7 +2119,7 @@ name##_ext_src_dest:;                                                         \
   ldr pc, [reg_t1, reg_t0, lsl #2]                                            \
 
 #define op_fetch_next_fixed_x(cycles)                                         \
-  cycle_check_irq_main(no);                                                   \
+  cycle_check_irq_main(no, no);                                               \
                                                                               \
 1:;                                                                           \
   fetch_8bit(reg_t0, ldrb);                                                   \
@@ -2420,22 +2373,22 @@ op_list(set, set)
 // op_*
 
 #define op_mode_table_t_na(operation, address_mode, address_range)            \
-  .word op_##operation##_##address_mode##_##address_range                     \
+  .long op_##operation##_##address_mode##_##address_range                     \
 
 #define op_mode_table_t_clear(operation, address_mode, address_range)         \
-  .word op_##operation##_##address_mode##_##address_range##_t_clear           \
+  .long op_##operation##_##address_mode##_##address_range##_t_clear           \
 
 #define op_mode_table_t_set(operation, address_mode, address_range)           \
-  .word op_##operation##_##address_mode##_##address_range##_t_set             \
+  .long op_##operation##_##address_mode##_##address_range##_t_set             \
 
 #define op_mode_table_dt_na(operation, addr_mode, addr_range, d_flag)         \
-  .word op_##operation##_##addr_mode##_##addr_range##_d_##d_flag              \
+  .long op_##operation##_##addr_mode##_##addr_range##_d_##d_flag              \
 
 #define op_mode_table_dt_clear(operation, addr_mode, addr_range, d_flag)      \
-  .word op_##operation##_##addr_mode##_##addr_range##_d_##d_flag##_t_clear    \
+  .long op_##operation##_##addr_mode##_##addr_range##_d_##d_flag##_t_clear    \
 
 #define op_mode_table_dt_set(operation, addr_mode, addr_range, d_flag)        \
-  .word op_##operation##_##addr_mode##_##addr_range##_d_##d_flag##_t_set      \
+  .long op_##operation##_##addr_mode##_##addr_range##_d_##d_flag##_t_set      \
 
 
 #define op_mode_table_d_na(opcode, operation, addr_mode, addr_range, t_f)     \
@@ -2448,10 +2401,10 @@ op_list(set, set)
   op_mode_table_dt_##t_f(operation, addr_mode, addr_range, set)               \
 
 #define op_mode_table_d_op(opcode, operation, addr_mode, addr_range, t_f)     \
-  .word op_##operation##_##addr_mode##_##addr_range##_op_##opcode             \
+  .long op_##operation##_##addr_mode##_##addr_range##_op_##opcode             \
 
 #define op_mode_table_d_filter(opcode, operation, addr_mode, addr_range, t_f) \
-  .word op_##operation##_##addr_mode##_##addr_range                           \
+  .long op_##operation##_##addr_mode##_##addr_range                           \
 
 
 #undef op
@@ -2599,19 +2552,57 @@ rmw_ext_##operation:;                                                         \
   add pc, lr, #((return_offset + 2) * 4)                                      \
 
 
+// Check cpu.alert, and if cpu.irq_raised is set raise an IRQ, otherwise
+// end execution because cpu.vdc_stalled was set.
+
 #define check_irq_raised_save_r0(offset)                                      \
   ldr r1, [sp, #(sp_cpu_struct + offset)];                                    \
-  ldrb r14, [r1, #0x8];                                                       \
+  /* Check cpu.alert                                                        */\
+  ldrb r14, [r1, #0x18];                                                      \
   cmp r14, #0;                                                                \
-  blne raise_irq_save_r0                                                      \
+  /* No alert, skip all                                                     */\
+  beq 2f;                                                                     \
+  /* Clear cpu.alert                                                        */\
+  mov r14, #0;                                                                \
+  strb r14, [r1, #0x18];                                                      \
+  /* Check cpu.irq_raised                                                   */\
+  ldrb r14, [r1, #0x10];                                                      \
+  cmp r14, #0;                                                                \
+  /* No IRQ raised, must be VDC                                             */\
+  beq 1f;                                                                     \
+  /* Raise IRQ                                                              */\
+  blne raise_irq_save_r0;                                                     \
+  b 2f;                                                                       \
+ 1:;                                                                          \
+  /* Must be cpu.vdc_stalled                                                */\
+  /* Clear cpu_cycles_remaining                                             */\
+  mvn reg_cycles, #0xFF;                                                      \
+ 2:                                                                           \
+
 
 #define check_irq_raised_no_save_r0(offset)                                   \
   ldr r1, [sp, #(sp_cpu_struct + offset)];                                    \
-  ldrb r0, [r1, #0x8];                                                        \
+  /* Check cpu.alert                                                        */\
+  ldrb r0, [r1, #0x18];                                                       \
   cmp r0, #0;                                                                 \
-  blne raise_irq                                                              \
-
-
+  /* No alert, skip all                                                     */\
+  beq 2f;                                                                     \
+  /* Clear cpu.alert                                                        */\
+  mov r0, #0;                                                                 \
+  strb r0, [r1, #0x18];                                                       \
+  /* Check cpu.irq_raised                                                   */\
+  ldrb r0, [r1, #0x10];                                                       \
+  cmp r0, #0;                                                                 \
+  /* No IRQ raised, must be VDC                                             */\
+  beq 1f;                                                                     \
+  /* Raise IRQ                                                              */\
+  blne raise_irq;                                                             \
+  b 2f;                                                                       \
+ 1:;                                                                          \
+  /* Must be cpu.vdc_stalled                                                */\
+  /* Clear cpu_cycles_remaining                                             */\
+  mvn reg_cycles, #0xFF;                                                      \
+ 2:                                                                           \
 
 
 // Upon entry r1 should contain a pointer to the irq raised
@@ -2624,7 +2615,7 @@ rmw_ext_##operation:;                                                         \
 @ r1: pointer to cpu
 
 0:
-  .word ext_symbol(irq)
+  .long ext_symbol(irq)
 
 irq_exception_table:
   .byte 0x00                              @ 000: no IRQ
@@ -2643,7 +2634,7 @@ raise_irq_save_r0:
   ldmia sp!, { r0, pc }
 
 raise_irq:
-  strb r4, [r1, #0x8]                     @ cpu.irq_raised = 0
+  strb r4, [r1, #0x10]                    @ cpu.irq_raised = 0
   ldr r1, 0b                              @ r1 = irq
 
   tst reg_p, #(1 << I_FLAG_BIT)           @ see if IRQs are enabled
@@ -2664,7 +2655,7 @@ raise_irq:
   adr r1, irq_exception_table             @ r1 = ptr to irq_exception_table
   ldrb r0, [r1, r0]                       @ get exception ptr
 
-  ldr r1, [reg_mem_table, #0x1c]          @ r1 = top page in address space
+  ldr r1, [reg_mem_table, #0x1C]          @ r1 = top page in address space
   orr reg_p, reg_p, #(1 << I_FLAG_BIT)    @ disable interrupts
   bic reg_p, reg_p, #(1 << D_FLAG_BIT)    @ clear D flag
   orr r0, r0, #0xFF00                     @ fill in upper bits of vector
@@ -2793,17 +2784,17 @@ branch_untaken_b:
 /*
 typedef struct
 {
-  u8 a;                                     @ offset 0x0
-  u8 x;                                     @ offset 0x1
-  u8 y;                                     @ offset 0x2
-  u8 s;                                     @ offset 0x3
-  u8 p;                                     @ offset 0x4
-  u8 cpu_divider;                           @ offset 0x5
-  u16 pc;                                   @ offset 0x6
+  u64 global_cycles;                        @ offset 0x0/0x4
 
-  u32 irq_raised;                           @ offset 0x8
+  u8 a;                                     @ offset 0x8
+  u8 x;                                     @ offset 0x9
+  u8 y;                                     @ offset 0xA
+  u8 s;                                     @ offset 0xB
+  u8 p;                                     @ offset 0xC
+  u8 cpu_divider;                           @ offset 0xD
+  u16 pc;                                   @ offset 0xE
 
-  u64 global_cycles;                        @ offset 0xC/0x10
+  u32 irq_raised;                           @ offset 0x10
 
   u32 extra_cycles;                         @ offset 0x14
 } cpu_struct;
@@ -2821,17 +2812,17 @@ typedef struct
 #define DEBUG_RUN                  1
 #define DEBUG_COUNTDOWN_BREAKPOINT 4
 
-#define DEBUG_MODE_OFFSET                  (ext_symbol(debug) + 0x14)
+#define DEBUG_MODE_OFFSET                  (ext_symbol(debug) + 0x20)
 #define DEBUG_BREAKPOINT_OFFSET            (ext_symbol(debug) + 0x4)
 #define DEBUG_INSTRUCTION_COUNT_OFFSET     (ext_symbol(debug) + 0x0)
 #define DEBUG_BREAKPOINT_ORIGINAL_OFFSET   (ext_symbol(debug) + 0x8)
 
 
 0:
-  .word DEBUG_MODE_OFFSET
-  .word DEBUG_BREAKPOINT_OFFSET
-  .word DEBUG_INSTRUCTION_COUNT_OFFSET
-  .word DEBUG_BREAKPOINT_ORIGINAL_OFFSET
+  .long DEBUG_MODE_OFFSET
+  .long DEBUG_BREAKPOINT_OFFSET
+  .long DEBUG_INSTRUCTION_COUNT_OFFSET
+  .long DEBUG_BREAKPOINT_ORIGINAL_OFFSET
 
 _step_debug:
   ldr r0, 0b                                @ r0 = debug_mode pointer
@@ -2896,21 +2887,8 @@ adjust_pc_minus:
 @ PC is overflowed or underflowed: carry flag determines this.
 
 adjust_pc_plus_minus:
-  /* this is called when the branch instruction
-     results in crossing the 0x2000 boundary.
-     critical bug fix: we should test overflow flag instead.
-
-     Two games branch across boundaries:
-     Alshark (CD)              
-     (at intro, branches from 0x5xxx to 0x6xxx)
-
-     Chou Jikyuu Yousai Macross 2036 (CD)   
-     (at the options, branches from 0x6xxx to 0x5xxx)
-  */
-  addvs reg_tr_pc, reg_tr_pc, #0x1
-  subvc reg_tr_pc, reg_tr_pc, #0x1
-  /*subcs reg_tr_pc, reg_tr_pc, #0x1
-  addcc reg_tr_pc, reg_tr_pc, #0x1*/
+  subcs reg_tr_pc, reg_tr_pc, #0x1
+  addcc reg_tr_pc, reg_tr_pc, #0x1
   retrieve_pc(reg_tr_pc)
   update_pc(reg_tr_pc)
   bx lr
@@ -2921,7 +2899,7 @@ adjust_pc_plus_minus:
 @ fails then it'll still be valid.
 
 cycle_check_irq:
-  cycle_check_irq_main(yes)
+  cycle_check_irq_main(yes, yes)
   fetch_8bit(r0, ldrb)                      @ reload opcode
 
 1:
@@ -2935,29 +2913,29 @@ cycle_check_irq:
 #define MEMORY_MPR_TRANSLATED_OFFSET        (ext_symbol(memory) + 0x288818)
 
 0:
-  .word ext_symbol(cpu)                     @ 0 + 0x00
-  .word MEMORY_MPR_TRANSLATED_OFFSET        @ 0 + 0x04
-  .word op_table                            @ 0 + 0x08
-  .word cycle_end                           @ 0 + 0x0C
-  .word cycle_check_irq                     @ 0 + 0x10
-  .word ext_symbol(irq)                     @ 0 + 0x14
+  .long ext_symbol(cpu)                     @ 0 + 0x00
+  .long MEMORY_MPR_TRANSLATED_OFFSET        @ 0 + 0x04
+  .long op_table                            @ 0 + 0x08
+  .long cycle_end                           @ 0 + 0x0C
+  .long cycle_check_irq                     @ 0 + 0x10
+  .long ext_symbol(irq)                     @ 0 + 0x14
 
 cycle_end:
-  add sp, sp, #0x18                         @ deallocate stack variables
+  add sp, sp, #0x1C                         @ deallocate stack variables
   ldr r1, 0b                                @ r0 = cpu
   @ The follow regs get packed together for slightly speedier storage
   bic r0, reg_s, #0x1                       @ starting with s
   orr r0, r0, reg_y, lsr #8                 @ orr in y
   orr r0, r0, reg_x, lsr #16                @ orr in x
   orr r0, r0, reg_a, lsr #24                @ orr in a
-  str r0, [r1, #0x0]                        @ restore cpu.a/x/y/s
+  str r0, [r1, #0x8]                        @ restore cpu.a/x/y/s
   collapse_flags(r0)                        @ get the flags back in r0
-  strb r0, [r1, #0x4]                       @ cpu.p = flags
+  strb r0, [r1, #0xC]                       @ cpu.p = flags
   retrieve_pc(r0)                           @ r0 = pc
   sub r0, r0, #1                            @ fetched one too many, undo
-  strh r0, [r1, #0x6]                       @ cpu.pc = pc
+  strh r0, [r1, #0xE]                       @ cpu.pc = pc
 
-  ldrb r0, [r1, #0x5]                       @ see if slow mode is on
+  ldrb r0, [r1, #0xD]                       @ see if slow mode is on
   cmp r0, #12
   beq cycle_end_slow
 
@@ -2991,25 +2969,25 @@ adjust_cycles_remaining_csl:
 
 
 #ifdef CPU_ARM_FAST_MODE
-.global ext_symbol(execute_instructions_fast)
+.globl ext_symbol(execute_instructions_fast)
 ext_symbol(execute_instructions_fast):
 #endif
 
 #ifdef CPU_ARM_COMPATIBILITY_MODE
-.global ext_symbol(execute_instructions_compatible)
+.globl ext_symbol(execute_instructions_compatible)
 ext_symbol(execute_instructions_compatible):
 #endif
 
   ldr r1, 0b                                @ r1 = cpu
 
-  ldr r2, [r1, #0xC]                        @ r2 = cpu.global_cycles low
-  ldr r3, [r1, #0x10]                       @ r3 = cpu.global_cycles high
+  ldr r2, [r1, #0x0]                        @ r2 = cpu.global_cycles low
+  ldr r3, [r1, #0x4]                        @ r3 = cpu.global_cycles high
 
-  adds r2, r2, r0                           @ cpu.global_cycles += cycles
+  add r2, r2, r0                            @ cpu.global_cycles += cycles
   adc r3, r3, #0
 
-  str r2, [r1, #0xC]                        @ write back cpu.global_cycles
-  str r3, [r1, #0x10]
+  str r2, [r1, #0x0]                        @ write back cpu.global_cycles
+  str r3, [r1, #0x4]
 
   ldr r2, [r1, #0x14]                       @ r2 = cpu.extra_cycles
   cmp r0, r2                                @ check extra cycles vs cycles
@@ -3018,22 +2996,31 @@ ext_symbol(execute_instructions_compatible):
   strle r2, [r1, #0x14]                     @ write back cpu.extra_cycles
   bxle lr                                   @ return
 
-  stmdb sp!, { r4, r5, r6, r7, r8, r9, r10, r11, r14 }
+  mov r3, #0                                @ r3 = 0
+  str r3, [r1, #0x18]                       @ cpu.alert = 0
 
   sub r0, r0, r2                            @ take away extra cycles
 
-  ldrb r2, [r1, #0x5]                       @ check CPU divider
+  ldr r2, [r1, #0x1C]                       @ r2 = cpu.vdc_stalled
+  mov r3, #0                                @ r3 = 0
+  str r3, [r1, #0x14]                       @ cpu.extra_cycles = 0
+  cmp r2, #1                                @ check cpu.vdc_stalled
+  bxeq lr                                   @ exit if it's 1
+
+  stmdb sp!, { r4, r5, r6, r7, r8, r9, r10, r11, r14 }
+
+  ldrb r2, [r1, #0xD]                       @ check cpu.cpu_divider
   cmp r2, #12                               @ see if it's slow speed
   bleq adjust_cycles_remaining_csl
 
   mov reg_cycles, r0, lsl #8                @ load cycles
   sub reg_cycles, reg_cycles, #(0x1 << 8)   @ plus one more so pl triggers
 
-  ldrb reg_a, [r1, #0x0]                    @ reg_a = cpu.a
-  ldrb reg_x, [r1, #0x1]                    @ reg_x = cpu.x
-  ldrb reg_y, [r1, #0x2]                    @ reg_y = cpu.y
-  ldrb reg_s, [r1, #0x3]                    @ reg_s = cpu.s
-  ldrb r2, [r1, #0x4]                       @ r1 = cpu.p
+  ldrb reg_a, [r1, #0x8]                    @ reg_a = cpu.a
+  ldrb reg_x, [r1, #0x9]                    @ reg_x = cpu.x
+  ldrb reg_y, [r1, #0xA]                    @ reg_y = cpu.y
+  ldrb reg_s, [r1, #0xB]                    @ reg_s = cpu.s
+  ldrb r2, [r1, #0xC]                       @ r1 = cpu.p
   orr reg_p, reg_p, r2                      @ set flags in reg_p
   extract_flags()                           @ set reg_p_nz
   ldr reg_mem_table, 0b + 0x04              @ reg_mem_table = mpr_translated
@@ -3050,16 +3037,17 @@ ext_symbol(execute_instructions_compatible):
   mov reg_s, reg_s, lsl #24
   orr reg_s, reg_s, #0x1
 
-  ldrh r0, [r1, #0x6]                       @ r0 = cpu.pc
+  ldrh r0, [r1, #0xE]                       @ r0 = cpu.pc
   update_pc(r0)                             @ set pc pointer
 
   // The following things go on the stack (after being pushed):
   // [sp, #0x0]: where to branch to after cycles run out
   // [sp, #0x4]: handler for normal cycle end
   // [sp, #0x8]: handler for delayed IRQ check
-  // [sp, #0xC]: how many cycles remaining before IRQ check
-  // [sp, #0x10]: pointer to cpu structure
-  // [sp, #0x14]: pointer to irq structure
+  // [sp, #0xC]: irq_status to check on IRQ check handler
+  // [sp, #0x10]: how many cycles remaining before IRQ check
+  // [sp, #0x14]: pointer to cpu structure
+  // [sp, #0x18]: pointer to irq structure
 
   mov r0, #0                                @ how many cycles to resume
   ldr r14, 0b + 0x14;                       @ irq pointer
@@ -3068,10 +3056,11 @@ ext_symbol(execute_instructions_compatible):
   ldr r0, 0b + 0x0C;                        @ cycle end function
   ldr r14, 0b + 0x10;                       @ irq check end function
 
-  stmdb sp!, { r0, r14 }                    @ and irq check end function
+  // Third thing is just a filler slot, so r15 works for it.
+  stmdb sp!, { r0, r14, r15 }               @ and irq check end function
   str r0, [sp, #-4]!                        @ store cycle end function twice
 
-  ldrb r0, [r1, #0x8]                       @ r0 = cpu.irq_raised
+  ldrb r0, [r1, #0x10]                      @ r0 = cpu.irq_raised
   cmp r0, #0                                @ was an IRQ raised?
   blne raise_irq                            @ if so do it
 
@@ -3079,3 +3068,4 @@ ext_symbol(execute_instructions_compatible):
   tst reg_p, #(1 << D_FLAG_BIT)             @ check if in decimal mode
   addne reg_op_table, reg_op_table, #2048   @ if in dec mode adjust op table
   ldr pc, [reg_op_table, reg_t0, lsl #2]    @ set things off
+

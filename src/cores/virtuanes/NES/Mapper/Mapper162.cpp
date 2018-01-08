@@ -1,11 +1,11 @@
 //////////////////////////////////////////////////////////////////////////
-// Mapper162	WaiXing FS304/FS301_1                                   //
+// Mapper162                                                            //
 //////////////////////////////////////////////////////////////////////////
 
 
 void	Mapper162::Reset()
 {
-	reg5000 = 3;
+	reg5000 = 0;
 	reg5100 = 0;
 	reg5200 = 0;
 	reg5300 = 7;
@@ -15,8 +15,6 @@ void	Mapper162::Reset()
 
 void Mapper162::WriteLow(WORD addr, BYTE data)
 {
-//	DEBUGOUT("Address=%04X Data=%02X\n", addr&0xFFFF, data&0xFF );
-
 	if(addr==0x5000){
 		reg5000 = data;
 		SetBank_CPU();
@@ -36,9 +34,8 @@ void Mapper162::WriteLow(WORD addr, BYTE data)
 	}else{
 		DEBUGOUT("write to %04x:%02x\n", addr, data);
 	}
+
 }
-
-
 
 void	Mapper162::SetBank_CPU()
 {
@@ -46,14 +43,12 @@ void	Mapper162::SetBank_CPU()
 	switch (reg5300)
 	{
 		case 4:
-			bank = (((reg5000 & 0xF) + ((reg5100 & 3) >> 1) ) | ((reg5200 & 3) << 4));
+			bank = (( (reg5000 & 0xF) + ((reg5100 & 3) >> 1) ) | ((reg5200 & 1) << 4));
 			break;
 		case 7:
-			bank = (((reg5000 & 0xF) + ((reg5100 & 1) << 4) ) | ((reg5200 & 3) << 4));
-//			bank = ((reg5000 & 0xF) | ((reg5200 & 1) << 4));
+			bank = ((reg5000 & 0xF) | ((reg5200 & 1) << 4));
 			break;
 	}
-//	DEBUGOUT("Bank=%02X\n", bank&0xFF );
 	SetPROM_32K_Bank(bank);
 }
 
@@ -66,8 +61,10 @@ void	Mapper162::HSync(int scanline)
 {
 	if( (reg5000&0x80) && nes->ppu->IsDispON() ) {
 		if(scanline<127){
+//			SetCRAM_4K_Bank(0, 0);
 			SetCRAM_4K_Bank(4, 0);
 		}else if(scanline<240){
+//			SetCRAM_4K_Bank(0, 1);
 			SetCRAM_4K_Bank(4, 1);
 		}
 	}

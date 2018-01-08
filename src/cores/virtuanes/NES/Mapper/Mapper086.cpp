@@ -22,7 +22,7 @@ void	Mapper086::WriteLow( WORD addr, BYTE data )
 //DEBUGOUT( "WR:$%02X\n", data );
 			if( (data&0x0F) == 0		// Strike
 			 || (data&0x0F) == 5 ) {	// Foul
-				cnt = 60;		// ŽŸ‚Ì”­º‚ð1•b’ö‹ÖŽ~‚·‚é
+				cnt = 60;		// ���̔�����1�b���֎~����
 			}
 
 			// OSD�ɂ����ׂ����c

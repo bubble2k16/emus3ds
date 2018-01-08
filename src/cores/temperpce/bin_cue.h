@@ -72,19 +72,6 @@ typedef struct
   cd_track_struct *logical_tracks[100];
 } cd_bin_struct;
 
-
-#define CD_READ_AHEAD_BUFFER_SIZE (65536)
-
-typedef struct
-{
-  FILE*   fptr;
-  s32     seek_pos;
-  s32     buffer_pos;
-  s32     buffer_length;
-  s8      buffer[CD_READ_AHEAD_BUFFER_SIZE];
-} cd_read_ahead_struct;
-
-
 #ifdef EXTERN_C_START
 EXTERN_C_START
 #endif 

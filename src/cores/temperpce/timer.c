@@ -71,31 +71,32 @@ void reset_timer()
 
 s32 add_cycles;
 
-// these are the assembly-optimized versions
-void execute_instructions_fast(u32 count);        
+#ifdef ARM_ARCH
+
+void execute_instructions_fast(u32 count);
+
+#define execute_instructions_select(count)                                    \
+    execute_instructions_fast(count)                                          \
+
+/*
 void execute_instructions_compatible(u32 count);
+void execute_instructions_fast(u32 count);
 
 #define execute_instructions_select(count)                                    \
   if(config.compatibility_mode)                                               \
-    execute_instructions(count);                                   \
+    execute_instructions_compatible(count);                                   \
   else                                                                        \
-    execute_instructions_compatible(count)                                          \
-
-
-
-/*
-#include "3dsemu.h"
-
-typedef struct
-{
-    bool                isReal3DS;
-    bool                enableDebug;
-    int                 emulatorState;
-} SEmulator;
-extern SEmulator emulator;
+    execute_instructions_fast(count)                                          \
 */
 
-void execute_instructions_timer(s32 cpu_cycles_remaining, bool emulateCDHardware)
+#else
+
+#define execute_instructions_select(count)                                    \
+    execute_instructions(count)                                          \
+
+#endif
+
+void execute_instructions_timer(s32 cpu_cycles_remaining)
 {
   if(timer.cycles_remaining < cpu_cycles_remaining)
   {
@@ -117,22 +118,9 @@ void execute_instructions_timer(s32 cpu_cycles_remaining, bool emulateCDHardware
     execute_instructions_select(cpu_cycles_remaining);
   }
 
-  // This saves some precious CPU processes for non-CD games.
-  // And the 'startOfScanline' flag allows us to process
-  // CD and ADPCM commands once every scanline, instead of twice.
-  // 
-  // Here's hoping it doesn't break games with sensitive timing
-  // to the ADPCM/CD commands.
-  //
-  if (config.cd_loaded && emulateCDHardware)
-  {
-    update_cd_read();
-    update_adpcm_dma();
-    update_adpcm();
-  }
-
-  //printf ("%lld\n", cpu.global_cycles);
-  //DEBUG_WAIT_L_KEY
+  update_cd_read();
+  update_adpcm_dma();
+  update_adpcm();
 }
 
 

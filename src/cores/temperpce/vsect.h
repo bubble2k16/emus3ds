@@ -8,35 +8,35 @@ typedef struct
 {
     int                 StartY;
     int                 EndY;
-    s32                 Value;
-    s32                 Value2;
-    s32                 Value3;
-    s32                 Value4;
-
+    union
+    {
+        u32             Value;
+        struct
+        {
+            u8          V1;
+            u8          V2;
+            u8          V3;
+            u8          V4;
+        };
+    };
 } VerticalSection;
 
 typedef struct 
 {
     int                 StartY;
-    s32                 CurrentValue;
-    s32                 CurrentValue2;
-    s32                 CurrentValue3;
-    s32                 CurrentValue4;
+    u32                 CurrentValue;
     int                 Count;
     VerticalSection     Section[256];
 } VerticalSections;
 
 
 
-// Methods related to managing vertical sections for any general registers.
+// Methods related to managing vertical sections for any general SNES registers.
 //
-void vsectReset(VerticalSections *verticalSections);
-void vsectCommit(VerticalSections *verticalSections, int endY);
-
-void vsectUpdateValue(VerticalSections *verticalSections, int startY, s32 newValue);
-void vsectUpdateValue(VerticalSections *verticalSections, int startY, s32 newValue, s32 newValue2);
-void vsectUpdateValue(VerticalSections *verticalSections, int startY, s32 newValue, s32 newValue2, s32 newValue3);
-void vsectUpdateValue(VerticalSections *verticalSections, int startY, s32 newValue, s32 newValue2, s32 newValue3, s32 newValue4);
+void vsectReset(VerticalSections *verticalSections, int currentScanline);
+void vsectReset(VerticalSections *verticalSections, int currentScanline, u32 currentValue);
+void vsectCommit(VerticalSections *verticalSections, int currentScanline);
+void vsectUpdateValue(VerticalSections *verticalSections, int currentScanline, u32 newValue);
 
 
 #endif

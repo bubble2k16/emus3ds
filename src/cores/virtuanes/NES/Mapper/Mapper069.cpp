@@ -46,21 +46,17 @@ void	Mapper069::Write( WORD addr, BYTE data )
 					SetVROM_1K_Bank( reg&0x07, data );
 					break;
 				case	0x08:
-//	DEBUGOUT( "Write8 - addr= %04x ; dat= %03x\n", addr, data );
 					if( !patch && !(data & 0x40) ) {
 						SetPROM_8K_Bank( 3, data );
 					}
 					break;
 				case	0x09:
-//	DEBUGOUT( "Write9 - addr= %04x ; dat= %03x\n", addr, data );
 					SetPROM_8K_Bank( 4, data );
 					break;
 				case	0x0A:
-//	DEBUGOUT( "WriteA - addr= %04x ; dat= %03x\n", addr, data );
 					SetPROM_8K_Bank( 5, data );
 					break;
 				case	0x0B:
-//	DEBUGOUT( "WriteB - addr= %04x ; dat= %03x\n", addr, data );
 					SetPROM_8K_Bank( 6, data );
 					break;
 
@@ -73,19 +69,16 @@ void	Mapper069::Write( WORD addr, BYTE data )
 					break;
 
 				case	0x0D:
-	DEBUGOUT( "WriteD - addr= %04x ; dat= %03x\n", addr, data );
 					irq_enable = data;
 					nes->cpu->ClrIRQ( IRQ_MAPPER );
 					break;
 
 				case	0x0E:
-	DEBUGOUT( "WriteE - addr= %04x ; dat= %03x\n", addr, data );
 					irq_counter = (irq_counter & 0xFF00) | data;
 					nes->cpu->ClrIRQ( IRQ_MAPPER );
 					break;
 
 				case	0x0F:
-	DEBUGOUT( "WriteF - addr= %04x ; dat= %03x\n", addr, data );
 					irq_counter = (irq_counter & 0x00FF) | (data << 8);
 					nes->cpu->ClrIRQ( IRQ_MAPPER );
 					break;

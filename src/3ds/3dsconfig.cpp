@@ -1,11 +1,8 @@
 
-#include "3ds.h"
-#include "string.h"
 #include "3dsconfig.h"
 
 static FILE    *fp = NULL;
-static bool    WriteMode = false;   
-static char    fileBuffer[4096];
+static bool    WriteMode = false;    
 
 //----------------------------------------------------------------------
 // Opens a config .cfg file.
@@ -15,7 +12,6 @@ bool config3dsOpenFile(const char *filename, bool fileWriteMode)
     if (!fp)
     {
         WriteMode = fileWriteMode;
-        fileBuffer[0] = 0;
         if (fileWriteMode)
             fp = fopen(filename, "w+");
         else
@@ -35,15 +31,10 @@ void config3dsCloseFile()
 {
     if (fp)
     {
-        if (WriteMode && strlen(fileBuffer) != 0)
-        {
-            fprintf(fp, fileBuffer);
-        }
         fclose(fp);
         fp = NULL;
     }
 }
-
 
 
 //----------------------------------------------------------------------
@@ -58,28 +49,17 @@ void config3dsReadWriteInt32(char *format, int *value, int minValue, int maxValu
 
     if (WriteMode)
     {
-        char tempBuffer[1024] = { 0 };
         if (value != NULL)
         {
             //printf ("Writing %s %d\n", format, *value);
-        	//fprintf(fp, format, *value);
-            snprintf(tempBuffer, 1023, format, *value);
+        	fprintf(fp, format, *value);
         }
         else
         {
             //printf ("Writing %s\n", format);
-        	//fprintf(fp, format);
-            snprintf(tempBuffer, 1023, format);
-        }
+        	fprintf(fp, format);
 
-        // Flush the text buffer to disk
-        //
-        if (strlen(fileBuffer) + strlen(tempBuffer) > 4096)
-        {
-            fprintf(fp, fileBuffer);
-            fileBuffer[0] = 0;
         }
-        strcat(fileBuffer, tempBuffer);
     }
     else
     {
@@ -111,30 +91,16 @@ void config3dsReadWriteString(char *writeFormat, char *readFormat, char *value)
     
     if (WriteMode)
     {
-        char tempBuffer[1024] = { 0 };
         if (value != NULL)
         {
             //printf ("Writing %s %d\n", format, *value);
-        	//fprintf(fp, writeFormat, value);
-            snprintf(tempBuffer, 1023, writeFormat, value);
-            
+        	fprintf(fp, writeFormat, value);
         }
         else
         {
             //printf ("Writing %s\n", format);
-        	//fprintf(fp, writeFormat);
-            snprintf(tempBuffer, 1023, writeFormat);
+        	fprintf(fp, writeFormat);
         }
-
-        // Flush the text buffer to disk
-        //
-        if (strlen(fileBuffer) + strlen(tempBuffer) > 4096)
-        {
-            fprintf(fp, fileBuffer);
-            fileBuffer[0] = 0;
-        }
-        strcat(fileBuffer, tempBuffer);
-        
     }
     else
     {

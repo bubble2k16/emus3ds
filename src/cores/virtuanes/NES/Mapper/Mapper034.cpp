@@ -22,8 +22,6 @@ void	Mapper034::WriteLow( WORD addr, BYTE data )
 		case	0x7FFF:
 			SetVROM_4K_Bank( 4, data );
 			break;
-		default:
-			Mapper::WriteLow(addr, data);
 	}
 }
 

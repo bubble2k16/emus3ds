@@ -45,7 +45,7 @@ INT	APU_INTERNAL::noise_freq[16] = {
 	202,  254,  380,  508,  762, 1016, 2034, 4068
 };
 
-// DMC “]‘—ƒNƒƒbƒN”ƒe[ƒuƒ‹
+// DMC �]���N���b�N���e�[�u��
 INT	APU_INTERNAL::dpcm_cycles[16] = {
 	428, 380, 340, 320, 286, 254, 226, 214,
 	190, 160, 142, 128, 106,  85,  72,  54
@@ -83,7 +83,7 @@ APU_INTERNAL::APU_INTERNAL()
 	cpu_clock = APU_CLOCK;
 	sampling_rate = 22050;
 
-	// ‰¼Ý’è
+	// ���ݒ�
 	cycle_rate = (INT)(cpu_clock*65536.0f/22050.0f);
 
 }
@@ -115,14 +115,14 @@ void	APU_INTERNAL::Reset( FLOAT fClock, INT nRate )
 
 	Setup( fClock, nRate );
 
-	// $4011‚Í‰Šú‰»‚µ‚È‚¢
+	// $4011�͏��������Ȃ�
 	WORD	addr;
 	for( addr = 0x4000; addr <= 0x4010; addr++ ) {
 		Write( addr, 0x00 );
 		SyncWrite( addr, 0x00 );
 	}
-//	Write( 0x4001, 0x08 );	// ResetŽž‚Íincƒ‚[ƒh‚É‚È‚é?
-//	Write( 0x4005, 0x08 );	// ResetŽž‚Íincƒ‚[ƒh‚É‚È‚é?
+//	Write( 0x4001, 0x08 );	// Reset����inc���[�h�ɂȂ�?
+//	Write( 0x4005, 0x08 );	// Reset����inc���[�h�ɂȂ�?
 	Write( 0x4012, 0x00 );
 	Write( 0x4013, 0x00 );
 	Write( 0x4015, 0x00 );
@@ -130,7 +130,7 @@ void	APU_INTERNAL::Reset( FLOAT fClock, INT nRate )
 	SyncWrite( 0x4013, 0x00 );
 	SyncWrite( 0x4015, 0x00 );
 
-	// $4017‚Í‘‚«ž‚Ý‚Å‰Šú‰»‚µ‚È‚¢(‰Šúƒ‚[ƒh‚ª0‚Å‚ ‚é‚Ì‚ðŠú‘Ò‚µ‚½ƒ\ƒtƒg‚ª‚ ‚éˆ×)
+	// $4017�͏������݂ŏ��������Ȃ�(�������[�h��0�ł����̂����҂����\�t�g��������)
 	FrameIRQ = 0xC0;
 	FrameCycle = 0;
 	FrameIRQoccur = 0;
@@ -161,7 +161,7 @@ CHAR	buf[512];
 	tempstr = CPathlib::MakePathExt( nes->rom->GetRomPath(), nes->rom->GetRomName(), "vtd" );
 	DEBUGOUT( "Path: %s\n", tempstr.c_str() );
 	if( !(fp = ::fopen( tempstr.c_str(), "r" )) ) {
-		// ƒfƒtƒHƒ‹ƒgƒtƒ@ƒCƒ‹–¼‚Å“Ç‚ñ‚ÅŒ©‚é
+		// �f�t�H���g�t�@�C�����œǂ��Ō���
 		tempstr = CPathlib::MakePathExt( nes->rom->GetRomPath(), "Default", "vtd" );
 		DEBUGOUT( "Path: %s\n", tempstr.c_str() );
 		if( !(fp = ::fopen( tempstr.c_str(), "r" )) ) {
@@ -172,7 +172,7 @@ CHAR	buf[512];
 
 	DEBUGOUT( "Find.\n" );
 
-	// ’è‹`ƒtƒ@ƒCƒ‹‚ð“Ç‚Ýž‚Þ
+	// ���`�t�@�C�����ǂݍ���
 	while( ::fgets( buf, 512, fp ) != NULL ) {
 		if( buf[0] == ';' || ::strlen(buf) <= 0 )
 			continue;
@@ -180,31 +180,31 @@ CHAR	buf[512];
 		CHAR	c = ::toupper( buf[0] );
 
 		if( c == '@' ) {
-		// ‰¹F“Ç‚Ýž‚Ý
+		// ���F�ǂݍ���
 		CHAR*	pbuf = &buf[1];
 		CHAR*	p;
 		INT	no, val;
 
-			// ‰¹Fƒiƒ“ƒo[Žæ“¾
+			// ���F�i���o�[�擾
 			no = ::strtol( pbuf, &p, 10 );
 			if( pbuf == p )
 				continue;
 			if( no < 0 || no > TONEDATA_MAX-1 )
 				continue;
 
-			// '='‚ðŒ©‚Â‚¯‚é
+			// '='��������
 			p = ::strchr( pbuf, '=' );
 			if( p == NULL )
 				continue;
-			pbuf = p+1;	// ŽŸ
+			pbuf = p+1;	// ��
 
 			// ���F�f�[�^���擾
 			int i;
 			for( i = 0; i < TONEDATA_LEN; i++ ) {
 				val = ::strtol( pbuf, &p, 10 );
-				if( pbuf == p )	// Žæ“¾Ž¸”sH
+				if( pbuf == p )	// �擾���s�H
 					break;
-				if( *p == ',' )	// ƒJƒ“ƒ}‚ð”ò‚Î‚·c
+				if( *p == ',' )	// �J���}�����΂��c
 					pbuf = p+1;
 				else
 					pbuf = p;
@@ -215,12 +215,12 @@ CHAR	buf[512];
 				bToneTableEnable[no] = TRUE;
 		} else
 		if( c == 'A' || c == 'B' ) {
-		// Šeƒ`ƒƒƒ“ƒlƒ‹‰¹F’è‹`
+		// �e�`�����l�����F���`
 		CHAR*	pbuf = &buf[1];
 		CHAR*	p;
 		INT	no, val;
 
-			// “à•”‰¹Fƒiƒ“ƒo[Žæ“¾
+			// �������F�i���o�[�擾
 			no = ::strtol( pbuf, &p, 10 );
 			if( pbuf == p )
 				continue;
@@ -228,13 +228,13 @@ CHAR	buf[512];
 			if( no < 0 || no > TONE_MAX-1 )
 				continue;
 
-			// '='‚ðŒ©‚Â‚¯‚é
+			// '='��������
 			p = ::strchr( pbuf, '=' );
 			if( p == NULL )
 				continue;
-			pbuf = p+1;	// ŽŸ
+			pbuf = p+1;	// ��
 
-			// ‰¹Fƒiƒ“ƒo[Žæ“¾
+			// ���F�i���o�[�擾
 			val = ::strtol( pbuf, &p, 10 );
 			if( pbuf == p )
 				continue;
@@ -258,18 +258,18 @@ CHAR	buf[512];
 			}
 		} else
 		if( c == 'C' ) {
-		// Šeƒ`ƒƒƒ“ƒlƒ‹‰¹F’è‹`
+		// �e�`�����l�����F���`
 		CHAR*	pbuf = &buf[1];
 		CHAR*	p;
 		INT	val;
 
-			// '='‚ðŒ©‚Â‚¯‚é
+			// '='��������
 			p = ::strchr( pbuf, '=' );
 			if( p == NULL )
 				continue;
-			pbuf = p+1;	// ŽŸ
+			pbuf = p+1;	// ��
 
-			// ‰¹Fƒiƒ“ƒo[Žæ“¾
+			// ���F�i���o�[�擾
 			val = ::strtol( pbuf, &p, 10 );
 			if( pbuf == p )
 				continue;
@@ -375,7 +375,7 @@ void	APU_INTERNAL::Write( WORD addr, BYTE data )
 		case	0x4017:
 			break;
 
-		// VirtuaNESŒÅ—Lƒ|[ƒg
+		// VirtuaNES�ŗL�|�[�g
 		case	0x4018:
 			UpdateRectangle( ch0, (INT)data );
 			UpdateRectangle( ch1, (INT)data );
@@ -474,7 +474,7 @@ void	APU_INTERNAL::SyncWrite( WORD addr, BYTE data )
 			SyncWrite4017( data );
 			break;
 
-		// VirtuaNESŒÅ—Lƒ|[ƒg
+		// VirtuaNES�ŗL�|�[�g
 		case	0x4018:
 			SyncUpdateRectangle( ch0, (INT)data );
 			SyncUpdateRectangle( ch1, (INT)data );
@@ -529,6 +529,7 @@ void	APU_INTERNAL::UpdateFrame()
 BYTE	APU_INTERNAL::SyncRead( WORD addr )
 {
 BYTE	data = addr>>8;
+
 	if( addr == 0x4015 ) {
 		data = 0;
 		if( ch0.sync_enable && ch0.sync_len_count > 0 ) data |= (1<<0);
@@ -551,7 +552,6 @@ BYTE	data = addr>>8;
 		}
 //DEBUGOUT( "R 4017 %02X\n", data );
 	}
-//printf("read $%04x -> %02x\n", addr, data);
 	return	data;
 }
 
@@ -769,7 +769,7 @@ INT	APU_INTERNAL::RenderRectangle( RECTANGLE& ch )
 	INT	volume = ch.nowvolume;
 
 	if( !(Config.sound.bChangeTone && ChannelTone[(!ch.complement)?0:1][ch.reg[0]>>6]) ) {
-		// •âŠÔˆ—
+		// ���ԏ���
 		double	total;
 		double	sample_weight = ch.phaseacc;
 		if( sample_weight > cycle_rate ) {
@@ -793,13 +793,13 @@ INT	APU_INTERNAL::RenderRectangle( RECTANGLE& ch )
 	} else {
 		INT*	pTone = ToneTable[ChannelTone[(!ch.complement)?0:1][ch.reg[0]>>6]-1];
 
-		// XV–³‚µ
+		// �X�V����
 		ch.phaseacc -= cycle_rate*2;
 		if( ch.phaseacc >= 0 ) {
 			return	pTone[ch.adder&0x1F]*volume/((1<<RECTANGLE_VOL_SHIFT)/2);
 		}
 
-		// 1ƒXƒeƒbƒv‚¾‚¯XV
+		// 1�X�e�b�v�����X�V
 		INT	freq = INT2FIX( ch.freq+1 );
 		if( freq > cycle_rate*2 ) {
 			ch.phaseacc += freq;
@@ -807,7 +807,7 @@ INT	APU_INTERNAL::RenderRectangle( RECTANGLE& ch )
 			return	pTone[ch.adder&0x1F]*volume/((1<<RECTANGLE_VOL_SHIFT)/2);
 		}
 
-		// ‰Ád•½‹Ï
+		// ���d����
 		INT	num_times, total;
 		num_times = total = 0;
 		while( ch.phaseacc < 0 ) {
@@ -959,7 +959,7 @@ INT	APU_INTERNAL::RenderTriangle()
 			return	ch2.nowvolume*vol/256;
 		}
 
-		// ‰Ád•½‹Ï
+		// ���d����
 		INT	num_times, total;
 		num_times = total = 0;
 		while( ch2.phaseacc < 0 ) {
@@ -992,7 +992,7 @@ INT	APU_INTERNAL::RenderTriangle()
 			return	ch2.nowvolume*vol/256;
 		}
 
-		// ‰Ád•½‹Ï
+		// ���d����
 		INT	num_times, total;
 		num_times = total = 0;
 		while( ch2.phaseacc < 0 ) {
@@ -1220,7 +1220,7 @@ INT	APU_INTERNAL::RenderDPCM()
 	}
 
 #if	1
-	// ƒCƒ“ƒ`ƒLL‚¢ƒvƒ`ƒmƒCƒYƒJƒbƒg(TEST)
+	// �C���`�L�L���v�`�m�C�Y�J�b�g(TEST)
 	ch4.dpcm_output_real = (INT)((ch4.reg[1]&0x01)+ch4.dpcm_value*2)-0x40;
 	if( abs(ch4.dpcm_output_real-ch4.dpcm_output_fake) <= 8 ) {
 		ch4.dpcm_output_fake = ch4.dpcm_output_real;

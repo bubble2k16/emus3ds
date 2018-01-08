@@ -4,7 +4,7 @@
 // Everything here must be C preprocessor material only. That way even
 // assembler files can load this.
 
-//#define DEBUGGER_ON
+#define DEBUGGER_ON
 
 #ifdef GP2X_BUILD
 

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////
-// Mapper047                                                            //
+// Mapper047  NES-QJ                                                    //
 //////////////////////////////////////////////////////////////////////////
 void	Mapper047::Reset()
 {
@@ -7,10 +7,6 @@ void	Mapper047::Reset()
 
 	if( nes->rom->GetPROM_CRC() == 0x7eef434c ) {
 		patch = 1;
-	}
-
-	if( nes->rom->GetPROM_CRC() == 0x436f9e3f ) { // Super 2in1 
-		patch = 2;
 	}
 
 	for( INT i = 0; i < 8; i++ ) {
@@ -44,34 +40,13 @@ void	Mapper047::Reset()
 void	Mapper047::WriteLow( WORD addr, BYTE data )
 {
 	if( addr == 0x6000 ) {
-		if( patch == 1 ) {
+		if( patch ) {
 			bank = (data & 0x06) >> 1;
-			SetBank_CPU();
-			SetBank_PPU();
-		} else if( patch == 2 ) {
-			switch( data ) {
-				case 0x60:
-					SetPROM_32K_Bank( 0 );
-					break;
-				case 0x64:
-					SetPROM_32K_Bank( 2 );
-					break;
-				case 0x80:
-					bank = 2;
-					SetBank_CPU();
-					SetBank_PPU();
-					break;
-				case 0xC0:
-					bank = 0;
-					SetBank_CPU();
-					SetBank_PPU();
-					break;
-			}
 		} else {
 			bank = (data & 0x01) << 1;
-			SetBank_CPU();
-			SetBank_PPU();
 		}
+		SetBank_CPU();
+		SetBank_PPU();
 	}
 }
 
@@ -166,15 +141,15 @@ void	Mapper047::HSync( INT scanline )
 void	Mapper047::SetBank_CPU()
 {
 	if( reg[0] & 0x40 ) {
-		SetPROM_8K_Bank( 4, bank * 8 + (((patch == 1) && (bank != 2))?6:14) );
+		SetPROM_8K_Bank( 4, bank * 8 + ((patch && bank != 2)?6:14) );
 		SetPROM_8K_Bank( 5, bank * 8 + prg1 );
 		SetPROM_8K_Bank( 6, bank * 8 + prg0 );
-		SetPROM_8K_Bank( 7, bank * 8 + (((patch == 1) && (bank != 2))?7:15) );
+		SetPROM_8K_Bank( 7, bank * 8 + ((patch && bank != 2)?7:15) );
 	} else {
 		SetPROM_8K_Bank( 4, bank * 8 + prg0 );
 		SetPROM_8K_Bank( 5, bank * 8 + prg1 );
-		SetPROM_8K_Bank( 6, bank * 8 + (((patch == 1) && (bank != 2))?6:14) );
-		SetPROM_8K_Bank( 7, bank * 8 + (((patch == 1) && (bank != 2))?7:15) );
+		SetPROM_8K_Bank( 6, bank * 8 + ((patch && bank != 2)?6:14) );
+		SetPROM_8K_Bank( 7, bank * 8 + ((patch && bank != 2)?7:15) );
 	}
 }
 
@@ -182,23 +157,23 @@ void	Mapper047::SetBank_PPU()
 {
 	if( VROM_1K_SIZE ) {
 		if( reg[0] & 0x80 ) {
-			SetVROM_1K_Bank( 0, (bank & 0x02) * ((patch != 2)?64:128) + chr4 );
-			SetVROM_1K_Bank( 1, (bank & 0x02) * ((patch != 2)?64:128) + chr5 );
-			SetVROM_1K_Bank( 2, (bank & 0x02) * ((patch != 2)?64:128) + chr6 );
-			SetVROM_1K_Bank( 3, (bank & 0x02) * ((patch != 2)?64:128) + chr7 );
-			SetVROM_1K_Bank( 4, (bank & 0x02) * ((patch != 2)?64:128) + chr01 + 0 );
-			SetVROM_1K_Bank( 5, (bank & 0x02) * ((patch != 2)?64:128) + chr01 + 1 );
-			SetVROM_1K_Bank( 6, (bank & 0x02) * ((patch != 2)?64:128) + chr23 + 0 );
-			SetVROM_1K_Bank( 7, (bank & 0x02) * ((patch != 2)?64:128) + chr23 + 1 );
+			SetVROM_1K_Bank( 0, (bank & 0x02) * 64 + chr4 );
+			SetVROM_1K_Bank( 1, (bank & 0x02) * 64 + chr5 );
+			SetVROM_1K_Bank( 2, (bank & 0x02) * 64 + chr6 );
+			SetVROM_1K_Bank( 3, (bank & 0x02) * 64 + chr7 );
+			SetVROM_1K_Bank( 4, (bank & 0x02) * 64 + chr01 + 0 );
+			SetVROM_1K_Bank( 5, (bank & 0x02) * 64 + chr01 + 1 );
+			SetVROM_1K_Bank( 6, (bank & 0x02) * 64 + chr23 + 0 );
+			SetVROM_1K_Bank( 7, (bank & 0x02) * 64 + chr23 + 1 );
 		} else {
-			SetVROM_1K_Bank( 0, (bank & 0x02) * ((patch != 2)?64:128) + chr01 + 0 );
-			SetVROM_1K_Bank( 1, (bank & 0x02) * ((patch != 2)?64:128) + chr01 + 1 );
-			SetVROM_1K_Bank( 2, (bank & 0x02) * ((patch != 2)?64:128) + chr23 + 0 );
-			SetVROM_1K_Bank( 3, (bank & 0x02) * ((patch != 2)?64:128) + chr23 + 1 );
-			SetVROM_1K_Bank( 4, (bank & 0x02) * ((patch != 2)?64:128) + chr4 );
-			SetVROM_1K_Bank( 5, (bank & 0x02) * ((patch != 2)?64:128) + chr5 );
-			SetVROM_1K_Bank( 6, (bank & 0x02) * ((patch != 2)?64:128) + chr6 );
-			SetVROM_1K_Bank( 7, (bank & 0x02) * ((patch != 2)?64:128) + chr7 );
+			SetVROM_1K_Bank( 0, (bank & 0x02) * 64 + chr01 + 0 );
+			SetVROM_1K_Bank( 1, (bank & 0x02) * 64 + chr01 + 1 );
+			SetVROM_1K_Bank( 2, (bank & 0x02) * 64 + chr23 + 0 );
+			SetVROM_1K_Bank( 3, (bank & 0x02) * 64 + chr23 + 1 );
+			SetVROM_1K_Bank( 4, (bank & 0x02) * 64 + chr4 );
+			SetVROM_1K_Bank( 5, (bank & 0x02) * 64 + chr5 );
+			SetVROM_1K_Bank( 6, (bank & 0x02) * 64 + chr6 );
+			SetVROM_1K_Bank( 7, (bank & 0x02) * 64 + chr7 );
 		}
 	}
 }

@@ -54,12 +54,12 @@ void	APU_FDS::WriteSub( WORD addr, BYTE data, FDSSOUND& ch, double rate )
 				if( data&0x80 ) {
 					ch.volenv_gain = data&0x3F;
 
-					// ‘¦Žž”½‰f
+					// �������f
 					if( !ch.main_addr ) {
 						ch.now_volume = (ch.volenv_gain<0x21)?ch.volenv_gain:0x20;
 					}
 				}
-				// ƒGƒ“ƒxƒ[ƒv1’iŠK‚Ì‰‰ŽZ
+				// �G���x���[�v1�i�K�̉��Z
 				ch.volenv_decay    = data&0x3F;
 				ch.volenv_phaseacc = (double)ch.envelope_speed * (double)(ch.volenv_decay+1) * rate / (232.0*960.0);
 				break;
@@ -83,7 +83,7 @@ void	APU_FDS::WriteSub( WORD addr, BYTE data, FDSSOUND& ch, double rate )
 				if( data&0x80 ) {
 					ch.swpenv_gain = data&0x3F;
 				}
-				// ƒGƒ“ƒxƒ[ƒv1’iŠK‚Ì‰‰ŽZ
+				// �G���x���[�v1�i�K�̉��Z
 				ch.swpenv_decay    = data&0x3F;
 				ch.swpenv_phaseacc = (double)ch.envelope_speed * (double)(ch.swpenv_decay+1) * rate / (232.0*960.0);
 				break;
@@ -132,10 +132,10 @@ void	APU_FDS::WriteSub( WORD addr, BYTE data, FDSSOUND& ch, double rate )
 	}
 }
 
-// APUƒŒƒ“ƒ_ƒ‰‘¤‚©‚çŒÄ‚Î‚ê‚é
+// APU�����_���������Ă΂���
 void	APU_FDS::Write( WORD addr, BYTE data )
 {
-	// ƒTƒ“ƒvƒŠƒ“ƒOƒŒ[ƒgŠî€
+	// �T���v�����O���[�g�
 	WriteSub( addr, data, fds, (double)sampling_rate );
 }
 
@@ -168,7 +168,7 @@ INT	APU_FDS::Process( INT channel )
 				fds.volenv_phaseacc += decay;
 
 				if( fds.volenv_mode == 0 ) {
-				// Œ¸­ƒ‚[ƒh
+				// �������[�h
 					if( fds.volenv_gain )
 						fds.volenv_gain--;
 				} else
@@ -187,7 +187,7 @@ INT	APU_FDS::Process( INT channel )
 				fds.swpenv_phaseacc += decay;
 
 				if( fds.swpenv_mode == 0 ) {
-				// Œ¸­ƒ‚[ƒh
+				// �������[�h
 					if( fds.swpenv_gain )
 						fds.swpenv_gain--;
 				} else
@@ -228,20 +228,20 @@ INT	APU_FDS::Process( INT channel )
 		INT	sub_multi = fds.sweep_bias * fds.swpenv_gain;
 
 		if( sub_multi & 0x0F ) {
-			// 16‚ÅŠ„‚èØ‚ê‚È‚¢ê‡
+			// 16�Ŋ����؂��Ȃ��ꍇ
 			sub_multi = (sub_multi / 16);
 			if( fds.sweep_bias >= 0 )
-				sub_multi += 2;    // ³‚Ìê‡
+				sub_multi += 2;    // ���̏ꍇ
 			else
-				sub_multi -= 1;    // •‰‚Ìê‡
+				sub_multi -= 1;    // ���̏ꍇ
 		} else {
-			// 16‚ÅŠ„‚èØ‚ê‚éê‡
+			// 16�Ŋ����؂����ꍇ
 			sub_multi = (sub_multi / 16);
 		}
-		// 193‚ð’´‚¦‚é‚Æ-258‚·‚é(-64‚Öƒ‰ƒbƒv)
+		// 193�𒴂�����-258����(-64�փ��b�v)
 		if( sub_multi > 193 )
 			sub_multi -= 258;
-		// -64‚ð‰º‰ñ‚é‚Æ+256‚·‚é(192‚Öƒ‰ƒbƒv)
+		// -64����������+256����(192�փ��b�v)
 	        if( sub_multi < -64 )
 			sub_multi += 256;
 
@@ -258,7 +258,7 @@ INT	APU_FDS::Process( INT channel )
 
 		fds.main_addr = (fds.main_addr+freq+64*sampling_rate)%(64*sampling_rate);
 
-		// 1ŽüŠú‚ð’´‚¦‚½‚çƒ{ƒŠƒ…[ƒ€XV
+		// 1�����𒴂������{�����[���X�V
 		if( main_addr_old > fds.main_addr )
 			fds.now_volume = (fds.volenv_gain<0x21)?fds.volenv_gain:0x20;
 
@@ -287,10 +287,10 @@ INT	APU_FDS::Process( INT channel )
 	return	fds.output;
 }
 
-// CPU‘¤‚©‚çŒÄ‚Î‚ê‚é
+// CPU�������Ă΂���
 void	APU_FDS::SyncWrite( WORD addr, BYTE data )
 {
-	// ƒNƒƒbƒNŠî€
+	// �N���b�N�
 	WriteSub( addr, data, fds_sync, 1789772.5 );
 }
 
@@ -324,12 +324,12 @@ BOOL	APU_FDS::Sync( INT cycles )
 				fds_sync.volenv_phaseacc += decay;
 
 				if( fds_sync.volenv_mode == 0 ) {
-				// Œ¸­ƒ‚[ƒh
+				// �������[�h
 					if( fds_sync.volenv_gain )
 						fds_sync.volenv_gain--;
 				} else
 				if( fds_sync.volenv_mode == 1 ) {
-				// ‘‰Áƒ‚[ƒh
+				// �������[�h
 					if( fds_sync.volenv_gain < 0x20 )
 						fds_sync.volenv_gain++;
 				}
@@ -344,12 +344,12 @@ BOOL	APU_FDS::Sync( INT cycles )
 				fds_sync.swpenv_phaseacc += decay;
 
 				if( fds_sync.swpenv_mode == 0 ) {
-				// Œ¸­ƒ‚[ƒh
+				// �������[�h
 					if( fds_sync.swpenv_gain )
 						fds_sync.swpenv_gain--;
 				} else
 				if( fds_sync.swpenv_mode == 1 ) {
-				// ‘‰Áƒ‚[ƒh
+				// �������[�h
 					if( fds_sync.swpenv_gain < 0x20 )
 						fds_sync.swpenv_gain++;
 				}

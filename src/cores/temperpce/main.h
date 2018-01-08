@@ -87,8 +87,6 @@ typedef struct
   char status_message[STATUS_MESSAGE_LINES][128];
   char *input_message;
 
-  bool palette_change_forces_flush;
-
 } config_struct;
 
 typedef struct

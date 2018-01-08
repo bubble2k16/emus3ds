@@ -28,5 +28,4 @@ typedef int64_t int64;
 #define TICKS_PER_SEC               (268123480)
 #define TICKS_PER_FRAME_NTSC        (4468724)
 #define TICKS_PER_FRAME_PAL         (5362469)
-#define TICKS_PER_FRAME_FASTFORWARD (1489574)
 

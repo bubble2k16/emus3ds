@@ -1,7 +1,7 @@
 BasicInfo:
   Title                  : "VirtuaNES for 3DS"
   CompanyCode            : "00"
-  ProductCode            : "CTR-P-TPCE"
+  ProductCode            : "CTR-P-VNES"
   ContentType            : Application
   Logo                  : Nintendo # Nintendo / Licensed / Distributed / iQue / iQueForSystem
  
@@ -10,7 +10,7 @@ RomFs:
   RootPath                : "romfs"
  
 TitleInfo:
-  UniqueId                : 0x384b
+  UniqueId                : 0x384a
   Category                : Application
  
 CardInfo:
@@ -182,7 +182,6 @@ AccessControlInfo:
   - ir:u
   - csnd:SND
   - ptm:sysm
-  - ir:rst
  
  
 SystemControlInfo:

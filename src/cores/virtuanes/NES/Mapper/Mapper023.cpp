@@ -3,8 +3,7 @@
 //////////////////////////////////////////////////////////////////////////
 void	Mapper023::Reset()
 {
-//	addrmask = 0xFFFF;
-	addrmask = 0xF003;
+	addrmask = 0xFFFF;
 
 	for( INT i = 0; i < 8; i++ ) {
 		reg[i] = i;
@@ -27,8 +26,7 @@ void	Mapper023::Reset()
 
 	if( crc == 0x93794634		// Akumajou Special Boku Dracula Kun(J)
 	 || crc == 0xc7829dae		// Akumajou Special Boku Dracula Kun(T-Eng)
-	 || crc == 0xf82dc02f 		// Akumajou Special Boku Dracula Kun(T-Eng v1.02)
-	 || crc == 0x99580334 ) {	// Crisis Force (Japan)
+	 || crc == 0xf82dc02f ) {	// Akumajou Special Boku Dracula Kun(T-Eng v1.02)
 		addrmask = 0xF00C;
 		nes->SetRenderMethod( NES::PRE_ALL_RENDER );
 	}
@@ -168,13 +166,11 @@ void	Mapper023::Write( WORD addr, BYTE data )
 			irq_latch = (irq_latch & 0xF0) | (data & 0x0F);
 			nes->cpu->ClrIRQ( IRQ_MAPPER );
 			break;
-		case 0xF001:
 		case 0xF004:
 			irq_latch = (irq_latch & 0x0F) | ((data & 0x0F) << 4);
 			nes->cpu->ClrIRQ( IRQ_MAPPER );
 			break;
 
-		case 0xF002:
 		case 0xF008:
 			irq_enable = data & 0x03;
 			irq_counter = irq_latch;
@@ -182,7 +178,6 @@ void	Mapper023::Write( WORD addr, BYTE data )
 			nes->cpu->ClrIRQ( IRQ_MAPPER );
 			break;
 
-		case 0xF003:
 		case 0xF00C:
 			irq_enable = (irq_enable & 0x01) * 3;
 			nes->cpu->ClrIRQ( IRQ_MAPPER );

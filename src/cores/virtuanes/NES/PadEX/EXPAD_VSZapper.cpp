@@ -1,9 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 // VS-Unisystem Zapper                                                  //
 //////////////////////////////////////////////////////////////////////////
-extern u32 insertCoin1;
-extern u32 insertCoin2;
-
 void	EXPAD_VSZapper::Reset()
 {
 	DEBUGOUT( "EXPAD_VSZapper::Reset\n" );
@@ -49,12 +46,10 @@ BYTE	data = 0x00;
 	readlatch[0] >>= 1;
 
 	// Coin 1
-	if (insertCoin1)
-	//if( Config.ButtonCheck( 0, Config.controller.nVSUnisystem ) )
+	if( Config.ButtonCheck( 0, Config.controller.nVSUnisystem ) )
 		data |= 0x20;
 	// Coin 2
-	if (insertCoin2)
-	//if( Config.ButtonCheck( 1, Config.controller.nVSUnisystem ) )
+	if( Config.ButtonCheck( 1, Config.controller.nVSUnisystem ) )
 		data |= 0x40;
 	// Service
 	if( Config.ButtonCheck( 2, Config.controller.nVSUnisystem ) ) {

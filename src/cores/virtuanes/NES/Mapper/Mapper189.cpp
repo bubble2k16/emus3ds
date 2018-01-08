@@ -38,23 +38,16 @@ void	Mapper189::Reset()
 		// $4000-$5FFF
 		SetPROM_Bank( 2, XRAM, BANKTYPE_ROM );
 	}
-
-	SP_rom = 0;
-	if( crc == 0xA41012AF ) {	// Street Fighter III (dump by temryu)
-		SP_rom = 1;
-	}
 }
 
 void	Mapper189::WriteLow( WORD addr, BYTE data )
 {
-	DEBUGOUT( "189MPRWR A=%04X D=%02X L=%3d CYC=%d\n", addr&0xFFFF, data&0xFF, nes->GetScanline(), nes->cpu->GetTotalCycles() );
 	if( (addr & 0xFF00) == 0x4100 ) {
 	// Street Fighter 2 YOKO
 		SetPROM_32K_Bank( (data&0x30)>>4 );
 	} else if( (addr & 0xFF00) == 0x6100 ) {
 	// Master Fighter 2
 		SetPROM_32K_Bank( data&0x03 );
-		if(SP_rom) SetPROM_32K_Bank( (data&0x30)>>4 );
 	}
 
 	if( patch ) {
@@ -100,7 +93,6 @@ void	Mapper189::WriteLow( WORD addr, BYTE data )
 
 void	Mapper189::Write( WORD addr, BYTE data )
 {
-	DEBUGOUT( "189MPRWR A=%04X D=%02X L=%3d CYC=%d\n", addr&0xFFFF, data&0xFF, nes->GetScanline(), nes->cpu->GetTotalCycles() );
 	switch( addr&0xE001 ) {
 		case	0x8000:
 			reg[0] = data;

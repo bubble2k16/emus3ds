@@ -126,7 +126,7 @@ BOOL	APU::GetQueueDAC( u64 writetime, QUEUEDATA& ret )
 	if( queueDAC.wrptr == queueDAC.rdptr ) {
 		return	FALSE;
 	}
-	if( queueDAC.data[queueDAC.rdptr].time <= writetime || writetime == 0x7fffffffffffffff ) {
+	if( queueDAC.data[queueDAC.rdptr].time <= writetime ) {
 		ret = queueDAC.data[queueDAC.rdptr];
 		queueDAC.rdptr++;
 		queueDAC.rdptr&=QUEUE_LENGTH-1;
@@ -351,7 +351,7 @@ void	APU::WriteExProcess( WORD addr, BYTE data )
 	}
 }
 
-void	APU::Process( LPBYTE lpBuffer, DWORD dwSize, bool fastForwarding )
+void	APU::Process( LPBYTE lpBuffer, DWORD dwSize )
 {
 INT	nBits = Config.sound.nBits;
 
@@ -388,8 +388,6 @@ INT	nFilterType = Config.sound.nFilterType;
 	BOOL*	bMute = m_bMute;
 	SHORT*	nVolume = Config.sound.nVolume;
 
-	INT	nMasterVolume = nVolume[0] / 25;
-/*
 	INT	nMasterVolume = bMute[0]?nVolume[0]:0;
 
 	// Internal
@@ -429,7 +427,7 @@ INT	nFilterType = Config.sound.nFilterType;
 	vol[21] = bMute[6]?(FME7_VOL*nVolume[11]*nMasterVolume)/(100*100):0;
 	vol[22] = bMute[7]?(FME7_VOL*nVolume[11]*nMasterVolume)/(100*100):0;
 	vol[23] = bMute[8]?(FME7_VOL*nVolume[11]*nMasterVolume)/(100*100):0;
-*/
+
 //	double	cycle_rate = ((double)FRAME_CYCLES*60.0/12.0)/(double)Config.sound.nRate;
 	//double	cycle_rate = ((double)nes->nescfg->FrameCycles*60.0/12.0)/(double)Config.sound.nRate;
 	cycle_rate = ((double)nes->nescfg->FrameCycles*60.0/12.0)/(double)Config.sound.nRate;
@@ -462,10 +460,7 @@ INT	nFilterType = Config.sound.nFilterType;
 
 		// We handle writes to the DAC here
 		//
-		u64 wtime = writetime;
-		if (fastForwarding)
-			wtime = 0x7fffffffffffffff;
-		while( GetQueueDAC( wtime, q ) ) {
+		while( GetQueueDAC( writetime, q ) ) {
 			if (q.addr == 0x4011)
 				WriteProcess( q.addr, q.data );
 			if (q.addr == 0x5011)
@@ -474,46 +469,44 @@ INT	nFilterType = Config.sound.nFilterType;
 		
 		// 0-4:internal 5-7:VRC6 8:VRC7 9:FDS 10-12:MMC5 13-20:N106 21-23:FME7
 		output = 0;
-		output += internal.Process( 0 )*RECTANGLE_VOL;
-		output += internal.Process( 1 )*RECTANGLE_VOL;
-		output += internal.Process( 2 )*TRIANGLE_VOL;
-		output += internal.Process( 3 )*NOISE_VOL;
-		output += internal.Process( 4 )*DPCM_VOL;
+		output += internal.Process( 0 )*vol[0];
+		output += internal.Process( 1 )*vol[1];
+		output += internal.Process( 2 )*vol[2];
+		output += internal.Process( 3 )*vol[3];
+		output += internal.Process( 4 )*vol[4];
 
 		if( exsound_select & 0x01 ) {
-			output += vrc6.Process( 0 )*VRC6_VOL;
-			output += vrc6.Process( 1 )*VRC6_VOL;
-			output += vrc6.Process( 2 )*VRC6_VOL;
+			output += vrc6.Process( 0 )*vol[5];
+			output += vrc6.Process( 1 )*vol[6];
+			output += vrc6.Process( 2 )*vol[7];
 		}
 		if( exsound_select & 0x02 ) {
-			output += vrc7.Process( 0 )*VRC7_VOL;
+			output += vrc7.Process( 0 )*vol[8];
 		}
 		if( exsound_select & 0x04 ) {
-			output += fds.Process( 0 )*FDS_VOL;
+			output += fds.Process( 0 )*vol[9];
 		}
 		if( exsound_select & 0x08 ) {
-			output += mmc5.Process( 0 )*MMC5_VOL;
-			output += mmc5.Process( 1 )*MMC5_VOL;
-			output += mmc5.Process( 2 )*MMC5_VOL;
+			output += mmc5.Process( 0 )*vol[10];
+			output += mmc5.Process( 1 )*vol[11];
+			output += mmc5.Process( 2 )*vol[12];
 		}
 		if( exsound_select & 0x10 ) {
-			output += n106.Process( 0 )*N106_VOL;
-			output += n106.Process( 1 )*N106_VOL;
-			output += n106.Process( 2 )*N106_VOL;
-			output += n106.Process( 3 )*N106_VOL;
-			output += n106.Process( 4 )*N106_VOL;
-			output += n106.Process( 5 )*N106_VOL;
-			output += n106.Process( 6 )*N106_VOL;
-			output += n106.Process( 7 )*N106_VOL;
+			output += n106.Process( 0 )*vol[13];
+			output += n106.Process( 1 )*vol[14];
+			output += n106.Process( 2 )*vol[15];
+			output += n106.Process( 3 )*vol[16];
+			output += n106.Process( 4 )*vol[17];
+			output += n106.Process( 5 )*vol[18];
+			output += n106.Process( 6 )*vol[19];
+			output += n106.Process( 7 )*vol[20];
 		}
 		if( exsound_select & 0x20 ) {
 			fme7.Process( 3 );	// Envelope & Noise
-			output += fme7.Process( 0 )*FME7_VOL;
-			output += fme7.Process( 1 )*FME7_VOL;
-			output += fme7.Process( 2 )*FME7_VOL;
+			output += fme7.Process( 0 )*vol[21];
+			output += fme7.Process( 1 )*vol[22];
+			output += fme7.Process( 2 )*vol[23];
 		}
-
-		output = output * nMasterVolume / 4;
 
 		output >>= 8;
 

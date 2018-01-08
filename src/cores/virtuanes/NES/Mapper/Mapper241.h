@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////
-// Mapper241  Education X-in-1                                          //
+// Mapper241  Fon Serm Bon                                              //
 //////////////////////////////////////////////////////////////////////////
 class	Mapper241 : public Mapper
 {
@@ -8,8 +8,9 @@ public:
 
 	void	Reset();
 	void	Write(WORD addr, BYTE data);
+	BYTE	ReadLow ( WORD addr );
+	//void	WriteLow( WORD addr, BYTE data );
 
 protected:
-	BYTE	SBPAL_fix;
 private:
 };

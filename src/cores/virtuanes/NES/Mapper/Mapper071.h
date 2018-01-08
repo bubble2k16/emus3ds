@@ -11,7 +11,5 @@ public:
 	void	Write(WORD addr, BYTE data);
 
 protected:
-	BYTE	rom_type;
-	BYTE	rom_bank;
 private:
 };
