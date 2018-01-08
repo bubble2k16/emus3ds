@@ -154,6 +154,10 @@ typedef struct
   u8 dirty_tiles[1024 * 64 / 32];
   // At 16x16x4bpp, each pattern takes 128 bytes
   u8 dirty_patterns[1024 * 64 / 128];
+
+  u32 copy_sat_hw;        // flag to indicate when to copy satb for hardware rendering.
+  u16 sat_hw[64 * 4];     // sat_hw for hardware rendering.
+  
 } vdc_struct;
 
 typedef enum

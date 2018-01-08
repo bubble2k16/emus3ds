@@ -8,30 +8,12 @@
 // render_flush
 //------------------------------------------------------------------
 
-// Reset vertical sections with a specific value.
-//
-void vsectReset(VerticalSections *verticalSections, int currentScanline, u32 currentValue)
-{
-    if (currentScanline > 240 || currentScanline < 0)
-        currentScanline = 240;
-    
-    verticalSections->CurrentValue = currentValue;
-    verticalSections->StartY = currentScanline;
-    verticalSections->Count = 0;
-    //printf ("Reset %d %d\n", currentScanline, currentValue);
-}
 
-
-// Reset all vertical sections with no change in the register value.
+// Resets the counter of the vertical section to zero.
 //
-void vsectReset(VerticalSections *verticalSections, int currentScanline)
+void vsectReset(VerticalSections *verticalSections)
 {
-    if (currentScanline > 240 || currentScanline < 0)
-        currentScanline = 240;
-    
-    verticalSections->StartY = currentScanline;
     verticalSections->Count = 0;
-    //printf ("Reset %d\n", currentScanline);
 }
 
 
@@ -39,44 +21,50 @@ void vsectReset(VerticalSections *verticalSections, int currentScanline)
 // This should be called just at the start of v-blank
 // and before the final parts of the screen is rendered.
 // 
-void vsectCommit(VerticalSections *verticalSections, int currentScanline)
+void vsectCommit(VerticalSections *verticalSections, int endY)
 {
-    if (currentScanline > 240 || currentScanline < 0)
-        currentScanline = 240;
-	if (currentScanline != verticalSections->StartY)
-	{
-		verticalSections->Section[verticalSections->Count].StartY = verticalSections->StartY;
-		verticalSections->Section[verticalSections->Count].EndY = currentScanline - 1;
-		verticalSections->Section[verticalSections->Count].Value = verticalSections->CurrentValue;
-		verticalSections->Count ++;
-
-        if (currentScanline == 240)
-            currentScanline = 0;
-		verticalSections->StartY = currentScanline;
-        //printf ("commit value: sy=%d cnt=%d val=%d\n", currentScanline, verticalSections->Count, verticalSections->CurrentValue);
-	}
+    verticalSections->Section[verticalSections->Count].StartY = verticalSections->StartY;
+    verticalSections->Section[verticalSections->Count].EndY = endY;
+    verticalSections->Section[verticalSections->Count].Value = verticalSections->CurrentValue;
+    verticalSections->Section[verticalSections->Count].Value2 = verticalSections->CurrentValue2;
+    verticalSections->Section[verticalSections->Count].Value3 = verticalSections->CurrentValue3;
+    verticalSections->Section[verticalSections->Count].Value4 = verticalSections->CurrentValue4;
+    verticalSections->Count++;
+    //printf ("commit ey=%3d c=%d v=%d,%d,%d,%d\n", endY, verticalSections->Count, verticalSections->CurrentValue, verticalSections->CurrentValue2, verticalSections->CurrentValue3, verticalSections->CurrentValue4);
 }
 
-// Sets a new value to this section, and commits it
-// if the current scanline is different from the last.
+
+// Sets a new value to this section.
 //
-void vsectUpdateValue(VerticalSections *verticalSections, int currentScanline, u32 newValue)
+void vsectUpdateValue(VerticalSections *verticalSections, int startY, s32 newValue)
 {
-    if (currentScanline > 240 || currentScanline < 0)
-        currentScanline = 240;
-	if (verticalSections->CurrentValue != newValue)
-	{
-		verticalSections->Section[verticalSections->Count].StartY = verticalSections->StartY;
-		verticalSections->Section[verticalSections->Count].EndY = currentScanline - 1;
-		verticalSections->Section[verticalSections->Count].Value = verticalSections->CurrentValue;
-		verticalSections->Count ++;
-
-        if (currentScanline == 240)
-            currentScanline = 0;
-		verticalSections->StartY = currentScanline;
-        //printf ("update value: sy=%d cnt=%d val=%d (%d)\n", currentScanline, verticalSections->Count, verticalSections->CurrentValue, newValue);
-        verticalSections->CurrentValue = newValue;
-
-	}
+    vsectUpdateValue(verticalSections, startY, newValue, 0, 0, 0);
 }
 
+
+// Sets a new value to this section.
+//
+void vsectUpdateValue(VerticalSections *verticalSections, int startY, s32 newValue, s32 newValue2)
+{
+    vsectUpdateValue(verticalSections, startY, newValue, newValue2, 0, 0);
+}
+
+
+// Sets a new value to this section.
+//
+void vsectUpdateValue(VerticalSections *verticalSections, int startY, s32 newValue, s32 newValue2, s32 newValue3)
+{
+    vsectUpdateValue(verticalSections, startY, newValue, newValue2, newValue3, 0);
+}
+
+
+// Sets a new value to this section.
+//
+void vsectUpdateValue(VerticalSections *verticalSections, int startY, s32 newValue, s32 newValue2, s32 newValue3, s32 newValue4)
+{
+    verticalSections->StartY = startY;
+    verticalSections->CurrentValue = newValue;
+    verticalSections->CurrentValue2 = newValue2;
+    verticalSections->CurrentValue3 = newValue3;
+    verticalSections->CurrentValue4 = newValue4;
+}

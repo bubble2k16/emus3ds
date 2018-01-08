@@ -29,6 +29,8 @@ extern	void	setchr4( WORD A, INT bank );
 extern	void	setchr8( INT bank );
 extern	void 	setmirror(int t);
 extern	void 	setmirrorw(int a, int b, int c, int d);
+extern	void SetupCartPRGMapping(int chip, uint8 *p, uint32 size, int ram);
+extern	void SetupCartCHRMapping(int chip, uint8 *p, uint32 size, int ram);
 
 // For compatibiity with FCEUX
 typedef void (*writefunc)(u32 A, u8 V);

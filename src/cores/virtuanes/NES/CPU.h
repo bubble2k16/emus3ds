@@ -33,8 +33,8 @@ class	Mapper;
 #define	IRQ_DPCM	0x08
 #define	IRQ_MAPPER	0x10
 #define	IRQ_MAPPER2	0x20
-#define	IRQ_TRIGGER	0x40		// one shot(��IRQ())
-#define	IRQ_TRIGGER2	0x80		// one shot(��IRQ_NotPending())
+#define	IRQ_TRIGGER	0x40		// one shot(‹ŒIRQ())
+#define	IRQ_TRIGGER2	0x80		// one shot(‹ŒIRQ_NotPending())
 
 #define	IRQ_MASK	(~(NMI_FLAG|IRQ_FLAG))
 
@@ -52,7 +52,7 @@ typedef	struct	{
 	BYTE	Y;
 	BYTE	S;
 
-	BYTE	INT_pending;	// ���荞�݃y���f�B���O�t���O
+	BYTE	INT_pending;	// Š„‚èž‚Ýƒyƒ“ƒfƒBƒ“ƒOƒtƒ‰ƒO
 } R6502;
 
 
@@ -97,7 +97,7 @@ protected:
 	// Fix: changed to u64 to fix the overflow problem.
 	u64		TOTAL_cycles;	// CPU�g�[�^���T�C�N����
 	
-	INT		DMA_cycles;	// DMA�T�C�N����
+	INT	DMA_cycles;	// DMAƒTƒCƒNƒ‹”
 
 	// PTR
 	LPBYTE	STACK;

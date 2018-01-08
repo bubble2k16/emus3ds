@@ -6,8 +6,14 @@ void	Mapper235::Reset()
 	for( INT i = 0; i < 0x2000; i++ ) {
 		DRAM[i] = 0xFF;
 	}
-
 	SetPROM_32K_Bank( 0 );
+
+	if( PROM_8K_SIZE == 32*2 ) {	// 20-in-1
+		dip_s=dip_s&3;
+		dip_s++;
+//		if(dip_s==4) dip_s=0;
+	}
+
 }
 
 void	Mapper235::Write( WORD addr, BYTE data )
@@ -72,4 +78,23 @@ void	Mapper235::Write( WORD addr, BYTE data )
 	} else {
 		SetVRAM_Mirror( VRAM_VMIRROR );
 	}
+
+	if( PROM_8K_SIZE == 32*2 ) {	// 20-in-1
+		if(addr==0x8000){
+			if(data&0x80){
+				SetPROM_16K_Bank(4, data&0x1F);
+				SetPROM_16K_Bank(6, data&0x1F);
+			}else{
+				SetPROM_32K_Bank((data&0x1F)>>1);
+			}
+			if(data&0x40) SetVRAM_Mirror( VRAM_HMIRROR );
+			else		  SetVRAM_Mirror( VRAM_VMIRROR );
+		}
+		if(addr==0x8003){
+//			SetPROM_16K_Bank(4, dip_s);
+			SetPROM_8K_Bank(4, dip_s);
+//			SetPROM_8K_Bank(5, dip_s);
+		}
+	}
+
 }

@@ -93,29 +93,48 @@ extern SMenuItem emulatorMenu[];
 // Load the ROM and reset the CPU.
 //-------------------------------------------------------
 
-bool emulatorSettingsLoad(bool, bool);
-bool emulatorSettingsSave(bool, bool);
+bool emulatorSettingsLoad(bool, bool, bool);
+bool emulatorSettingsSave(bool, bool, bool);
 
 bool emulatorLoadRom()
 {
     menu3dsShowDialog("Load ROM", "Loading... this may take a while.", DIALOGCOLOR_CYAN, NULL);
 
-    emulatorSettingsSave(false, false);
+    char romFileNameFullPathOriginal[_MAX_PATH];
+    strncpy(romFileNameFullPathOriginal, romFileNameFullPath, _MAX_PATH - 1);
+
+    //emulatorSettingsSave(true, true, false);
     snprintf(romFileNameFullPath, _MAX_PATH, "%s%s", file3dsGetCurrentDir(), romFileName);
 
     char romFileNameFullPath2[_MAX_PATH];
     strncpy(romFileNameFullPath2, romFileNameFullPath, _MAX_PATH - 1);
+
+    // Load up the new ROM settings first.
+    //
+    emulatorSettingsLoad(false, true, false);
+    impl3dsApplyAllSettings();
     
     if (!impl3dsLoadROM(romFileNameFullPath2))
     {
+        // If the ROM loading fails:
+        // 1. Restore the original ROM file path.
+        strncpy(romFileNameFullPath, romFileNameFullPathOriginal, _MAX_PATH - 1);
+        
+        // 2. Reload original settings
+        //emulatorSettingsLoad(false, true, false);
+        impl3dsApplyAllSettings();
+        
         menu3dsHideDialog();
+
         return false;
     }
+    impl3dsApplyAllSettings();
+
+    if (settings3DS.AutoSavestate)
+        impl3dsLoadState(0);
 
     emulator.emulatorState = EMUSTATE_EMULATE;
 
-    emulatorSettingsLoad(true, false);
-    impl3dsApplyAllSettings();
     cheat3dsLoadCheatTextFile(file3dsReplaceFilenameExtension(romFileNameFullPath, ".chx"));
     menu3dsHideDialog();
 
@@ -129,8 +148,13 @@ bool emulatorLoadRom()
 //----------------------------------------------------------------------
 // Menus
 //----------------------------------------------------------------------
-SMenuItem fileMenu[1000];
-char romFileNames[1000][_MAX_PATH];
+#define MAX_FILES 1000
+SMenuItem fileMenu[MAX_FILES + 1];
+//char romFileNames[MAX_FILES][_MAX_PATH];
+// By changing the romFileNames to fileList (strings allocated on demand)
+// this fixes the crashing problem on Old 3DS when running Luma 8 and Rosalina 2.
+// 
+std::vector<std::string> fileList;
 
 int totalRomFileCount = 0;
 
@@ -139,20 +163,20 @@ int totalRomFileCount = 0;
 //----------------------------------------------------------------------
 void fileGetAllFiles(void)
 {
-    std::vector<std::string> files = file3dsGetFiles(impl3dsRomExtensions, 1000);
+    fileList = file3dsGetFiles(impl3dsRomExtensions, MAX_FILES);
 
     totalRomFileCount = 0;
 
     // Increase the total number of files we can display.
-    for (int i = 0; i < files.size() && i < 1000; i++)
+    for (int i = 0; i < fileList.size() && i < MAX_FILES; i++)
     {
-        strncpy(romFileNames[i], files[i].c_str(), _MAX_PATH);
+        //strncpy(romFileNames[i], fileList[i].c_str(), _MAX_PATH);
         totalRomFileCount++;
         fileMenu[i].Type = MENUITEM_ACTION;
         fileMenu[i].ID = i;
-        fileMenu[i].Text = romFileNames[i];
+        fileMenu[i].Text = fileList[i].c_str();
     }
-    fileMenu[files.size()].Type = MENUITEM_LASTITEM;
+    fileMenu[totalRomFileCount].Type = MENUITEM_LASTITEM;
 }
 
 
@@ -161,7 +185,7 @@ void fileGetAllFiles(void)
 //----------------------------------------------------------------------
 int fileFindLastSelectedFile()
 {
-    for (int i = 0; i < totalRomFileCount && i < 1000; i++)
+    for (int i = 0; i < totalRomFileCount && i < MAX_FILES; i++)
     {
         if (strncmp(fileMenu[i].Text, romFileNameLastSelected, _MAX_PATH) == 0)
             return i;
@@ -170,31 +194,41 @@ int fileFindLastSelectedFile()
 }
 
 
-
 //----------------------------------------------------------------------
 // Load global settings, and game-specific settings.
 //----------------------------------------------------------------------
-bool emulatorSettingsLoad(bool includeGameSettings, bool showMessage = true)
+bool emulatorSettingsLoad(bool includeGlobalSettings, bool includeGameSettings, bool showMessage = true)
 {
-    bool success = impl3dsReadWriteSettingsGlobal(false);
-    if (!success)
-        return false;
-    impl3dsApplyAllSettings(false);
+    if (includeGlobalSettings)
+    {
+        bool success = impl3dsReadWriteSettingsGlobal(false);
+        if (success)
+        {
+            input3dsSetDefaultButtonMappings(settings3DS.GlobalButtonMapping, settings3DS.GlobalTurbo, false);
+            impl3dsApplyAllSettings(false);
+        }
+        else
+        {
+            impl3dsInitializeDefaultSettingsGlobal();
+            input3dsSetDefaultButtonMappings(settings3DS.GlobalButtonMapping, settings3DS.GlobalTurbo, true);
+            impl3dsApplyAllSettings(false);
+            return false;
+        }
+    }
 
     if (includeGameSettings)
     {
-        success = impl3dsReadWriteSettingsByGame(false);
+        bool success = impl3dsReadWriteSettingsByGame(false);
         if (success)
         {
+            input3dsSetDefaultButtonMappings(settings3DS.ButtonMapping, settings3DS.Turbo, false);
             impl3dsApplyAllSettings();
-            /*if (impl3dsApplyAllSettings())
-                emulatorSettingsSave(true, showMessage);*/
             return true;
         }
         else
         {
-            impl3dsInitializeDefaultSettings();
-
+            impl3dsInitializeDefaultSettingsByGame();
+            input3dsSetDefaultButtonMappings(settings3DS.ButtonMapping, settings3DS.Turbo, true);
             impl3dsApplyAllSettings();
 
             //return emulatorSettingsSave(true, showMessage);
@@ -208,7 +242,7 @@ bool emulatorSettingsLoad(bool includeGameSettings, bool showMessage = true)
 //----------------------------------------------------------------------
 // Save global settings, and game-specific settings.
 //----------------------------------------------------------------------
-bool emulatorSettingsSave(bool includeGameSettings, bool showMessage)
+bool emulatorSettingsSave(bool includeGlobalSettings, bool includeGameSettings, bool showMessage)
 {
     if (showMessage)
     {
@@ -218,9 +252,15 @@ bool emulatorSettingsSave(bool includeGameSettings, bool showMessage)
     }
 
     if (includeGameSettings)
+    {
         impl3dsReadWriteSettingsByGame(true);
+    }
 
-    impl3dsReadWriteSettingsGlobal(true);
+    if (includeGlobalSettings)
+    {
+        impl3dsReadWriteSettingsGlobal(true);
+    }
+
     if (showMessage)
     {
         ui3dsDrawRect(50, 140, 270, 154, 0x000000);
@@ -264,7 +304,8 @@ void menuSelectFile(void)
         {
             // Load ROM
             //
-            romFileName = romFileNames[selection];
+            //romFileName = romFileNames[selection];
+            romFileName = fileList[selection].c_str();
             strncpy(romFileNameLastSelected, romFileName, _MAX_PATH);
             if (romFileName[0] == 1)
             {
@@ -338,7 +379,7 @@ bool menuSelectedChanged(int ID, int value)
     if (ID >= 50000 && ID <= 51000)
     {
         // Handle cheats
-        int enabled = menu3dsGetValueByID(2, ID);
+        int enabled = menu3dsGetValueByID(-1, ID);
         impl3dsSetCheatEnabledFlag(ID - 50000, enabled == 1);
         cheat3dsSetCheatEnabledFlag(ID - 50000, enabled == 1);
         return false;
@@ -357,13 +398,14 @@ void menuPause()
     
     bool settingsUpdated = false;
     bool cheatsUpdated = false;
-    bool loadRomBeforeExit = false;
+    bool settingsSaved = false;
     bool returnToEmulation = false;
 
 
     menu3dsClearMenuTabs();
     menu3dsAddTab("Emulator", emulatorMenu);
     menu3dsAddTab("Options", optionMenu);
+    menu3dsAddTab("Controls", controlsMenu);
     menu3dsAddTab("Cheats", cheatMenu);
     menu3dsAddTab("Select ROM", fileMenu);
 
@@ -373,9 +415,10 @@ void menuPause()
     menu3dsSetTabSubTitle(0, NULL);
     menu3dsSetTabSubTitle(1, NULL);
     menu3dsSetTabSubTitle(2, NULL);
-    menu3dsSetTabSubTitle(3, file3dsGetCurrentDir());
+    menu3dsSetTabSubTitle(3, NULL);
+    menu3dsSetTabSubTitle(4, file3dsGetCurrentDir());
     if (previousFileID >= 0)
-        menu3dsSetSelectedItemIndexByID(3, previousFileID);
+        menu3dsSetSelectedItemIndexByID(4, previousFileID);
     menu3dsSetCurrentMenuTab(0);
     menu3dsSetTransferGameScreen(true);
 
@@ -390,7 +433,6 @@ void menuPause()
 
         int selection = menu3dsShowMenu(menuSelectedChanged, animateMenu);
         animateMenu = false;
-        
 
         if (selection == -1 || selection == 1000)
         {
@@ -404,7 +446,8 @@ void menuPause()
         {
             // Load ROM
             //
-            romFileName = romFileNames[selection];
+            //romFileName = romFileNames[selection];
+            romFileName = fileList[selection].c_str();
             if (romFileName[0] == 1)
             {
                 if (strcmp(romFileName, "\x01 ..") == 0)
@@ -416,28 +459,53 @@ void menuPause()
                 menu3dsClearMenuTabs();
                 menu3dsAddTab("Emulator", emulatorMenu);
                 menu3dsAddTab("Options", optionMenu);
+                menu3dsAddTab("Controls", controlsMenu);
                 menu3dsAddTab("Cheats", cheatMenu);
                 menu3dsAddTab("Select ROM", fileMenu);
-                menu3dsSetCurrentMenuTab(3);
-                menu3dsSetTabSubTitle(3, file3dsGetCurrentDir());
+                menu3dsSetCurrentMenuTab(4);
+                menu3dsSetTabSubTitle(4, file3dsGetCurrentDir());
             }
             else
             {
                 strncpy(romFileNameLastSelected, romFileName, _MAX_PATH);
 
-                // Save settings and cheats, before loading
-                // your new ROM.
-                //
-                if (impl3dsCopyMenuToOrFromSettings(true))
-                    emulatorSettingsSave(true, true);
-                
-                if (!emulatorLoadRom())
-                {
-                    menu3dsShowDialog("Load ROM", "Hmm... unable to load ROM.", DIALOGCOLOR_RED, optionsForOk);
+                bool loadRom = true;
+                if (settings3DS.AutoSavestate) {
+                    menu3dsShowDialog("Save State", "Autosaving state...", DIALOGCOLOR_RED, NULL);
+                    bool result = impl3dsSaveState(0);
                     menu3dsHideDialog();
+
+                    if (!result) {
+                        int choice = menu3dsShowDialog("Autosave failure", "Automatic savestate writing failed.\nLoad chosen game anyway?", DIALOGCOLOR_RED, optionsForNoYes);
+                        if (choice != 1) {
+                            loadRom = false;
+                        }
+                    }
                 }
-                else
-                    break;
+
+                if (loadRom)
+                {
+                    // Save settings and cheats, before loading
+                    // your new ROM.
+                    //
+                    if (impl3dsCopyMenuToOrFromSettings(true))
+                    {
+                        emulatorSettingsSave(true, true, true);
+                    }
+                    else
+                    {
+                        emulatorSettingsSave(true, false, true);
+                    }
+                    settingsSaved = true;
+                    
+                    if (!emulatorLoadRom())
+                    {
+                        menu3dsShowDialog("Load ROM", "Hmm... unable to load ROM.", DIALOGCOLOR_RED, optionsForOk);
+                        menu3dsHideDialog();
+                    }
+                    else
+                        break;
+                }
             }
         }
         else if (selection >= 2001 && selection <= 2010)
@@ -569,8 +637,10 @@ void menuPause()
 
     // Save settings and cheats
     //
-    if (impl3dsCopyMenuToOrFromSettings(true))
-        emulatorSettingsSave(true, true);
+    if (!settingsSaved && impl3dsCopyMenuToOrFromSettings(true))
+    {
+        emulatorSettingsSave(true, true, true);
+    }
     impl3dsApplyAllSettings();
 
     cheat3dsSaveCheatTextFile (file3dsReplaceFilenameExtension(romFileNameFullPath, ".chx"));
@@ -623,6 +693,10 @@ char *noCheatsText[] {
 //--------------------------------------------------------
 void emulatorInitialize()
 {
+    emulator.enableDebug = false;
+    emulator.emulatorState = 0;
+    emulator.waitBehavior = 0;
+
     file3dsInitialize();
 
     romFileNameLastSelected[0] = 0;
@@ -661,7 +735,7 @@ void emulatorInitialize()
 
     enableExitHook();
 
-    emulatorSettingsLoad(false, true);
+    emulatorSettingsLoad(true, false, true);
 
     // Do this one more time.
     if (file3dsGetCurrentDir()[0] == 0)
@@ -788,6 +862,7 @@ void emulatorLoop()
 {
 	// Main loop
     //emulator.enableDebug = true;
+    emulator.waitBehavior = WAIT_FULL;
 
     int emuFramesSkipped = 0;
     long emuFrameTotalActualTicks = 0;
@@ -831,10 +906,10 @@ void emulatorLoop()
         updateFrameCount();
 
     	input3dsScanInputForEmulation();
-        impl3dsEmulationRunOneFrame(firstFrame, skipDrawingFrame);
-
         if (emulator.emulatorState != EMUSTATE_EMULATE)
             break;
+
+        impl3dsEmulationRunOneFrame(firstFrame, skipDrawingFrame);
 
         firstFrame = false; 
 
@@ -842,18 +917,28 @@ void emulatorLoop()
         // the rendering for the next frame if we are too slow.
         //
 #ifndef EMU_RELEASE
-        //if (emulator.isReal3DS)
+        if (emulator.isReal3DS)
 #endif
         {
 
+            // Check the keys to see if the user is fast-forwarding
+            //
+            int keysHeld = input3dsGetCurrentKeysHeld();
+            emulator.fastForwarding = false;
+            if ((settings3DS.UseGlobalEmuControlKeys && (settings3DS.GlobalButtonHotkeyDisableFramelimit & keysHeld)) ||
+                (!settings3DS.UseGlobalEmuControlKeys && (settings3DS.ButtonHotkeyDisableFramelimit & keysHeld))) 
+                emulator.fastForwarding = true;
+
             long currentTick = svcGetSystemTick();
             long actualTicksThisFrame = currentTick - startFrameTick;
+            long ticksPerFrame = settings3DS.TicksPerFrame;
+            if (emulator.fastForwarding)
+                ticksPerFrame = TICKS_PER_FRAME_FASTFORWARD;
 
             emuFrameTotalActualTicks += actualTicksThisFrame;  // actual time spent rendering past x frames.
-            emuFrameTotalAccurateTicks += settings3DS.TicksPerFrame;  // time supposed to be spent rendering past x frames.
+            emuFrameTotalAccurateTicks += ticksPerFrame;  // time supposed to be spent rendering past x frames.
 
             int isSlow = 0;
-
 
             long skew = emuFrameTotalAccurateTicks - emuFrameTotalActualTicks;
 
@@ -862,7 +947,7 @@ void emulatorLoop()
                 // We've skewed out of the actual frame rate.
                 // Once we skew beyond 0.1 (10%) frames slower, skip the frame.
                 //
-                if (skew < -settings3DS.TicksPerFrame/10 && emuFramesSkipped < settings3DS.MaxFrameSkips)
+                if (skew < -ticksPerFrame/10 && emuFramesSkipped < settings3DS.MaxFrameSkips)
                 {
                     skipDrawingFrame = true;
                     emuFramesSkipped++;
@@ -877,7 +962,7 @@ void emulatorLoop()
                     {
                         emuFramesSkipped = 0;
                         emuFrameTotalActualTicks = actualTicksThisFrame;
-                        emuFrameTotalAccurateTicks = settings3DS.TicksPerFrame;
+                        emuFrameTotalAccurateTicks = ticksPerFrame;
                     }
                 }
             }
@@ -885,6 +970,11 @@ void emulatorLoop()
             {
 
                 float timeDiffInMilliseconds = (float)skew * 1000000 / TICKS_PER_SEC;
+                if (emulator.waitBehavior == WAIT_HALF)
+                    timeDiffInMilliseconds /= 2;
+                else if (emulator.waitBehavior == WAIT_NONE)
+                    timeDiffInMilliseconds = 1;
+                emulator.waitBehavior = WAIT_FULL;
 
                 // Reset the counters.
                 //
@@ -893,7 +983,6 @@ void emulatorLoop()
                 emuFramesSkipped = 0;
 
                 svcSleepThread ((long)(timeDiffInMilliseconds * 1000));
-
                 skipDrawingFrame = false;
             }
 
@@ -902,6 +991,14 @@ void emulatorLoop()
 	}
 
     snd3dsStopPlaying();
+
+    // Wait for the sound thread to leave the snd3dsMixSamples entirely
+    // to prevent a race condition between the PTMU_GetBatteryChargeState (when
+    // drawing the menu) and GSPGPU_FlushDataCache (in the sound thread).
+    //
+    // (There's probably a better way to do this, but this will do for now)
+    //
+    svcSleepThread(500000);
 }
 
 
@@ -938,6 +1035,9 @@ int main()
     }
 
 quit:
+    if (emulator.emulatorState > 0 && settings3DS.AutoSavestate)
+        impl3dsLoadState(0);
+
     printf("emulatorFinalize:\n");
     emulatorFinalize();
     printf ("Exiting...\n");

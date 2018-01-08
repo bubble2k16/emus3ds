@@ -1,5 +1,8 @@
 #include "common.h"
 #include "palette.h"
+#include "3dsdbg.h"
+#include "3dsopt.h"
+#include "3dsemu.h"
 
 // Put temp debug vars here
 
@@ -570,6 +573,7 @@ void reset_vdc(vdc_struct *vdc)
   vdc->desr = 0;
   vdc->lenr = 0;
   vdc->satb = 0;
+  vdc->copy_sat_hw = 0;
 
   vdc->write_latch = 0xFF;
   vdc->read_latch = 0xFF;
@@ -808,6 +812,8 @@ void vce_data_write_low(u32 value)
 
   if (vce.palette[vce.palette_offset] != palette_entry)
   {
+    render_line_force_flush();
+    
     vce.palette[vce.palette_offset] = palette_entry;
 
     if(((vce.palette_offset & 0x0F) == 0) && (vce.palette_offset < 0x100))
@@ -854,6 +860,8 @@ void vce_data_write_high(u32 value)
 
   if (vce.palette[vce.palette_offset] != palette_entry)
   {
+    render_line_force_flush();
+
     vce.palette[vce.palette_offset] = palette_entry;
 
     if(((vce.palette_offset & 0x0F) == 0) && (vce.palette_offset < 0x100))
@@ -2844,6 +2852,26 @@ void vdc_frame_start(vdc_struct *vdc)
 
 u32 vdc_check_vblank(vdc_struct *vdc)
 {
+  // Originally, the vblank copies the SAT
+  // from VRAM into the internal SAT buffer BEFORE
+  // the hardware renderer renders a block of scanlines. 
+  // 
+  // This caused the renderer to display new SATs but pointing
+  // to an outdated copy of sprite bitmaps.
+  //
+  // Doing this "delays" the copying of the SAT to the next
+  // scanline after the vblank, so that the hardware renderer
+  // can render sprites using the old SATs. 
+  //
+  // This fixes Castlevania Rondo of Blood, but we'll have to
+  // see if other games may suffer from this (?)
+  //
+  if (vdc->copy_sat_hw)
+  {
+    memcpy(vdc->sat_hw, vdc->sat, 512);
+    vdc->copy_sat_hw = 0;
+  }
+
   if(vdc->display_counter == vdc->vblank_line)
   {
     vdc->vblank_active = 1;
@@ -2859,6 +2887,9 @@ u32 vdc_check_vblank(vdc_struct *vdc)
       {
         memcpy(vdc->sat, vdc->vram + vdc->satb, 512);
         update_satb(vdc);
+
+        //if (!config.software_rendering)
+          vdc->copy_sat_hw = 1;
       }
     }
     return 1;
@@ -2926,9 +2957,10 @@ void vdc_line_increment(vdc_struct *vdc)
   }
 }
 
-
 void update_frame_execute(u32 skip)
 {
+  vdc_hw_a.skip = skip;
+  
   s32 hds_cycles;
 
   static u32 check_idle_loop_line = 0;
@@ -2938,6 +2970,8 @@ void update_frame_execute(u32 skip)
 
   do
   {
+    vdc_hw_a.force_flush = false;
+
     if(check_idle_loops && (vce.frame_counter == check_idle_loop_line))
     {
       patch_idle_loop();
@@ -2972,16 +3006,18 @@ void update_frame_execute(u32 skip)
 
     hds_cycles = vdc_a.hds_cycles;
 
-    execute_instructions_timer(hds_cycles);
+    execute_instructions_timer(hds_cycles, false);
 
     vdc_set_effective_byr(&vdc_a);
 
     if(!skip)
     {
-      if (config.software_rendering)
-        render_line();
-      else
-        render_line_hw();
+      //t3dsStartTiming(21, "render_line");
+      //if (config.software_rendering)
+      //  render_line();
+      //else
+       render_line_hw();
+      //t3dsEndTiming(21);
     }
 
     if(vdc_a.vblank_active && (vdc_a.cr & 0x08))
@@ -2992,7 +3028,7 @@ void update_frame_execute(u32 skip)
 
       vdc_a.status |= VDC_STATUS_VBLANK_IRQ;
 
-      execute_instructions_timer(6);
+      execute_instructions_timer(6, false);
       hds_cycles += 6;
 
       if(vdc_a.status & VDC_STATUS_VBLANK_IRQ)
@@ -3000,7 +3036,7 @@ void update_frame_execute(u32 skip)
     }
 
     // Active display
-    execute_instructions_timer(vce.scanline_cycles - hds_cycles);
+    execute_instructions_timer(vce.scanline_cycles - hds_cycles, true);
 
     vdc_line_increment(&vdc_a);
 
@@ -3018,6 +3054,9 @@ void update_frame_execute(u32 skip)
 
 void update_frame_execute_sgx(u32 skip)
 {
+  vdc_hw_a.skip = skip;
+  vdc_hw_b.skip = skip;
+
   s32 hds_cycles;
 
   static u32 check_idle_loop_line = 0;
@@ -3027,6 +3066,8 @@ void update_frame_execute_sgx(u32 skip)
 
   do
   {
+    vdc_hw_a.force_flush = false;
+    
     if(check_idle_loops && (vce.frame_counter == check_idle_loop_line))
     {
       patch_idle_loop();
@@ -3068,13 +3109,16 @@ void update_frame_execute_sgx(u32 skip)
 
     hds_cycles = vdc_a.hds_cycles;
 
-    execute_instructions_timer(hds_cycles);
+    execute_instructions_timer(hds_cycles, false);
 
     vdc_set_effective_byr(&vdc_a);
     vdc_set_effective_byr(&vdc_b);
 
     if(!skip)
-      render_line_sgx();
+    {
+      //render_line_sgx();
+      render_line_sgx_hw();
+    }
       
     if(vdc_a.vblank_active && (vdc_a.cr & 0x08))
     {
@@ -3084,7 +3128,7 @@ void update_frame_execute_sgx(u32 skip)
 
       vdc_a.status |= VDC_STATUS_VBLANK_IRQ;
 
-      execute_instructions_timer(6);
+      execute_instructions_timer(6, false);
       hds_cycles += 6;
 
       if(vdc_a.status & VDC_STATUS_VBLANK_IRQ)
@@ -3100,7 +3144,7 @@ void update_frame_execute_sgx(u32 skip)
     }
 
     // Active display
-    execute_instructions_timer(vce.scanline_cycles - hds_cycles);
+    execute_instructions_timer(vce.scanline_cycles - hds_cycles, true);
 
     vdc_line_increment(&vdc_a);
     vdc_line_increment(&vdc_b);

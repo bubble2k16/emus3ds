@@ -1,5 +1,6 @@
 // Hu6280 CPU emulator.
 
+#include <3ds.h>
 #include "common.h"
 #include "op_list.h"
 
@@ -233,7 +234,7 @@ char mem_names[4][32] = { "zero page (RAM)", "RAM", "ROM", "I/O" };
 }                                                                             \
 
 
-void show_profile_stats(void)
+void show_profile_stats()
 {
   u32 opcode_stats_sorted[512];
   u32 op_number, op_stat;
@@ -496,11 +497,11 @@ char disasmtxt[300];
   update_pc();                                                                \
 }                                                                             \
 
-#define check_pending_interrupts(check_status)                                \
-  if(((check_status & (IRQ_CD | IRQ_VDC | IRQ_TIMER)) & ~irq.enable) &&       \
+#define check_pending_interrupts()                                            \
+  if(((irq.status & (IRQ_CD | IRQ_VDC | IRQ_TIMER)) & ~irq.enable) &&         \
    ((p & (1 << I_FLAG_BIT)) == 0))                                            \
   {                                                                           \
-    u32 irq_status = check_status & ~irq.enable;                              \
+    u32 irq_status = irq.status & ~irq.enable;                                \
     u32 exception_ptr;                                                        \
                                                                               \
     if(irq_status & IRQ_CD)                                                   \
@@ -694,12 +695,12 @@ char disasmtxt[300];
    ((opcode >> 4) - 8))                                                       \
 
 #define op_tsb_reg(var, extra)                                                \
-  u32 result = (var) | a;                                                     \
+  u32 result = var | a;                                                       \
   bit_flags(var, result);                                                     \
   var |= a                                                                    \
 
 #define op_trb_reg(var, extra)                                                \
-  u32 result = (var) & ~a;                                                    \
+  u32 result = var & ~a;                                                      \
   bit_flags(var, result);                                                     \
   var &= ~a                                                                   \
 
@@ -980,7 +981,7 @@ else                                                                          \
   p |= (1 << B_FLAG_BIT);                                                     \
   op_push(p);                                                                 \
                                                                               \
-  p = (p | (1 << I_FLAG_BIT)) & ~((1 << D_FLAG_BIT) | (1 << T_FLAG_BIT));     \
+  p = p | (1 << I_FLAG_BIT) & ~((1 << D_FLAG_BIT) | (1 << T_FLAG_BIT));       \
   load_mem_16(pc, BRK_VECTOR);                                                \
   update_pc();                                                                \
 }                                                                             \
@@ -999,7 +1000,7 @@ else                                                                          \
                                                                               \
   if((p & (1 << I_FLAG_BIT)) == 0)                                            \
   {                                                                           \
-    check_pending_interrupts(irq.status);                                     \
+    check_pending_interrupts();                                               \
   }                                                                           \
 
 
@@ -1067,7 +1068,6 @@ else                                                                          \
 
 #define op_cli(address_mode, address_range)                                   \
   p = p & ~(1 << I_FLAG_BIT);                                                 \
-  cli_captured_irq_status = irq.status;                                       \
   check_pending_interrupts_delay()                                            \
 
 
@@ -1226,6 +1226,7 @@ else                                                                          \
   u32 source, dest;                                                           \
   s32 length;                                                                 \
   u32 saved_source, saved_dest, remaining_length;                             \
+  u32 offset_index = 0;                                                       \
   u8 *source_ptr, *dest_ptr;                                                  \
   fetch_16bit(source);                                                        \
   fetch_16bit(dest);                                                          \
@@ -1283,7 +1284,8 @@ else                                                                          \
 #define op_transfer_check_boundary_dual_down(var)                             \
   if(((var - length) ^ var) & 0xe000)                                         \
   {                                                                           \
-    length = var & 0x1fff;                                                    \
+    /* important bug fix to +1 to length */ \
+    length = (var & 0x1fff) + 1;                                              \
     saved_source = source - length;                                           \
     saved_dest = dest - length;                                               \
   }                                                                           \
@@ -1438,6 +1440,8 @@ else                                                                          \
 // version doesn't really make sense. But it can be added if necessary.
 
 #define op_transfer_loop_tia()                                                \
+  if(mpr_check_ext(dest_ptr))                                                 \
+  {                                                                           \
   io_write_function_ptr *dest_functions =                                     \
    (io_write_function_ptr *)mpr_translate_ext_offset(dest_ptr, dest);         \
   op_transfer_take_cycles_ext(dest);                                          \
@@ -1498,8 +1502,76 @@ else                                                                          \
       offset_index = 1;                                                       \
     }                                                                         \
   }                                                                           \
+  }                                                                           \
+  else                                                                        \
+  {                                                                           \
+  /* this missing part of the TIA instruction */                              \
+  dest_ptr = mpr_translate_offset(dest_ptr, dest);                            \
+  length -= 2;                                                                \
+                                                                              \
+  if(mpr_check_ext(source_ptr))                                               \
+  {                                                                           \
+    op_transfer_take_cycles_ext(dest);                                        \
+    io_read_function_ptr *source_functions =                                  \
+     (io_read_function_ptr *)mpr_translate_ext_offset(source_ptr, source);    \
+                                                                              \
+    /* Ext source and normal dest */                                          \
+    if(offset_index)                                                          \
+    {                                                                         \
+      offset_index = 0;                                                       \
+      dest_ptr[1] = source_functions[0]();                                    \
+      source_functions++;                                                     \
+      length--;                                                               \
+    }                                                                         \
+                                                                              \
+    while(length >= 0)                                                        \
+    {                                                                         \
+      dest_ptr[0] = source_functions[0]();                                    \
+      dest_ptr[1] = source_functions[1]();                                    \
+      source_functions += 2;                                                  \
+      length -= 2;                                                            \
+    }                                                                         \
+                                                                              \
+    if((length + 1) == 0)                                                     \
+    {                                                                         \
+      dest_ptr[0] = source_functions[0]();                                    \
+      offset_index = 1;                                                       \
+    }                                                                         \
+                                                                              \
+  }                                                                           \
+  else                                                                        \
+  {                                                                           \
+    op_transfer_take_cycles();                                                \
+    source_ptr = mpr_translate_offset(source_ptr, source);                    \
+    /* Normal source, normal dest */                                          \
+    if(offset_index)                                                          \
+    {                                                                         \
+      offset_index = 0;                                                       \
+      dest_ptr[1] = source_ptr[0];                                            \
+      source_ptr++;                                                           \
+      length--;                                                               \
+    }                                                                         \
+                                                                              \
+    while(length >= 0)                                                        \
+    {                                                                         \
+      dest_ptr[0] = source_ptr[0];                                            \
+      dest_ptr[1] = source_ptr[1];                                            \
+      source_ptr += 2;                                                        \
+      length -= 2;                                                            \
+    }                                                                         \
+                                                                              \
+    if((length + 1) == 0)                                                     \
+    {                                                                         \
+      dest_ptr[0] = source_ptr[0];                                            \
+      offset_index = 1;                                                       \
+    }                                                                         \
+  }                                                                           \
+  }                                                                           \
+  
 
 #define op_transfer_loop_tin()                                                \
+  if(mpr_check_ext(dest_ptr))                                                 \
+  {                                                                           \
   io_write_function_ptr *dest_function =                                      \
    (io_write_function_ptr *)mpr_translate_ext_offset(dest_ptr, dest);         \
   op_transfer_take_cycles_ext(dest);                                          \
@@ -1527,6 +1599,39 @@ else                                                                          \
       source_ptr++;                                                           \
       length--;                                                               \
     }                                                                         \
+  }                                                                           \
+  }                                                                           \
+  else                                                                        \
+  {                                                                           \
+  /* this missing part of the TIN instruction */                              \
+  dest_ptr = mpr_translate_offset(dest_ptr, dest);                            \
+                                                                              \
+  if(mpr_check_ext(source_ptr))                                               \
+  {                                                                           \
+    op_transfer_take_cycles_ext(dest);                                        \
+    io_read_function_ptr *source_functions =                                  \
+     (io_read_function_ptr *)mpr_translate_ext_offset(source_ptr, source);    \
+                                                                              \
+    /* Ext source and normal dest */                                          \
+    while(length > 0)                                                         \
+    {                                                                         \
+      dest_ptr[0] = source_functions[0]();                                    \
+      source_functions++;                                                     \
+      length--;                                                               \
+    }                                                                         \
+  }                                                                           \
+  else                                                                        \
+  {                                                                           \
+    op_transfer_take_cycles();                                                \
+    source_ptr = mpr_translate_offset(source_ptr, source);                    \
+    /* Normal source, normal dest */                                          \
+    while(length > 0)                                                         \
+    {                                                                         \
+      dest_ptr[0] = source_ptr[0];                                            \
+      source_ptr++;                                                           \
+      length--;                                                               \
+    }                                                                         \
+  }                                                                           \
   }                                                                           \
 
 #define op_transfer_loop_copy(increment)                                      \
@@ -1627,11 +1732,9 @@ else                                                                          \
 }                                                                             \
 
 #define op_tai(address_mode, address_range)                                   \
-  u32 offset_index = 0;                                                       \
   op_transfer_loop(tai)                                                       \
 
 #define op_tia(address_mode, address_range)                                   \
-  u32 offset_index = 0;                                                       \
   op_transfer_loop(tia)                                                       \
 
 #define op_tin(address_mode, address_range)                                   \
@@ -1701,6 +1804,7 @@ else                                                                          \
   op_transfer(increment, fix)                                                 \
 
 */
+
 
 /** Null operations **********************************************************/
 
@@ -1887,37 +1991,25 @@ cpu_struct cpu;
 
 #include "3dsemu.h"
 
-typedef struct
-{
-    bool                isReal3DS;
-    bool                enableDebug;
-    int                 emulatorState;
-} SEmulator;
-
-extern SEmulator emulator;
-
-u32 disasm_pc;
-u32 disasm_pc2;
-u8 disasm_output[500];
-
-
 /*
+u32 disasm_pc;
 #define disasm_opcode \
-  if (emulator.enableDebug) \
+  disasm_pc = ((pc_high << 13) + pc_low) & 0xFFFF; \
+  if (true) \
   { \
-    disasm_pc2 = disasm_pc = ((pc_high << 13) + pc_low) & 0xFFFF; \
-    disasm_instruction(disasm_output, &disasm_pc); \
-    printf ("%4x: %-15s A%02X X%02X Y%02X S%02X\n", disasm_pc2, disasm_output, a, x, y, s); \
-    { DEBUG_WAIT_L_KEY } \
+    print_debug (a, x, y, p, s, disasm_pc, cpu_cycles_remaining); \
   } \
 */
+
 #define disasm_opcode
 
 
-#define op_switch(d_flag, t_flag)       \
+#define op_switch(d_flag, t_flag)                                             \
   disasm_opcode                                                               \
+  perform_step_debug();                                                       \
   fetch_8bit(current_instruction);                                            \
   profile_opcode_type(current_instruction);                                   \
+                                                                              \
   switch(current_instruction)                                                 \
   {                                                                           \
     op_list(d_flag, t_flag);                                                  \
@@ -1940,7 +2032,7 @@ u8 disasm_output[500];
                                                                               \
   } while(cpu_cycles_remaining > 0)                                           \
 
-#ifndef ARM_ARCH
+//#ifndef ARM_ARCH
 
 void execute_instructions(s32 cpu_cycles_remaining)
 {
@@ -1958,7 +2050,6 @@ void execute_instructions(s32 cpu_cycles_remaining)
   u32 pc = cpu.pc;
   u32 p = cpu.p;
   u32 c_flag, v_flag;
-  u32 cli_captured_irq_status;
 
   s32 check_interrupt_cycles = 0xFFFFFFF;
 
@@ -1978,26 +2069,26 @@ void execute_instructions(s32 cpu_cycles_remaining)
   cpu_cycles_remaining -= cpu.extra_cycles;
   cpu.extra_cycles = 0;
 
-  if(cpu.vdc_stalled)
-    return;
-
   if(cpu.cpu_divider == 12)
   {
     cpu.extra_cycles = (u32)cpu_cycles_remaining % 4;
     cpu_cycles_remaining /= 4;
   }
 
+  if(cpu.vdc_stalled)
+    return;
+
   update_pc();
   update_zero_segment();
   extract_flags();
 
-  cpu.alert = 0;
-
   if(cpu.irq_raised)
   {
-    check_pending_interrupts(irq.status);
+    check_pending_interrupts();
     cpu.irq_raised = 0;
   }
+
+  cpu.alert = 0;
 
   reenter_execute_loop:
 
@@ -2016,7 +2107,7 @@ void execute_instructions(s32 cpu_cycles_remaining)
     cpu_cycles_remaining += check_interrupt_cycles;
     check_interrupt_cycles = 0xFFFFFFF;
 
-    check_pending_interrupts(cli_captured_irq_status);
+    check_pending_interrupts();
 
     if(cpu_cycles_remaining > 0)
       goto reenter_execute_loop;
@@ -2039,7 +2130,7 @@ void execute_instructions(s32 cpu_cycles_remaining)
     cpu.extra_cycles = -cpu_cycles_remaining;
 }
 
-#endif
+//#endif
 
 void initialize_cpu()
 {
