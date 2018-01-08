@@ -182,7 +182,7 @@ AccessControlInfo:
   - ir:u
   - csnd:SND
   - ptm:sysm
-  - ir:rst
+ 
  
 SystemControlInfo:
   SaveDataSize: 128KB # It doesn't use any save data.

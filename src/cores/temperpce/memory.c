@@ -365,11 +365,11 @@ void setup_io_tables()
   io_write_function_ptr *current_io_write_function =
    memory.io_write_functions;
 
-  //printf("Initializing I/O tables.\n");
+  printf("Initializing I/O tables.\n");
   // VDC section: 0x0000 to 0x03FF
   if(config.sgx_mode)
   {
-    //printf("Using SGX VDC map.\n");
+    printf("Using SGX VDC map.\n");
     for(i = 0; i < (0x400 / 0x20); i++, current_io_read_function += 0x20,
      current_io_write_function += 0x20)
     {
@@ -1168,7 +1168,7 @@ void setup_hucard_map()
   if(memory.sf2_region == -1)
   {
     // Write protect ROM by redirecting writes to null space
-    //printf("nulling ROM writes\n");
+    printf("nulling ROM writes\n");
     memory_remap_write_null(0x0, 0x80);
 
     for(i = 0x1FF0; i < 0x2000; i++)
@@ -1195,7 +1195,7 @@ void setup_hucard_map()
   {
     if(config.cd_system_type >= CD_SYSTEM_TYPE_V3)
     {
-      //printf("setting up SCD RAM\n");
+      printf("setting up SCD RAM\n");
       for(i = 0x0; i < 0x18; i++)
       {
         memory_map_set(read, i + 0x68, cd.ext_ram + (i * 0x2000));
@@ -1206,18 +1206,18 @@ void setup_hucard_map()
     // Setup Arcade Card
     if(config.cd_system_type == CD_SYSTEM_TYPE_ACD)
     {
-      //printf("setting up Arcade Card\n");
+      printf("setting up Arcade Card\n");
       map_arcade_card();
     }
     else
     {
-      //printf("unmap ACD\n");
+      printf("unmap ACD\n");
       unmap_arcade_card();
     }
   }
   else
   {
-    //printf("unmap ACD\n");
+    printf("unmap ACD\n");
     unmap_arcade_card();
   }
 
@@ -1237,7 +1237,7 @@ void flip_rom()
   // In USA ROMs, the bits in each byte are reversed due to having
   // a different physical pin arrangement.
 
-  //printf("Mirroring bits in USA ROM.\n");
+  printf("Mirroring bits in USA ROM.\n");
 
   // 0000b -> 0000b
   // 0001b -> 1000b
@@ -1304,7 +1304,7 @@ s32 load_syscard()
       break;
   }
 
-  //printf("loading syscard %s\n", syscard_name);
+  printf("loading syscard %s\n", syscard_name);
 
   //sprintf(syscard_path, "%s%csyscards%c%s.bin", config.main_path,
   // DIR_SEPARATOR_CHAR, DIR_SEPARATOR_CHAR, syscard_name);
@@ -1318,7 +1318,7 @@ s32 load_syscard()
     // DIR_SEPARATOR_CHAR, DIR_SEPARATOR_CHAR, syscard_name);
     sprintf(syscard_path, "/3ds/temperpce_3ds/syscards/%s.pce", syscard_name);
 
-    //printf("could not open syscard, trying %s\n", syscard_path);
+    printf("could not open syscard, trying %s\n", syscard_path);
     rom_file = fopen(syscard_path, "rb");
 
     if(rom_file == NULL)
@@ -1343,13 +1343,10 @@ s32 load_syscard()
   return 0;
 }
 
-
-extern char bramSaveFilepath[MAX_PATH];
 void get_bram_path(char *path)
 {
-  strncpy(path, bramSaveFilepath, MAX_PATH - 1);
-  //sprintf(path, "%s%c%s.sav", config.main_path,
-  //  DIR_SEPARATOR_CHAR, config.rom_filename);
+  sprintf(path, "%s%c%s.sav", config.main_path,
+    DIR_SEPARATOR_CHAR, config.rom_filename);
   /*if(config.per_game_bram)
   {
     sprintf(path, "%s%cbram%c%s.sav", config.main_path,
@@ -1377,13 +1374,11 @@ s32 load_rom(char *path)
   #endif
   u8 i;
 
-/*
   if(config.rom_filename[0])
   {
     get_bram_path(path_name);
     save_bram(path_name);
   }
-*/
 
   dot_ptr = strrchr(path, '.');
 
@@ -1397,23 +1392,20 @@ s32 load_rom(char *path)
     {
       if((strlen(path) > 7) && (strcasecmp(dot_ptr - 7, "syscard.bin")))
       {
-        //printf("Load cue, not bin, stupid.\n");
+        printf("Load cue, not bin, stupid.\n");
         strcpy(dot_ptr + 1, "cue");
       }
     }
 
     if(strstr(path, ".cue"))
     {
-      // bug fix to close the rom_file here, otherwise it will never be closed,
-      // and the file handlers will leak.
-      fclose(rom_file);
       if(load_bin_cue(path) == -1)
         return -1;
 
       config.cd_loaded = 1;
     }
 
-    if(strstr(path, "sgx") || strstr(path, "SGX"))
+    if(strstr(path, "sgx"))
       config.sgx_mode = 1;
       
     #ifdef CRC_CHECK
@@ -1453,8 +1445,8 @@ s32 load_rom(char *path)
   }
 
   getcwd(config.rom_directory, MAX_PATH);
-  //printf("got ROM dir %s, name %s\n", config.rom_directory,
-  // config.rom_filename);
+  printf("got ROM dir %s, name %s\n", config.rom_directory,
+   config.rom_filename);
 
   if(!config.cd_loaded)
   {
@@ -1500,7 +1492,7 @@ s32 load_rom(char *path)
 
   if(memory.rom_pages > 0x80)
   {
-    //printf("loading Street Fighter 2\n");
+    printf("loading Street Fighter 2\n");
     memory.sf2_region = 0;
   }
   else
@@ -1510,7 +1502,7 @@ s32 load_rom(char *path)
 
   if(!memcmp(memory.hucard_rom + 0x1F26, "POPULOUS", strlen("POPULOUS")))
   {
-    //printf("loading Populous\n");
+    printf("loading Populous\n");
     config.populous_loaded = 1;
   }
   else
@@ -1525,13 +1517,9 @@ s32 load_rom(char *path)
 
   get_bram_path(path_name);
   if(stat(path_name, &sb))
-  {
     create_bram(path_name);
-  }
   else
-  {
     load_bram(path_name);
-  }
 
   if(config.cd_loaded)
   {

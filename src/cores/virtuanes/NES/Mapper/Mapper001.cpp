@@ -96,9 +96,9 @@ void	Mapper001::Reset()
 
 void	Mapper001::Write( WORD addr, BYTE data )
 {
+//	DEBUGOUT( "MMC1 %04X=%02X\n", addr&0xFFFF,data&0xFF );
 
 	if( wram_patch == 1 && addr == 0xBFFF ) {
-	DEBUGOUT( "MMC1 %04X=%02X\n", addr&0xFFFF,data&0xFF );
 		wram_count++;
 		wram_bank += data&0x01;
 		if( wram_count == 5 ) {

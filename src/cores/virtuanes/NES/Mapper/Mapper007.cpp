@@ -16,9 +16,6 @@ void	Mapper007::Reset()
 	if( crc == 0x09874777 ) {	// Marble Madness(U)
 		nes->SetRenderMethod( NES::TILE_RENDER );
 	}
-	if( crc == 0xfad97471 ) {	// ริบýณต(unif - [CC-21])
-		patch = 2;
-    }
 
 	if( crc == 0x279710DC		// Battletoads (U)
 	 || crc == 0xCEB65B06 ) {	// Battletoads Double Dragon (U)
@@ -29,16 +26,10 @@ void	Mapper007::Reset()
 
 void	Mapper007::Write( WORD addr, BYTE data )
 {
-	if( patch == 2 )
-	{
-		SetVROM_8K_Bank( addr & 0x1 );
-		if( addr & 0x2 ) SetVRAM_Mirror( VRAM_MIRROR4H );
-		else		 SetVRAM_Mirror( VRAM_MIRROR4L );
-	}else{
-		SetPROM_32K_Bank( (data & 0x07) );
-		if( !patch ) {
-			if( data & 0x10 ) SetVRAM_Mirror( VRAM_MIRROR4H );
-			else		  SetVRAM_Mirror( VRAM_MIRROR4L );
-		}
+	SetPROM_32K_Bank( data & 0x07 );
+
+	if( !patch ) {
+		if( data & 0x10 ) SetVRAM_Mirror( VRAM_MIRROR4H );
+		else		  SetVRAM_Mirror( VRAM_MIRROR4L );
 	}
 }

@@ -27,6 +27,8 @@ typedef enum
 
 typedef struct
 {
+  u64 global_cycles;
+
   // These are carefully arranged to align well and make load/store
   // efficient. Don't mess with the order.
   u8 a;
@@ -39,15 +41,13 @@ typedef struct
 
   u32 irq_raised;
 
-  u64 global_cycles;
-
   u32 extra_cycles;
 
-  // Not saved in savestate, right now just here for testing
+  // Not saved in savestate.
   u32 alert;
   u32 vdc_stalled;
   u32 cycles_remaining;
-} __attribute__((__packed__)) cpu_struct;
+} cpu_struct;
 
 extern cpu_struct cpu;
 
@@ -58,7 +58,7 @@ EXTERN_C_START
 void initialize_cpu();
 void reset_cpu();
 void execute_instructions(s32 cycles_to_execute);
-void execute_instructions_timer(s32 cpu_cycles_remaining, bool emulateCDHardware);
+void execute_instructions_timer(s32 cpu_cycles_remaining);
 
 #define op_push(val)                                                          \
   stack_page[s] = val;                                                        \

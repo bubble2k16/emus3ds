@@ -12,100 +12,6 @@ static char *skip_whitespace(char *str)
   return str;
 }
 
-// For CD read-ahead
-
-
-cd_read_ahead_struct cd_read_ahead;
-
-
-void read_ahead_fseek(FILE *fp, int pos, int origin) 
-{
-  fseek(fp, pos, origin);
-  //printf ("rafseek %x, %d, %d\n", fp, pos, origin);
-
-  if (cd_read_ahead.fptr != fp)
-  {
-    cd_read_ahead.fptr = fp;
-
-    if (origin == SEEK_SET)
-      cd_read_ahead.seek_pos = pos;
-    else
-      cd_read_ahead.seek_pos = 0x7fffffff;
-
-    cd_read_ahead.buffer_pos = 0;
-    cd_read_ahead.buffer_length = 0;
-  }
-  else
-  {
-    if (origin == SEEK_SET)
-    {
-      if (cd_read_ahead.seek_pos != 0x7fffffff &&
-        cd_read_ahead.seek_pos <= pos && 
-        pos < (cd_read_ahead.seek_pos + cd_read_ahead.buffer_length))
-      {
-        //printf ("GS %d\n", pos - cd_read_ahead.seek_pos);
-        cd_read_ahead.buffer_pos = pos - cd_read_ahead.seek_pos;
-      }
-      else
-      {
-        //printf ("GN\n");
-        cd_read_ahead.seek_pos = pos;
-        cd_read_ahead.buffer_pos = 0;
-        cd_read_ahead.buffer_length = 0;
-      }
-    }
-    else
-    {
-      //printf ("R\n");
-      cd_read_ahead.seek_pos = -1;
-      cd_read_ahead.buffer_pos = 0;
-      cd_read_ahead.buffer_length = 0;
-    }
-  }
-
-}
-
-int read_ahead_fread(void *dest_buffer, int size, int count, FILE *fp, bool read_ahead) 
-{
-  //printf ("rafread %x, %d\n", fp, size);
-  if (!read_ahead)
-  {
-    cd_read_ahead.buffer_length = 0;
-    cd_read_ahead.buffer_pos = 0; 
-    cd_read_ahead.fptr = fp; 
-    return fread(dest_buffer, size, count, fp);
-  }
-  else
-  {
-    int total_size = (size) * (count);  // count is always 1 in this emulator
-    if (cd_read_ahead.fptr != fp || 
-        (cd_read_ahead.buffer_pos + total_size) > cd_read_ahead.buffer_length) 
-    { 
-      //printf ("fread\n"),
-      //fread(cd_read_ahead.buffer, CD_READ_AHEAD_BUFFER_SIZE, 1, fp); 
-      //printf ("seek: %d\n", cd_read_ahead.buffer_pos + cd_read_ahead.seek_pos);
-      fseek(fp, cd_read_ahead.buffer_pos + cd_read_ahead.seek_pos, SEEK_SET);
-      cd_read_ahead.seek_pos = cd_read_ahead.buffer_pos + cd_read_ahead.seek_pos;
-      cd_read_ahead.buffer_length = fread(cd_read_ahead.buffer, 1, CD_READ_AHEAD_BUFFER_SIZE, fp); 
-      //cd_read_ahead.buffer_length = CD_READ_AHEAD_BUFFER_SIZE;
-      cd_read_ahead.buffer_pos = 0; 
-      cd_read_ahead.fptr = fp; 
-    } 
-    if (cd_read_ahead.buffer_pos + total_size > cd_read_ahead.buffer_length) 
-    {
-      total_size = cd_read_ahead.buffer_length - cd_read_ahead.buffer_pos; 
-    }
-    memcpy(dest_buffer, &cd_read_ahead.buffer[cd_read_ahead.buffer_pos], total_size); 
-    cd_read_ahead.buffer_pos += total_size; 
-
-    if (total_size == size * count)
-      return 1;
-    else
-      return 0;
-  }
-}
-
-
 #define address8(base, offset)                                                \
   *((u8 *)((u8 *)base + (offset)))                                            \
 
@@ -122,8 +28,7 @@ wav_info_struct *wav_open(FILE *fp)
   u8 *fmt_header = wav_header + 0x0C;
   wav_info_struct *wav_info;
 
-  //printf ("fread hdr: 36\n");
-  read_ahead_fread(wav_header, 36, 1, fp, true);
+  fread(wav_header, 36, 1, fp);
   // RIFF type chunk
   if(strncmp((char *)riff_header + 0x00, "RIFF", 4) ||
    strncmp((char *)riff_header + 0x08, "WAVE", 4) ||
@@ -147,16 +52,16 @@ wav_info_struct *wav_open(FILE *fp)
    ((wav_info->bytes_per_sample != 1) &&
     (wav_info->bytes_per_sample != 2)))
   {
-    //printf("rejected wave file: bad format\n");
+    printf("rejected wave file: bad format\n");
     free(wav_info);
     return NULL;
   }
 
   wav_info->frequency_div = 44100 / wav_info->frequency;
 
-  //printf("loaded wav file, channels: %d, frequency: %d,"
-  // " bytes per sample: %d\n", wav_info->channels, wav_info->frequency,
-  // wav_info->bytes_per_sample);
+  printf("loaded wav file, channels: %d, frequency: %d,"
+   " bytes per sample: %d\n", wav_info->channels, wav_info->frequency,
+   wav_info->bytes_per_sample);
 
   wav_info->bytes_per_sector =
    588 * wav_info->channels * wav_info->bytes_per_sample *
@@ -241,7 +146,7 @@ s32 wav_decode_sector(FILE *wav_file, wav_info_struct *wav_info,
 
   if(switch_factor == 0xF)
   {
-    if(read_ahead_fread(buffer, 2352, 1, wav_file, true) == 1)
+    if(fread(buffer, 2352, 1, wav_file) == 1)
       return 0;
   }
   else
@@ -252,7 +157,7 @@ s32 wav_decode_sector(FILE *wav_file, wav_info_struct *wav_info,
     u32 sample_input_index;
     u32 sample_output_index;
 
-    read_ahead_fread(_sector_buffer, wav_info->bytes_per_sector, 1, wav_file, true);
+    fread(_sector_buffer, wav_info->bytes_per_sector, 1, wav_file);
 
     switch(switch_factor)
     {
@@ -304,7 +209,7 @@ s32 wav_decode_sector(FILE *wav_file, wav_info_struct *wav_info,
 s32 wav_seek(FILE *wav_file, wav_info_struct *wav_info, u32 offset)
 {
   offset = offset * wav_info->bytes_per_sector / 2352;
-  read_ahead_fseek(wav_file, 44 + offset, SEEK_SET);
+  fseek(wav_file, 44 + offset, SEEK_SET);
   return 0;
 }
 
@@ -312,9 +217,9 @@ s32 wav_seek(FILE *wav_file, wav_info_struct *wav_info, u32 offset)
 s32 wav_size(FILE *wav_file, wav_info_struct *wav_info)
 {
   u32 raw_size = ftell(wav_file);
-  read_ahead_fseek(wav_file, 0, SEEK_END);
+  fseek(wav_file, 0, SEEK_END);
   raw_size = ftell(wav_file);
-  read_ahead_fseek(wav_file, 0, SEEK_SET);
+  fseek(wav_file, 0, SEEK_SET);
   raw_size -= 44;
 
   if(wav_info->channels == 1)
@@ -369,12 +274,12 @@ FILE *fopen_scan_dir_case_insensitive(char *file_name, char *open_mode)
   getcwd(path_buffer, MAX_PATH);
   current_dir = opendir(path_buffer);
 
-  //printf("performing directory scan to try to find match for %s (dir %s)\n",
-  // file_name, path_buffer);
+  printf("performing directory scan to try to find match for %s (dir %s)\n",
+   file_name, path_buffer);
 
   if(separator_pos)
   {
-    //printf("stripping Windows absolute path from filename\n");
+    printf("stripping Windows absolute path from filename\n");
     strcpy(path_buffer, separator_pos + 1);
     str_to_lower(file_name_lower_case, path_buffer);
     file_name = path_buffer;
@@ -390,12 +295,12 @@ FILE *fopen_scan_dir_case_insensitive(char *file_name, char *open_mode)
     if(current_file)
     {
       str_to_lower(current_file_name, current_file->d_name);
-      //printf("checking %s against %s\n", current_file_name, file_name_lower_case);
+      printf("checking %s against %s\n", current_file_name, file_name_lower_case);
 
       if(!strcmp(file_name_lower_case, current_file_name))
       {
         FILE *matched_file;
-        //printf("found a match (%s)\n", current_file->d_name);
+        printf("found a match (%s)\n", current_file->d_name);
         matched_file = fopen(current_file->d_name, open_mode);
         closedir(current_dir);
         return matched_file;
@@ -490,7 +395,7 @@ void track_file_seek(cd_track_file_struct *track_file, u32 offset)
     switch(track_file->type)
     {
       case TRACK_FILE_TYPE_BINARY:
-        read_ahead_fseek(track_file->file_handle, offset, SEEK_SET);
+        fseek(track_file->file_handle, offset, SEEK_SET);
         break;
 
       case TRACK_FILE_TYPE_WAVE:
@@ -511,12 +416,12 @@ void track_file_seek(cd_track_file_struct *track_file, u32 offset)
 }
 
 void track_file_read(cd_track_file_struct *track_file, u8 *buffer,
- u32 length, cd_track_struct *track)
+ u32 length)
 {
   switch(track_file->type)
   {
     case TRACK_FILE_TYPE_BINARY:
-      read_ahead_fread(buffer, length, 1, track_file->file_handle, true);
+      fread(buffer, length, 1, track_file->file_handle);
       break;
 
     case TRACK_FILE_TYPE_WAVE:
@@ -568,9 +473,9 @@ u32 track_file_size(cd_track_file_struct *track_file)
   switch(track_file->type)
   {
     case TRACK_FILE_TYPE_BINARY:
-      read_ahead_fseek(track_file->file_handle, 0, SEEK_END);
+      fseek(track_file->file_handle, 0, SEEK_END);
       track_size = ftell(track_file->file_handle);
-      read_ahead_fseek(track_file->file_handle, 0, SEEK_SET);
+      fseek(track_file->file_handle, 0, SEEK_SET);
       return track_size;
 
     case TRACK_FILE_TYPE_WAVE:
@@ -605,7 +510,7 @@ s32 load_bin_cue(char *cue_file_name)
 
   close_bin_cue();
 
-  //printf("loading cue file %s\n", cue_file_name);
+  printf("loading cue file %s\n", cue_file_name);
 
   if(cue_file)
   {
@@ -637,7 +542,7 @@ s32 load_bin_cue(char *cue_file_name)
     if(separator_pos)
     {
       *separator_pos = 0;
-      //printf("changing directory to %s\n", cue_file_dir);
+      printf("changing directory to %s\n", cue_file_dir);
       chdir(cue_file_dir);
       *separator_pos = DIR_SEPARATOR_CHAR;
     }
@@ -811,7 +716,7 @@ s32 load_bin_cue(char *cue_file_name)
     next_physical_track = cd_bin.physical_tracks + 1;
     global_sector_offset = 0;
 
-    //printf("Done parsing cue, calculating physical offsets and sizes:\n");
+    printf("Done parsing cue, calculating physical offsets and sizes:\n");
 
     for(current_file = 0; current_file < num_files; current_file++)
     {
@@ -854,20 +759,20 @@ s32 load_bin_cue(char *cue_file_name)
       next_physical_track++;
     }
 
-    //printf("finished loading cue file %s\n", cue_file_name);
-    //printf("first track: %d, last track: %d\n", cd_bin.first_track,
-    // cd_bin.last_track);
+    printf("finished loading cue file %s\n", cue_file_name);
+    printf("first track: %d, last track: %d\n", cd_bin.first_track,
+     cd_bin.last_track);
 
     for(i = cd_bin.first_track; i <= cd_bin.last_track; i++)
     {
-      //printf("track %d:\n", i);
+      printf("track %d:\n", i);
       if(cd_bin.logical_tracks[i] == NULL)
       {
-        //printf("  (invalid)\n");
+        printf("  (invalid)\n");
       }
       else
       {
-        /*printf("  file %p (%d)\n",
+        printf("  file %p (%d)\n",
          cd_bin.track_files + cd_bin.logical_tracks[i]->file_number,
          cd_bin.logical_tracks[i]->file_number);
         printf("  physical offset 0x%x\n",
@@ -877,7 +782,7 @@ s32 load_bin_cue(char *cue_file_name)
         printf("  sector count %x\n",
          cd_bin.logical_tracks[i]->sector_count);
         printf("  sector size %d\n",
-         cd_bin.logical_tracks[i]->sector_size);*/
+         cd_bin.logical_tracks[i]->sector_size);
       }
     }
 
@@ -891,7 +796,7 @@ s32 load_bin_cue(char *cue_file_name)
   }
 
  bin_cue_load_error:
-  //printf("Could not load CD image.\n");
+  printf("Could not load CD image.\n");
   return -1;
 }
 
@@ -941,7 +846,7 @@ s32 bin_cue_read_sector(u8 *sector_buffer, u32 sector_offset, u32 offset,
      target_track->physical_offset +
      (target_track->sector_size * track_sector_offset) + offset);
     track_file_read(cd_bin.track_files + target_track->file_number,
-     sector_buffer, size, target_track);
+     sector_buffer, size);
   }
   else
   {

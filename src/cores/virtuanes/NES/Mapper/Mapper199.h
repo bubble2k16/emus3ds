@@ -20,11 +20,12 @@ public:
 	void	LoadState( LPBYTE p );
 
 protected:
-	BYTE	reg[8], prg[4], chr[8];
-
+	BYTE	reg[8];
+	BYTE	prg[4];
+	BYTE	chr[8];
 	BYTE	we_sram;
-	BYTE	JMaddr, JMaddrDAT[3];
 
+	BYTE	irq_type;
 	BYTE	irq_enable;
 	BYTE	irq_counter;
 	BYTE	irq_latch;

@@ -10,10 +10,9 @@ protected:
 	void (*_power)(void);
 	void (*_reset)(void);
 	void (*_restore)(int);
-	void (*_clock)(void);
 
 public:
-	MapperFCEUX( NES* parent, void (*power)(void), void (*reset)(void), void (*restore)(int), void (*clock)(int), SFORMAT *stateRegs ) : Mapper(parent) 
+	MapperFCEUX( NES* parent, void (*power)(void), void (*reset)(void), void (*restore)(int), SFORMAT *stateRegs ) : Mapper(parent) 
     {
         SetReadHandler(0x0000, 0xFFFF, ANull);
         SetWriteHandler(0x0000, 0xFFFF, BNull);
@@ -22,7 +21,6 @@ public:
         _reset = reset;
         _restore = restore;
         _stateRegs = stateRegs;
-        _clock = clock;
 
     }
 
@@ -56,12 +54,6 @@ public:
 	void	ExWrite( WORD addr, BYTE data ) 
     {
         BWrite[addr](addr, data);
-    }
-    
-	void	Clock( INT cycles ) 
-    {
-        if (_clock)
-            _clock();
     }
     
 

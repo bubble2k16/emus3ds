@@ -14,21 +14,6 @@
 // For compatibility with FCEUX mappers
 // 
 int	PRGsize[32];
-u8 *PRGptr[32];
-int	PRGram[32];
-int	PRGmask2[32];
-int	PRGmask4[32];
-int	PRGmask8[32];
-int	PRGmask16[32];
-int	PRGmask32[32];
-
-int	CHRsize[32];
-u8 *CHRptr[32];
-int	CHRram[32];
-int	CHRmask1[32];
-int	CHRmask2[32];
-int	CHRmask4[32];
-int	CHRmask8[32];
 
 
 // For compatibility with FCEUX mappers
@@ -62,95 +47,6 @@ void	setprg32 ( WORD A, WORD bank )
 	}
 }
 
-
-// For compatibility with FCEUX mappers
-// 
-void setpageptr(int s, uint32 A, uint8 *p, int ram)
-{
-	uint32 AB = A >> 11;
-	uint32 bank = A >> 13;
-	int x;
-
-	if (p)
-    {
-		for (x = (s >> 3) - 1; x >= 0; x--) 
-        {
-			//PRGIsRAM[AB + x] = ram;
-			//Page[AB + x] = p - A;
-            SetPROM_Bank( bank + x, RAM + (x * 0x2000), ram ? BANKTYPE_RAM : BANKTYPE_ROM );
-		}
-    }
-	else
-    {
-        printf ("setpageptr, p = 0\n");
-        /*
-		for (x = (s >> 1) - 1; x >= 0; x--) {
-			PRGIsRAM[AB + x] = 0;
-			Page[AB + x] = 0;
-
-            SetPROM_Bank( bank, RAM, ram ? BANKTYPE_RAM : BANKTYPE_ROM );
-		} 
-        */   
-    }
-}
-
-
-void setprg8r(int r, uint32 A, uint32 V) {
-	if (PRGsize[r] >= 8192) 
-    {
-		V &= PRGmask8[r];
-		setpageptr(8, A, PRGptr[r] ? (&PRGptr[r][V << 13]) : 0, PRGram[r]);
-	} 
-    else 
-    {
-        printf ("setprg32 not supported for size < 8192\n");
-        /*
-		uint32 VA = V << 2;
-		int x;
-		for (x = 0; x < 4; x++)
-			setpageptr(2, A + (x << 11), PRGptr[r] ? (&PRGptr[r][((VA + x) & PRGmask2[r]) << 11]) : 0, PRGram[r]);
-        */
-	}
-}
-
-
-void setprg16r(int r, uint32 A, uint32 V) {
-	if (PRGsize[r] >= 16384) 
-    {
-		V &= PRGmask16[r];
-		setpageptr(16, A, PRGptr[r] ? (&PRGptr[r][V << 14]) : 0, PRGram[r]);
-	} 
-    else 
-    {
-        printf ("setprg32 not supported for size < 16384\n");
-        /*
-		uint32 VA = V << 3;
-		int x;
-
-		for (x = 0; x < 8; x++)
-			setpageptr(2, A + (x << 11), PRGptr[r] ? (&PRGptr[r][((VA + x) & PRGmask2[r]) << 11]) : 0, PRGram[r]);
-        */
-	}
-}
-
-void setprg32r(int r, uint32 A, uint32 V) {
-	if (PRGsize[r] >= 32768) 
-    {
-		V &= PRGmask32[r];
-		setpageptr(32, A, PRGptr[r] ? (&PRGptr[r][V << 15]) : 0, PRGram[r]);
-	} 
-    else 
-    {
-        printf ("setprg32 not supported for size < 32768\n");
-        /*
-		uint32 VA = V << 4;
-		int x;
-
-		for (x = 0; x < 16; x++)
-			setpageptr(2, A + (x << 11), PRGptr[r] ? (&PRGptr[r][((VA + x) & PRGmask2[r]) << 11]) : 0, PRGram[r]);
-        */
-	}
-}
 
 // For compatibility with FCEUX mappers
 // 
@@ -253,30 +149,4 @@ void SetWriteHandler(s32 start, s32 end, writefunc func)
 	for (x = end; x >= start; x--) {
 		BWrite[x] = func;
 	}
-}
-
-
-void SetupCartPRGMapping(int chip, uint8 *p, uint32 size, int ram) {
-	PRGptr[chip] = p;
-	PRGsize[chip] = size;
-
-	PRGmask2[chip] = (size >> 11) - 1;
-	PRGmask4[chip] = (size >> 12) - 1;
-	PRGmask8[chip] = (size >> 13) - 1;
-	PRGmask16[chip] = (size >> 14) - 1;
-	PRGmask32[chip] = (size >> 15) - 1;
-
-	PRGram[chip] = ram ? 1 : 0;
-}
-
-void SetupCartCHRMapping(int chip, uint8 *p, uint32 size, int ram) {
-	CHRptr[chip] = p;
-	CHRsize[chip] = size;
-
-	CHRmask1[chip] = (size >> 10) - 1;
-	CHRmask2[chip] = (size >> 11) - 1;
-	CHRmask4[chip] = (size >> 12) - 1;
-	CHRmask8[chip] = (size >> 13) - 1;
-
-	CHRram[chip] = ram;
 }

@@ -50,7 +50,7 @@ INT	i;
 		BG_MEM_PAGE[i] = i;
 	}
 
-	// SRAMÝ’è
+	// SRAM�ݒ�
 	SetBank_SRAM( 3, 0 );
 
 	sram_size = 0;

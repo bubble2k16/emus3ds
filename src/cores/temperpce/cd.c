@@ -1,5 +1,4 @@
 #include "common.h"
-#include "3dsemu.h"
 
 #ifdef GP2X_OR_WIZ_BUILD
 
@@ -61,8 +60,6 @@ scsi_command_struct scsi_commands[256];
   cd.data_buffer_top = 0;                                                     \
   cd.data_buffer_bytes_written = 0                                            \
 
-
-extern cd_read_ahead_struct cd_read_ahead;
 
 void cd_raise_event(u32 event)
 {
@@ -253,7 +250,7 @@ void scsi_command_set_audio_start_pos()
   // Bug fix: Why was this not here?
   // Without this, all games that play CD audio freezes entirely.
   //
-  //cd_set_status(SCSI_STATUS_MESSAGE_GOOD);
+  cd_set_status(SCSI_STATUS_MESSAGE_GOOD);
 }
 
 void scsi_command_set_audio_end_pos()
@@ -745,7 +742,6 @@ void cd_enable_bram(u32 value)
   if(value & 0x80)
   {
     cd.bram_enable = 1;
-    cd.uses_bram = true;
     memory_remap_read_write(0xF7, 1, cd.bram, cd.bram);
   }
 }
@@ -894,14 +890,7 @@ void initialize_cd()
   // For now, this is about 800ms
   cd.access_sector_cycle_interval = (u32)(MASTER_CLOCK_RATE * 0.8);
 
-  cd.audio_buffer = malloc(CD_AUDIO_BUFFER_SIZE * 4);
-
   initialize_access_factors();
-}
-
-void close_cd()
-{
-  if (cd.audio_buffer) free(cd.audio_buffer);
 }
 
 void reset_cd()
@@ -913,8 +902,6 @@ void reset_cd()
   memset(cd.cdda_cache, 0, 2352);
 
   memset(cd.command_buffer, 0, 16);
-
-  memset(cd.audio_buffer, 0, CD_AUDIO_BUFFER_SIZE * 4);
 
   cd.last_read_cycles = 0;
   cd.last_cdda_cycles = 0;
@@ -949,9 +936,6 @@ void reset_cd()
   cd.cdda_start_last_cycles = 0xFFFFFFFF;
   cd.cdda_read_offset = 0;
 
-  cd.cdda_audio_buffer_index = 0;
-  cd.cdda_audio_read_buffer_index = 0;
-
   cd.message = 0;
   cd.status_sent = 0;
   cd.message_sent = 0;
@@ -962,14 +946,7 @@ void reset_cd()
   cd.additional_sense_code_qualifier = 0;
   cd.field_replaceable_unit_code = 0;
 
-  //cd_read_ahead.fptr = NULL;
-  //cd_read_ahead.buffer_pos = 0;
-  //cd_read_ahead.buffer_length = 0;
-  //memset(cd_read_ahead.buffer, 0, CD_READ_AHEAD_BUFFER_SIZE);
-
   cd_full_volume();
-
-  cd.uses_bram = false;
 }
 
 void update_cd_read()
@@ -1031,14 +1008,9 @@ void update_cd_read()
   cd.last_read_cycles += clock_delta;
 }
 
-#define CD_SYNC_SAMPLES (735 * 2 * 2)   // 2 frames in advance   
-#include "3dsopt.h"
 void update_cdda()
 {
-  //t3dsStartTiming(60, "update_cdda");
-  s32 audio_buffer_index = cd.cdda_audio_buffer_index;
-  
-  s64 clock_delta =
+  s32 clock_delta =
    (cpu.global_cycles << step_fractional_bits_clock) - cd.last_cdda_cycles;
   cd.last_cdda_cycles += clock_delta;
 
@@ -1070,26 +1042,6 @@ void update_cdda()
   if((cd.cdda_status == CDDA_STATUS_PLAYING) && (!cd.cdda_access_cycles))
   {
     s32 sample_l, sample_r;
-
-    // Check if we are generating too slowly, if so,
-    // we generate samples 1 sec later.
-    //
-    /*if (clock_delta >= 0)
-    {
-      int cd_diff = audio_buffer_index - cd.cdda_audio_read_buffer_index;
-      if (cd_diff < 0)
-        cd_diff += CD_AUDIO_BUFFER_SIZE;
-      if (cd_diff == 0)
-      {
-        // Generate the sound a few frames later
-        for (int i = 0; i < CD_SYNC_SAMPLES / 2; i++)
-        {
-          cd.audio_buffer[audio_buffer_index] = 0;
-          cd.audio_buffer[audio_buffer_index + 1] = 0;
-          audio_buffer_index = (audio_buffer_index + 2) % CD_AUDIO_BUFFER_SIZE;
-        }
-      }
-    }*/
 
     while(clock_delta >= 0)
     {
@@ -1134,41 +1086,14 @@ void update_cdda()
       sample_l = cd.cdda_cache[cd.cdda_read_offset];
       sample_r = cd.cdda_cache[cd.cdda_read_offset + 1];
 
-      /*
       audio.buffer[cd.cdda_audio_buffer_index] +=
        sample_l * cd.cdda_volume;
       audio.buffer[cd.cdda_audio_buffer_index + 1] +=
        sample_r * cd.cdda_volume;
-       */
-      cd.audio_buffer[audio_buffer_index] =
-       sample_l * cd.cdda_volume;
-      cd.audio_buffer[audio_buffer_index + 1] =
-       sample_r * cd.cdda_volume;
-      cd.has_samples = true;
 
-      /*FILE *fp = fopen("snd.raw", "ab");
-      int samples[2] = { cd.audio_buffer[audio_buffer_index] >> 5, cd.audio_buffer[audio_buffer_index + 1] >> 5 };
-      fwrite(samples, 4, 1, fp);
-      fclose(fp);*/
-       
       cd.cdda_read_offset += 2;
-
-      //cd.cdda_audio_buffer_index =
-      // (cd.cdda_audio_buffer_index + 2) % AUDIO_BUFFER_SIZE;
-      audio_buffer_index =
-       (audio_buffer_index + 2) % CD_AUDIO_BUFFER_SIZE;
-
-      // If we are too fast, hold on for a while
-      if (emulator.isReal3DS && !emulator.fastForwarding)
-      {
-        int wait_count = 64;
-        while (audio_buffer_index == cd.cdda_audio_read_buffer_index && wait_count)
-        {
-          svcSleepThread((long)100000);
-          wait_count--;
-          //printf (".");
-        }
-      }
+      cd.cdda_audio_buffer_index =
+       (cd.cdda_audio_buffer_index + 2) % AUDIO_BUFFER_SIZE;
 
       cd.cdda_cycles -= psg.clock_step;
       clock_delta -= psg.clock_step;
@@ -1176,31 +1101,23 @@ void update_cdda()
       if(cd.cdda_cycles < 0)
         break;
     }
-
-    
   }
 
   while(clock_delta >= 0)
   {
-    //cd.cdda_audio_buffer_index =
-    // (cd.cdda_audio_buffer_index + 2) % AUDIO_BUFFER_SIZE;
-    //audio_buffer_index =
-    // (audio_buffer_index + 2) % CD_AUDIO_BUFFER_SIZE;
+    cd.cdda_audio_buffer_index =
+     (cd.cdda_audio_buffer_index + 2) % AUDIO_BUFFER_SIZE;
 
     clock_delta -= psg.clock_step;
   }
 
   cd.last_cdda_cycles -= clock_delta;
-
-  cd.cdda_audio_buffer_index = audio_buffer_index;
-
-  //t3dsEndTiming(60);
 }
 
 void save_bram(char *path)
 {
   FILE *bram_file = fopen(path, "wb");
-  //printf("saving bram %s...\n", path);
+  printf("saving bram %s...\n", path);
   fwrite(cd.bram, 1024 * 8, 1, bram_file);
   fclose(bram_file);
 }
@@ -1208,7 +1125,7 @@ void save_bram(char *path)
 void load_bram(char *path)
 {
   FILE *bram_file = fopen(path, "rb");
-  //printf("loading bram %s\n", path);
+  printf("loading bram %s\n", path);
   fread(cd.bram, 1024 * 8, 1, bram_file);
   fclose(bram_file);
 }
@@ -1225,7 +1142,7 @@ void create_bram(char *path)
   cd.bram[6] = 0x10;
   cd.bram[7] = 0x80;
 
-  //save_bram(path);
+  save_bram(path);
 }
 
 void dump_cd_status()

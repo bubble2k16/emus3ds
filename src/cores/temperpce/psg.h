@@ -92,7 +92,7 @@ void initialize_psg();
 void reset_psg();
 void update_psg();
 void audio_exit();
-void render_psg(int num_samples, bool fastForward);
+void render_psg(int num_samples);
 
 void psg_load_savestate(savestate_load_type savestate_file);
 void psg_store_savestate(savestate_store_type savestate_file);

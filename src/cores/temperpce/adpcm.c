@@ -1,5 +1,4 @@
 #include "common.h"
-#include "3dsemu.h"
 
 adpcm_struct adpcm;
 
@@ -16,7 +15,7 @@ u16 adpcm_step_values[49] =
 
 s32 adpcm_table_move[8] = { -1, -1, -1, -1, 2, 4, 6, 8 };
 
-inline __attribute__((always_inline)) s32 adpcm_convert_sample(u32 adpcm_code)
+s32 adpcm_convert_sample(u32 adpcm_code)
 {
   s32 step_index = adpcm.step_index;
   u32 step_value = adpcm_step_values[step_index];
@@ -253,20 +252,12 @@ void adpcm_fade_out(u32 ms)
 
 void initialize_adpcm()
 {
-  adpcm.audio_buffer = malloc(ADPCM_AUDIO_BUFFER_SIZE * 4);
-}
 
-void close_adpcm()
-{
-  if (adpcm.audio_buffer) free(adpcm.audio_buffer);
 }
-
 
 void reset_adpcm()
 {
   memset(adpcm.sample_ram, 0, 64 * 1024);
-  memset(adpcm.audio_buffer, 0, ADPCM_AUDIO_BUFFER_SIZE * 4);
-
   adpcm.last_cycles = 0;
   adpcm.last_dma_cycles = 0;
 
@@ -291,9 +282,6 @@ void reset_adpcm()
 
   adpcm.fade_cycle_interval = 0;
   adpcm.fade_cycles = 0;
-
-  adpcm.audio_buffer_index = 0;
-  adpcm.audio_read_buffer_index = 0;
 
   adpcm_playback_rate(0);
   adpcm_full_volume();
@@ -335,28 +323,22 @@ void update_adpcm_dma()
   }
 }
 
-#define ADPCM_SYNC_SAMPLES (735 * 2 * 2)  // 2 frames in advance
-#include "3dsopt.h"
-
 void update_adpcm()
 {
-  s32 clock_delta =
+  u32 clock_delta =
    (cpu.global_cycles << step_fractional_bits_clock) - adpcm.last_cycles;
 
   if(clock_delta < 0)
-  {
     return;
-  }
 
-  //t3dsStartTiming(61, "update_adpcm");
-  register s32 clocks_remaining = clock_delta;
-  register s32 samples_remaining = adpcm.sample_length;
-  register u32 frequency_step = adpcm.frequency_step;
+  s32 clocks_remaining = clock_delta;
+  s32 samples_remaining = adpcm.sample_length;
+  u32 frequency_step = adpcm.frequency_step;
 
-  register u32 sample_index = adpcm.sample_read_address;
-  register u32 sample_index_fractional = adpcm.sample_index_fractional;
+  u32 sample_index = adpcm.sample_read_address;
+  u32 sample_index_fractional = adpcm.sample_index_fractional;
 
-  register u32 audio_buffer_index = adpcm.audio_buffer_index;
+  u32 audio_buffer_index = adpcm.audio_buffer_index;
   s32 *audio_buffer = audio.buffer;
   u8 *sample_ram = adpcm.sample_ram;
   u32 current_adpcm_code;
@@ -367,28 +349,6 @@ void update_adpcm()
 
   if(adpcm.last_command & 0x20)
   {
-
-    // Check if we are generating too slowly, if so,
-    // we generate samples 1 sec later.
-    //
-    /*if ((samples_remaining > 0) && (clocks_remaining >= 0))
-    {
-      int adpcm_diff = audio_buffer_index - adpcm.audio_read_buffer_index;
-      if (adpcm_diff < 0)
-        adpcm_diff += ADPCM_AUDIO_BUFFER_SIZE;
-      if (adpcm_diff == 0)
-      {
-        // Generate the sound a few frames later
-        for (int i = 0; i < ADPCM_SYNC_SAMPLES / 2; i++)
-        {
-          adpcm.audio_buffer[audio_buffer_index] = 0;
-          adpcm.audio_buffer[audio_buffer_index + 1] = 0;
-          audio_buffer_index = (audio_buffer_index + 2) % ADPCM_AUDIO_BUFFER_SIZE;
-        }
-      }
-    }*/
-
-    //t3dsStartTiming(62, "update_adpcm:freq");
     while((samples_remaining > 0) && (clocks_remaining >= 0))
     {
       sample_index = (sample_index + 1) & 0x1FFFF;
@@ -423,34 +383,12 @@ void update_adpcm()
         // Use this for nearest neighbor resampling
         //dest_sample = current_sample;
 
-        //audio_buffer[audio_buffer_index] += dest_sample;
-        //audio_buffer[audio_buffer_index + 1] += dest_sample;
-
-        // since there's no stereo panning, we just write 1 value to save some time.
-        adpcm.audio_buffer[audio_buffer_index] = dest_sample;
-        //adpcm.audio_buffer[audio_buffer_index + 1] = dest_sample; 
-        adpcm.has_samples = true;
-
-        //printf ("adpcm: %04x %04x\n", dest_sample, dest_sample);
+        audio_buffer[audio_buffer_index] += dest_sample;
+        audio_buffer[audio_buffer_index + 1] += dest_sample;
 
         sample_index_fractional += frequency_step;
         audio_buffer_index =
-         (audio_buffer_index + 2) % ADPCM_AUDIO_BUFFER_SIZE;
-
-        // If we are too fast, hold on for a while
-        if (audio_buffer_index == adpcm.audio_read_buffer_index)  // doing this here saves a bit of time.
-        {
-          if (emulator.isReal3DS && !emulator.fastForwarding)
-          {
-            int wait_count = 64;
-            while (audio_buffer_index == adpcm.audio_read_buffer_index && wait_count)
-            {
-              // Wait 1 ms
-              svcSleepThread((long)100000);
-              wait_count--;
-            }
-          }
-        }
+         (audio_buffer_index + 2) % AUDIO_BUFFER_SIZE;
 
         clocks_remaining -= psg.clock_step;
       }
@@ -460,7 +398,6 @@ void update_adpcm()
       samples_remaining--;
       sample_index_fractional &= ((1 << step_fractional_bits_frequency) - 1);
     }
-    //t3dsEndTiming(62);
 
     adpcm.sample_length = samples_remaining;
     adpcm.sample_read_address = sample_index;
@@ -483,10 +420,8 @@ void update_adpcm()
 
   while(clocks_remaining >= 0)
   {
-    //audio_buffer_index =
-    // (audio_buffer_index + 2) % AUDIO_BUFFER_SIZE;
-    //audio_buffer_index =
-    // (audio_buffer_index + 2) % ADPCM_AUDIO_BUFFER_SIZE;
+    audio_buffer_index =
+     (audio_buffer_index + 2) % AUDIO_BUFFER_SIZE;
 
     clocks_remaining -= psg.clock_step;
   }
@@ -514,7 +449,6 @@ void update_adpcm()
       }
     }
   }
-  //t3dsEndTiming(61);
 }
 
 #define adpcm_savestate_extra_load()                                          \

@@ -1,7 +1,7 @@
 #ifndef _3DSCHEAT_H_
 #define _3DSCHEAT_H_
 
-#define MAX_CHEATS      100
+#define MAX_CHEATS      200
 
 //----------------------------------------------------------
 // This implements a generic text file format (.CHX)

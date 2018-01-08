@@ -24,7 +24,6 @@ protected:
 	BYTE	irq_counter;
 	BYTE	irq_latch;
 	INT	irq_clock;
-	BYTE	regH[9];
 
 private:
 };
