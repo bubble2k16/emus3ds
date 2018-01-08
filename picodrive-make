@@ -53,7 +53,7 @@ INCLUDES	:=	include \
 ARCH	:=	-march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
 
 CFLAGS	:=	-g -w -O3 -mword-relocations -finline-limit=20000 \
-            -D_ASM_DRAW_C -D_ASM_MEMORY_C -D_ASM_MISC_C -D_ASM_YM2612_C -D_ASM_CD_MEMORY_C \
+            -D_ASM_DRAW_C -D_ASM_MEMORY_C -D_ASM_MISC_C -D_ASM_YM2612_C -D_ASM_CD_MEMORY_C -D_ASM_32X_DRAW \
 			-DEMU_C68K -D_USE_DRZ80 \
 			-fno-rtti -fomit-frame-pointer -ffunction-sections -fpermissive \
 			$(ARCH)
