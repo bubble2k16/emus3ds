@@ -323,9 +323,9 @@ int PsndRender3DS(short *leftBuffer, short *rightBuffer, int length)
     memset32(buf32, 0, length<<stereo);
 
 
-/*
+
 //printf("active_chs: %02x\n", buf32_updated);
-  (void)buf32_updated;
+//  (void)buf32_updated;
 
 
   // CD: PCM sound
@@ -334,6 +334,7 @@ int PsndRender3DS(short *leftBuffer, short *rightBuffer, int length)
     //buf32_updated = 1;
   }
 
+/*
   // CD: CDDA audio
   // CD mode, cdda enabled, not data track, CDC is reading
   if ((PicoIn.AHW & PAHW_MCD) && (PicoIn.opt & POPT_EN_MCD_CDDA)
