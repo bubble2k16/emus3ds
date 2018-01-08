@@ -33,12 +33,30 @@ void	Mapper004::Reset()
 	irq_preset = 0;
 	irq_preset_vbl = 0;
 
+	rom_type = 0;
+	security = 0;
+
+	KT_bank = 0;	//for KT CN games
+
+	temp1 = 0xE001;
+
 	// IRQ�^�C�v�ݒ�
 	nes->SetIrqType( NES::IRQ_CLOCK );
 	irq_type = 0;
 
 	DWORD	crc = nes->rom->GetPROM_CRC();
 
+	if( crc == 0x488AB51A
+	 || crc == 0xf7b93e43) {
+		temp1 = 0xE002;
+	}
+	if( crc == 0x8bc9ec42){		// "Contra Fighter (Unl) [U]"
+		rom_type = 1;
+	}
+	if( crc == 0xA9B36A7D		// Feng Yun (C)
+	 || crc == 0x370808c3) {	//WXN-����
+		rom_type = 2;
+	}
 	if( crc == 0x5c707ac4 ) {	// Mother(J)
 		nes->SetIrqType( NES::IRQ_HSYNC );
 		nes->SetRenderMethod( NES::TILE_RENDER );
@@ -167,12 +185,17 @@ void	Mapper004::Reset()
 		vs_patch = 3;
 	}
 }
-
+//static uint8 lut[8] = { 0x00, 0x00, 0x00, 0x01, 0x02, 0x04, 0x0F, 0x00 };
 BYTE	Mapper004::ReadLow( WORD addr )
 {
 	if( !vs_patch ) {
-		if( addr >= 0x5000 && addr <= 0x5FFF ) {
-			return	XRAM[addr-0x4000];
+//		if((addr>=5000)&&(addr<=5007)) return lut[addr&7];
+		if(rom_type == 1){
+			if( addr >= 0x4020 && addr <= 0x7FFF ) {
+				return security;
+			}
+		} else if( addr >= 0x5000 && addr <= 0x5FFF ) {
+				return	XRAM[addr-0x4000];
 		}
 	} else if( vs_patch == 1 ) {
 		// VS TKO Boxing Security
@@ -234,7 +257,20 @@ BYTE	Mapper004::ReadLow( WORD addr )
 
 void	Mapper004::WriteLow( WORD addr, BYTE data )
 {
-	if( addr >= 0x5000 && addr <= 0x5FFF ) {
+
+	DEBUGOUT("Address=%04X Data=%02X\n", addr&0xFFFF, data&0xFF );
+
+	// Adding this here causes Feng Yun to freeze on boot.
+	//if(addr==0x5000) KT_bank = data * 0x10;	//for KT CN games
+
+	if(rom_type == 1){
+		if( addr >= 0x4020 && addr <= 0x7FFF ) {
+			security = data & 3;
+			if (security == 1){
+				security = 2;
+			}
+		}
+	} else if( addr >= 0x5000 && addr <= 0x5FFF ) {
 		XRAM[addr-0x4000] = data;
 	} else {
 		Mapper::WriteLow( addr, data );
@@ -243,15 +279,16 @@ void	Mapper004::WriteLow( WORD addr, BYTE data )
 
 void	Mapper004::Write( WORD addr, BYTE data )
 {
-//DEBUGOUT( "MPRWR A=%04X D=%02X L=%3d CYC=%d\n", addr&0xFFFF, data&0xFF, nes->GetScanline(), nes->cpu->GetTotalCycles() );
+	DEBUGOUT( "MPRWR A=%04X D=%02X L=%3d CYC=%d\n", addr&0xFFFF, data&0xFF, nes->GetScanline(), nes->cpu->GetTotalCycles() );
 
-	switch( addr & 0xE001 ) {
+	switch( addr & temp1 ) {
 		case	0x8000:
 			reg[0] = data;
 			SetBank_CPU();
 			SetBank_PPU();
 			break;
 		case	0x8001:
+		case	0x8002:
 			reg[1] = data;
 
 			switch( reg[0] & 0x07 ) {
@@ -280,11 +317,11 @@ void	Mapper004::Write( WORD addr, BYTE data )
 					SetBank_PPU();
 					break;
 				case	0x06:
-					prg0 = data;
+					prg0 = data + KT_bank;
 					SetBank_CPU();
 					break;
 				case	0x07:
-					prg1 = data;
+					prg1 = data + KT_bank;
 					SetBank_CPU();
 					break;
 			}
@@ -298,12 +335,9 @@ void	Mapper004::Write( WORD addr, BYTE data )
 			break;
 		case	0xA001:
 			reg[3] = data;
-//DEBUGOUT( "MPRWR A=%04X D=%02X L=%3d CYC=%d\n", addr&0xFFFF, data&0xFF, nes->GetScanline(), nes->cpu->GetTotalCycles() );
 			break;
 		case	0xC000:
-//DEBUGOUT( "MPRWR A=%04X D=%02X L=%3d CYC=%d\n", addr&0xFFFF, data&0xFF, nes->GetScanline(), nes->cpu->GetTotalCycles() );
 			reg[4] = data;
-			//printf ("Set counter: %d @ %d\n", data, nes->GetScanline());
 			if( irq_type == MMC3_IRQ_KLAX || irq_type == MMC3_IRQ_ROCKMAN3 ) {
 				irq_counter = data;
 			} else {
@@ -315,7 +349,6 @@ void	Mapper004::Write( WORD addr, BYTE data )
 			break;
 		case	0xC001:
 			reg[5] = data;
-			//printf ("Load counter: %d @ %d\n", data, nes->GetScanline());
 			if( irq_type == MMC3_IRQ_KLAX || irq_type == MMC3_IRQ_ROCKMAN3 ) {
 				irq_latch = data;
 			} else {
@@ -438,11 +471,33 @@ void	Mapper004::SetBank_PPU()
 {
 	if( VROM_1K_SIZE ) {
 		if( reg[0] & 0x80 ) {
-			SetVROM_8K_Bank( chr4, chr5, chr6, chr7,
-					 chr01, chr01+1, chr23, chr23+1 );
+			if(rom_type == 2){
+				SetBank_PPUSUB( 4, chr01+0 );
+				SetBank_PPUSUB( 5, chr01+1 );
+				SetBank_PPUSUB( 6, chr23+0 );
+				SetBank_PPUSUB( 7, chr23+1 );
+				SetBank_PPUSUB( 0, chr4 );
+				SetBank_PPUSUB( 1, chr5 );
+				SetBank_PPUSUB( 2, chr6 );
+				SetBank_PPUSUB( 3, chr7 );
+			} else {
+				SetVROM_8K_Bank( chr4, chr5, chr6, chr7,
+						 chr01, chr01+1, chr23, chr23+1 );
+			}
 		} else {
-			SetVROM_8K_Bank( chr01, chr01+1, chr23, chr23+1,
-					 chr4, chr5, chr6, chr7 );
+			if(rom_type == 2){
+				SetBank_PPUSUB( 0, chr01+0 );
+				SetBank_PPUSUB( 1, chr01+1 );
+				SetBank_PPUSUB( 2, chr23+0 );
+				SetBank_PPUSUB( 3, chr23+1 );
+				SetBank_PPUSUB( 4, chr4 );
+				SetBank_PPUSUB( 5, chr5 );
+				SetBank_PPUSUB( 6, chr6 );
+				SetBank_PPUSUB( 7, chr7 );
+			} else {
+				SetVROM_8K_Bank( chr01, chr01+1, chr23, chr23+1,
+						 chr4, chr5, chr6, chr7 );
+			}
 		}
 	} else {
 		if( reg[0] & 0x80 ) {
@@ -464,6 +519,15 @@ void	Mapper004::SetBank_PPU()
 			SetCRAM_1K_Bank( 6, chr6&0x07 );
 			SetCRAM_1K_Bank( 7, chr7&0x07 );
 		}
+	}
+}
+
+void	Mapper004::SetBank_PPUSUB( int bank, int page )
+{
+	if(  page < 8 ) {
+		SetCRAM_1K_Bank( bank, page );
+	} else {
+		SetVROM_1K_Bank( bank, page );
 	}
 }
 

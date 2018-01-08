@@ -69,7 +69,7 @@
 	{0x15141401,	  4,		8},	/* Asmik Kun Land */
 	{0x4cccd878,	  4,		8},	/* Cat Ninden Teyandee */
 	{0x59280bec,	  4,		8},	/* Jackie Chan */
-	{0x7474ac92,	  4,		8},	/* Kabuki: Quantum Fighter */
+	{0x7474ac92,	  4,	   -1},	/* Kabuki: Quantum Fighter */
 	{0x5337f73c,	  4,		8},	/* Niji no Silk Road */
 	{0x9eefb4b4,	  4,		8},	/* Pachi Slot Adventure 2 */
 	{0x21a653c7,	  4,	   -1},	/* Super Sky Kid */

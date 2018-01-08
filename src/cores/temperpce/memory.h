@@ -114,7 +114,7 @@ EXTERN_C_END
     cpu.alert = 0;                                                            \
     if(cpu.irq_raised)                                                        \
     {                                                                         \
-      check_pending_interrupts(irq.status);                                   \
+      check_pending_interrupts();                                             \
       cpu.irq_raised = 0;                                                     \
     }                                                                         \
     else                                                                      \

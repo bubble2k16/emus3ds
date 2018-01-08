@@ -5,6 +5,7 @@
 #include "3dsopt.h"
 #define MAX_TASKS 2048
 
+/*
 SAsyncTask asyncTasks[MAX_TASKS];
 int asyncTaskAddPtr = 0;
 int asyncTaskExecPtr = 0;
@@ -124,3 +125,4 @@ void async3dsWaitTasks()
         svcSleepThread(1);
     }
 }
+*/

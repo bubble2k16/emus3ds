@@ -5,8 +5,9 @@ void	Mapper065::Reset()
 {
 	patch = 0;
 
-	// Kaiketsu Yanchamaru 3(J)
-	if( nes->rom->GetPROM_CRC() == 0xe30b7f64 ) {
+	// Kaiketsu Yanchamaru 3(J) & (C)
+	if( (nes->rom->GetPROM_CRC() == 0xe30b7f64)
+	 || (nes->rom->GetPROM_CRC() == 0x5f17f55e) ) {
 		patch = 1;
 	}
 	if( nes->rom->GetPROM_CRC() == 0x1CE227A3 ) {

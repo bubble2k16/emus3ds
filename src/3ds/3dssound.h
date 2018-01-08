@@ -13,16 +13,16 @@ typedef struct
     short       *fullBuffers;
     short       *leftBuffer;
     short       *rightBuffer;
-    u64			startTick;
-    u64         bufferPosition;
-    u64         samplePosition;
+    s64			startTick;
+    s64         bufferPosition;
+    s64         samplePosition;
 
     Handle      mixingThreadHandle;
     u8          mixingThreadStack[0x4000] __attribute__((aligned(8)));
     bool        terminateMixingThread;
 
-    u64         startSamplePosition = 0;
-    u64         upToSamplePosition = 0;
+    s64         startSamplePosition = 0;
+    s64         upToSamplePosition = 0;
 
     CSND_ChnInfo*   channelInfo;
 
@@ -32,6 +32,26 @@ typedef struct
 
 
 extern SSND3DS snd3DS;
+
+//---------------------------------------------------------
+// Computes the truncated number of samples per loop by
+// dividing the the ideal sample rate by the total
+// number of loops to be executed per second. 
+//
+// Usually loopsPerSecond is the frame rate. If you want
+// to generate samples twice per frame, then this value
+// will be the frame rate x 2.
+//---------------------------------------------------------
+int snd3dsComputeSamplesPerLoop(int idealSampleRate, int loopsPerSecond);
+
+
+//---------------------------------------------------------
+// Computes the final sample rate by taking the 
+// samples generate per loop multiplying by the 
+// number of loops in a second.
+//---------------------------------------------------------
+int snd3dsComputeSampleRate(int idealSampleRate, int loopsPerSecond);
+
 
 //---------------------------------------------------------
 // Set the sampling rate.

@@ -6,17 +6,17 @@
 #include <string>
 using namespace std;
 
-// �ȉ��̂Q��OR�}�X�N
+// ˆÈ‰º‚Ì‚Q‚Â‚ÍORƒ}ƒXƒN
 #define	CHEAT_ENABLE		(1<<0)
 #define	CHEAT_KEYDISABLE	(1<<1)
 
-// �������ݎ���
-#define	CHEAT_TYPE_ALWAYS	0	// ���ɏ�������
-#define	CHEAT_TYPE_ONCE		1	// �P�񂾂���������
-#define	CHEAT_TYPE_GREATER	2	// �f�[�^�����傫����
-#define	CHEAT_TYPE_LESS		3	// �f�[�^���菬������
+// ‘‚«ž‚ÝŽí—Þ
+#define	CHEAT_TYPE_ALWAYS	0	// í‚É‘‚«ž‚Ý
+#define	CHEAT_TYPE_ONCE		1	// ‚P‰ñ‚¾‚¯‘‚«ž‚Ý
+#define	CHEAT_TYPE_GREATER	2	// ƒf[ƒ^‚æ‚è‘å‚«‚¢Žž
+#define	CHEAT_TYPE_LESS		3	// ƒf[ƒ^‚æ‚è¬‚³‚¢Žž
 
-// �f�[�^��
+// ƒf[ƒ^’·
 #define	CHEAT_LENGTH_1BYTE	0
 #define	CHEAT_LENGTH_2BYTE	1
 #define	CHEAT_LENGTH_3BYTE	2

@@ -46,9 +46,9 @@
 #if defined(_MSC_VER)
 #define INLINE __inline
 #elif defined(__GNUC__)
-#define INLINE __inline__
+#define INLINE __inline__ __attribute__((always_inline))
 #else
-#define INLINE
+#define INLINE 
 #endif
 
 #define OPLL_TONE_NUM 2
@@ -1199,6 +1199,9 @@ int16 OPLL_calc(OPLL *opll)
     if(!(opll->mask&OPLL_MASK_CH(i))&&(opll->CAR(i)->eg_mode!=FINISH))
       inst += calc_slot_car(opll->CAR(i),calc_slot_mod(opll->MOD(i))) ;
 
+/*
+  The VRC7 only has 6 channels. 
+  
   if(!opll->rythm_mode)
   {
     for(i = 6 ; i < 9 ; i++)
@@ -1227,6 +1230,7 @@ int16 OPLL_calc(OPLL *opll)
     if(!(opll->mask&OPLL_MASK_CYM)&&(opll->CAR(8)->eg_mode!=FINISH))
        perc += calc_slot_cym(opll->CAR(8), opll->noiseA, opll->noiseB, rythmC) ;
   }
+*/
 
 #if SLOT_AMP_BITS > 8
   inst = (inst >> (SLOT_AMP_BITS - 8)) ;
