@@ -6,7 +6,7 @@
 int emu_save_load_sram(char *saveFname, int load)
 {
 	int ret = 0;
-/*
+
     FILE *sramFile;
     int sram_size;
     unsigned char *sram_data;
@@ -57,6 +57,6 @@ int emu_save_load_sram(char *saveFname, int load)
             sync();
 #endif
         }
-    }*/
+    }
     return ret;
 }
