@@ -323,7 +323,7 @@ int PsndRender3DS(short *leftBuffer, short *rightBuffer, int length)
     memset32(buf32, 0, length<<stereo);
 
 
-/*
+
 //printf("active_chs: %02x\n", buf32_updated);
   (void)buf32_updated;
 
@@ -349,7 +349,7 @@ int PsndRender3DS(short *leftBuffer, short *rightBuffer, int length)
 
   if ((PicoIn.AHW & PAHW_32X) && (PicoIn.opt & POPT_EN_PWM))
     p32x_pwm_update(buf32, length, stereo);
-*/
+
   // convert + limit to normal 16bit output
   //PsndMix_32_to_16l(PicoIn.sndOut+offset, buf32, length);
 

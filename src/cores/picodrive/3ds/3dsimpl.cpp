@@ -350,7 +350,7 @@ extern SSettings3DS settings3DS;
 //---------------------------------------------------------
 // Provide a comma-separated list of file extensions
 //---------------------------------------------------------
-char *impl3dsRomExtensions = "sms,md,smd,gen,rom,bin";
+char *impl3dsRomExtensions = "sms,md,smd,gen,rom,bin,iso";
 
 
 //---------------------------------------------------------
@@ -601,6 +601,8 @@ bool impl3dsLoadROM(char *romFilePath)
     PicoPatchUnload();
 	enum media_type_e media_type;
 	media_type = PicoLoadMedia(romFilePath, "/3ds/picodrive_3ds/carthw.cfg", find_bios, NULL);
+    PicoSetInputDevice(0, PICO_INPUT_PAD_6BTN);
+    PicoSetInputDevice(1, PICO_INPUT_PAD_6BTN);
 
     // ** Load SRAM
     emu_save_load_sram(file3dsReplaceFilenameExtension(romFileNameFullPath, ".sram"), 1);
