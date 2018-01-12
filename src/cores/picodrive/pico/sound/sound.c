@@ -16,13 +16,17 @@
 
 #include "3dsopt.h"
 #include "3dssoundqueue.h"
+#include "3dsfilereadahead.h"
+
 extern SSoundQueue soundQueue;
 extern SDACQueue dacQueue;
+cd_read_ahead_struct cdda_read_ahead;
 
 void (*PsndMix_32_to_16l)(short *dest, int *src, int count) = mix_32_to_16l_stereo;
 
 // master int buffer to mix to
 static int PsndBuffer[2*(44100+100)/50];
+static int PsndBuffer2[2*(44100+100)/50];
 
 // dac, psg
 static unsigned short dac_info[312+4]; // pos in sample buffer
@@ -103,8 +107,11 @@ PICO_INTERNAL void PsndReset(void)
   prev_r3 = 0;
   lowpass_counter = 0;
   timers_reset();
+
+  read_ahead_init(&cdda_read_ahead);
 }
 
+int sampleCurrentTo44100[1000];  // Max 882 samples per frame (PAL).
 
 // to be called after changing sound rate or chips
 void PsndRerate(int preserve_state)
@@ -151,6 +158,15 @@ void PsndRerate(int preserve_state)
 
   if (PicoIn.AHW & PAHW_PICO)
     PicoReratePico();
+
+    // Calculate the sampled PCM/CDDA indexes for 
+    // rates != 44100khz.
+    //
+    int samplesPerFrameBasedOn44100 = 44100 / target_fps;
+    for (int i = 0; i < Pico.snd.len; i++)
+    {
+      sampleCurrentTo44100[i] = i * samplesPerFrameBasedOn44100 / Pico.snd.len;
+    }
 }
 
 
@@ -229,29 +245,52 @@ PICO_INTERNAL void PsndDoPSG(int line_to)
 }
 
 // cdda
-static void cdda_raw_update(int *buffer, int length)
+void cdda_raw_update(int *buffer, int length)
 {
+  t3dsStartTiming(60, "cdda_raw_update");
   int ret, cdda_bytes, mult = 1;
 
-  cdda_bytes = length*4;
-  if (PicoIn.sndRate <= 22050 + 100) mult = 2;
-  if (PicoIn.sndRate <  22050 - 100) mult = 4;
-  cdda_bytes *= mult;
+  //cdda_bytes = length*4;
+  //if (PicoIn.sndRate <= 22050 + 100) mult = 2;
+  //if (PicoIn.sndRate <  22050 - 100) mult = 4;
+  //cdda_bytes *= mult;
 
-  ret = pm_read(cdda_out_buffer, cdda_bytes, Pico_mcd->cdda_stream);
+  if (Pico.m.pal) 
+    cdda_bytes = (44100 / 50) * 4;
+  else
+    cdda_bytes = (44100 / 60) * 4;
+  ret = 0;
+  //ret = pm_read(cdda_out_buffer, cdda_bytes, Pico_mcd->cdda_stream);
+  //printf ("%d\n", ret);
+  ret = read_ahead_fread(&cdda_read_ahead, cdda_out_buffer, cdda_bytes, ((pm_file *)Pico_mcd->cdda_stream)->file);
   if (ret < cdda_bytes) {
     memset((char *)cdda_out_buffer + ret, 0, cdda_bytes - ret);
     Pico_mcd->cdda_stream = NULL;
     return;
   }
 
+  if (PicoIn.sndRate == 44100)
+    mix_16h_to_32(buffer, cdda_out_buffer, length*2); 
+  else
+  {
+    for (int i = 0; i < length; i++)
+    {
+      buffer[i*2] += cdda_out_buffer[sampleCurrentTo44100[i]*2] >> 1;
+      buffer[i*2+1] += cdda_out_buffer[sampleCurrentTo44100[i]*2+1] >> 1;
+      //printf("%d / %d\n", buffer[i*2], buffer[i*2+1]);
+    }
+  }
+  /*
   // now mix
   switch (mult) {
     case 1: mix_16h_to_32(buffer, cdda_out_buffer, length*2); break;
     case 2: mix_16h_to_32_s1(buffer, cdda_out_buffer, length*2); break;
     case 4: mix_16h_to_32_s2(buffer, cdda_out_buffer, length*2); break;
   }
+  */
+  t3dsEndTiming(60);
 }
+
 
 void cdda_start_play(int lba_base, int lba_offset, int lb_len)
 {
@@ -266,11 +305,13 @@ void cdda_start_play(int lba_base, int lba_offset, int lb_len)
     return;
   }
 
-  pm_seek(Pico_mcd->cdda_stream, (lba_base + lba_offset) * 2352, SEEK_SET);
+  //pm_seek(Pico_mcd->cdda_stream, (lba_base + lba_offset) * 2352, SEEK_SET);
+  read_ahead_fseek(&cdda_read_ahead, ((pm_file *)Pico_mcd->cdda_stream)->file, (lba_base + lba_offset) * 2352, SEEK_SET);
   if (Pico_mcd->cdda_type == CT_WAV)
   {
     // skip headers, assume it's 44kHz stereo uncompressed
-    pm_seek(Pico_mcd->cdda_stream, 44, SEEK_CUR);
+    //pm_seek(Pico_mcd->cdda_stream, 44, SEEK_CUR);
+    read_ahead_fseek(&cdda_read_ahead, ((pm_file *)Pico_mcd->cdda_stream)->file, 44, SEEK_CUR);
   }
 }
 
@@ -322,18 +363,17 @@ int PsndRender3DS(short *leftBuffer, short *rightBuffer, int length)
   } else
     memset32(buf32, 0, length<<stereo);
 
-
-
 //printf("active_chs: %02x\n", buf32_updated);
-  (void)buf32_updated;
+  //(void)buf32_updated;
 
-
+/*
   // CD: PCM sound
   if (PicoIn.AHW & PAHW_MCD) {
     pcd_pcm_update(buf32, length, stereo);
     //buf32_updated = 1;
   }
-
+*/
+/*
   // CD: CDDA audio
   // CD mode, cdda enabled, not data track, CDC is reading
   if ((PicoIn.AHW & PAHW_MCD) && (PicoIn.opt & POPT_EN_MCD_CDDA)
@@ -341,15 +381,16 @@ int PsndRender3DS(short *leftBuffer, short *rightBuffer, int length)
       && !(Pico_mcd->s68k_regs[0x36] & 1))
   {
     // note: only 44, 22 and 11 kHz supported, with forced stereo
-    if (Pico_mcd->cdda_type == CT_MP3)
-      mp3_update(buf32, length, stereo);
-    else
+    //if (Pico_mcd->cdda_type == CT_MP3)
+    //  mp3_update(buf32, length, stereo);
+    //else
       cdda_raw_update(buf32, length);
   }
-
+*/
+/*
   if ((PicoIn.AHW & PAHW_32X) && (PicoIn.opt & POPT_EN_PWM))
     p32x_pwm_update(buf32, length, stereo);
-
+*/
   // convert + limit to normal 16bit output
   //PsndMix_32_to_16l(PicoIn.sndOut+offset, buf32, length);
 
@@ -375,12 +416,12 @@ int PsndRender3DS(short *leftBuffer, short *rightBuffer, int length)
       l = *src++;
       r = *src++;
       
-      short sample = 0;
-      int hasDAC = dacQueueRead(&dacQueue, &sample);
+      short lsample = 0, rsample = 0;
+      int hasDAC = dacQueueReadStereo(&dacQueue, &lsample, &rsample);
       if (hasDAC)
       {
-        l += sample;
-        r += sample;
+        l += lsample;
+        r += rsample;
       }
 
       l = l * PicoIn.sndVolumeMul / 32;
@@ -563,6 +604,35 @@ PICO_INTERNAL void PsndGetSamples(int y)
 
   if (y == 224)
   {
+    int *buf32 = PsndBuffer2;
+    int length = Pico.snd.len;
+
+    if (PicoIn.AHW & (PAHW_MCD | PAHW_32X))
+      memset32(PsndBuffer2, 0, length * 2);
+
+    // CD: PCM sound
+    if (PicoIn.AHW & PAHW_MCD) {
+      pcd_pcm_update(buf32, length, true);
+      //buf32_updated = 1;
+    }
+
+
+    // CD: CDDA audio
+    // CD mode, cdda enabled, not data track, CDC is reading
+    if ((PicoIn.AHW & PAHW_MCD) && (PicoIn.opt & POPT_EN_MCD_CDDA)
+        && Pico_mcd->cdda_stream != NULL
+        && !(Pico_mcd->s68k_regs[0x36] & 1))
+    {
+      // note: only 44, 22 and 11 kHz supported, with forced stereo
+      if (Pico_mcd->cdda_type == CT_MP3)
+        mp3_update(buf32, length, true);
+      else
+        cdda_raw_update(buf32, length);
+    }
+
+    if ((PicoIn.AHW & PAHW_32X) && (PicoIn.opt & POPT_EN_PWM))
+      p32x_pwm_update(buf32, length, true);
+  
     /*if (Pico.m.status & 2)
          curr_pos += PsndRender(curr_pos, Pico.snd.len-Pico.snd.len/2);
     else curr_pos  = PsndRender(0, Pico.snd.len_use);
@@ -576,18 +646,38 @@ PICO_INTERNAL void PsndGetSamples(int y)
     //
     if (emulator.isReal3DS)
     {
-      if (emulator.fastForwarding)
+      if (PicoIn.AHW & (PAHW_MCD | PAHW_32X))
       {
-        for (int i = 0; i < Pico.snd.len; i++)
-          dacQueueAdd(&dacQueue, PicoIn.sndOut[i*2]);
+        if (emulator.fastForwarding)
+        {
+          for (int i = 0; i < Pico.snd.len; i++)
+            dacQueueAddStereo(&dacQueue, PicoIn.sndOut[i*2] + buf32[i*2], PicoIn.sndOut[i*2] + (buf32[i*2 + 1]));
+        }
+        else
+        {
+          for (int i = 0; i < Pico.snd.len; i++)
+          {
+            dacQueueWaitUntilLength(&dacQueue, Pico.snd.len * 2, 16, 100000);
+            dacQueueAddStereo(&dacQueue, PicoIn.sndOut[i*2] + buf32[i*2], PicoIn.sndOut[i*2] + (buf32[i*2 + 1]));
+          }
+        }
       }
       else
       {
-        for (int i = 0; i < Pico.snd.len; i++)
+        if (emulator.fastForwarding)
         {
-          dacQueueWaitUntilLength(&dacQueue, Pico.snd.len * 2, 32, 100000);
-          dacQueueAdd(&dacQueue, PicoIn.sndOut[i*2]);
+          for (int i = 0; i < Pico.snd.len; i++)
+            dacQueueAddStereo(&dacQueue, PicoIn.sndOut[i*2], PicoIn.sndOut[i*2]);
         }
+        else
+        {
+          for (int i = 0; i < Pico.snd.len; i++)
+          {
+            dacQueueWaitUntilLength(&dacQueue, Pico.snd.len * 2, 16, 100000);
+            dacQueueAddStereo(&dacQueue, PicoIn.sndOut[i*2], PicoIn.sndOut[i*2]);
+          }
+        }
+        
       }
     }
 
