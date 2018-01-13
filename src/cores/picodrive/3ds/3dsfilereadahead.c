@@ -9,6 +9,21 @@ void read_ahead_init(cd_read_ahead_struct *cd_read_ahead)
   cd_read_ahead->fptr = NULL;
 }
 
+long read_ahead_ftell(cd_read_ahead_struct *cd_read_ahead, FILE *fp) 
+{
+  if (fp == NULL)
+    return 0;
+  
+  if (cd_read_ahead->fptr != fp)
+  {
+    return ftell(fp);
+  }  
+  else
+  {
+    return cd_read_ahead->seek_pos + cd_read_ahead->buffer_pos;
+  }
+}
+
 void read_ahead_fseek(cd_read_ahead_struct *cd_read_ahead, FILE *fp, int pos, int origin) 
 {
   if (fp == NULL)
