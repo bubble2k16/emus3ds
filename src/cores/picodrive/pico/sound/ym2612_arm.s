@@ -845,8 +845,6 @@ crl_algo_done:
     tst     r0, r0
     beq     ctl_sample_skip
     orr     r4, r4, #8              @ have_output
-    tst     r12, #1
-    beq     ctl_sample_mono
 
     tst     r12, #0x20              @ L
     ldrne   r1, [r11]
@@ -858,20 +856,35 @@ crl_algo_done:
     addeq   r11, r11, #4
     addne   r1, r0, r1
     strne   r1, [r11], #4
-    b       crl_do_phase
+
+    /* duplicated this here to avoid the branch */
+    @ -- PHASE UPDATE --
+    add     r5, lr, #0x10
+    ldmia   r5, {r0-r1}
+    add     r5, lr, #0x20
+    ldmia   r5, {r2-r3}
+    add     r5, lr, #0x10
+    add     r0, r0, r2
+    add     r1, r1, r3
+    stmia   r5!,{r0-r1}
+    ldmia   r5, {r0-r1}
+    add     r5, lr, #0x28
+    ldmia   r5, {r2-r3}
+    add     r5, lr, #0x18
+    add     r0, r0, r2
+    add     r1, r1, r3
+    stmia   r5, {r0-r1}
+
+    tst     r12, #8
+    bne     crl_loop_lfo
+    b       crl_loop
+
 
 ctl_sample_skip:
     and     r1, r12, #1
     add     r1, r1,  #1
     add     r11,r11, r1, lsl #2
-    b       crl_do_phase
 
-ctl_sample_mono:
-    ldr     r1, [r11]
-    add     r1, r0, r1
-    str     r1, [r11], #4
-
-crl_do_phase:
     @ -- PHASE UPDATE --
     add     r5, lr, #0x10
     ldmia   r5, {r0-r1}

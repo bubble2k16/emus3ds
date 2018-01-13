@@ -60,7 +60,7 @@ int snd3dsComputeSampleRate(int idealSampleRate, int loopsPerSecond);
 // impl3dsInitializeCore function. It CANNOT be called
 // after the snd3dsInitialize function is called.
 //---------------------------------------------------------
-void snd3dsSetSampleRate(bool isStereo, int sampleRate, int samplesPerLoop, bool spawnMixingThread);
+void snd3dsSetSampleRate(bool isStereo, int sampleRate, int samplesPerLoop, bool spawnMixingThread, int minLoopBuffer = 1, int maxLoopBuffer = 2);
 
 
 //---------------------------------------------------------

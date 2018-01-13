@@ -1067,10 +1067,19 @@ static void chan_render_prep(void)
 	crct.lfo_inc = ym2612.OPN.lfo_inc;
 }
 
-static void chan_render_finish(void)
+static void chan_render_finish(int length)
 {
-	ym2612.OPN.eg_cnt = crct.eg_cnt;
-	ym2612.OPN.eg_timer = crct.eg_timer;
+	// This is weird: because if the channels are all disabled, the timer will
+	// not be incremented.
+	//ym2612.OPN.eg_cnt = crct.eg_cnt;		
+	//ym2612.OPN.eg_timer = crct.eg_timer;
+	ym2612.OPN.eg_timer += ym2612.OPN.eg_timer_add;
+	while (ym2612.OPN.eg_timer > EG_TIMER_OVERFLOW)
+	{
+		ym2612.OPN.eg_timer -= EG_TIMER_OVERFLOW;
+		ym2612.OPN.eg_cnt++;		
+	}
+
 	g_lfo_ampm = crct.pack >> 16; // need_save
 	ym2612.OPN.lfo_cnt = crct.lfo_cnt;
 }
@@ -1078,6 +1087,9 @@ static void chan_render_finish(void)
 static int chan_render(int *buffer, int length, int c, UINT32 flags) // flags: stereo, ?, disabled, ?, pan_r, pan_l
 {
 	crct.CH = &ym2612.CH[c];
+	if (!(crct.CH->SLOT[SLOT1].state | crct.CH->SLOT[SLOT2].state | crct.CH->SLOT[SLOT3].state | crct.CH->SLOT[SLOT4].state))
+		return;
+	
 	crct.mem = crct.CH->mem_value;		/* one sample delay memory */
 	crct.lfo_cnt = ym2612.OPN.lfo_cnt;
 
@@ -1627,7 +1639,7 @@ int YM2612UpdateOne_(int *buffer, int length, int stereo, int is_buf_empty)
 	if (ym2612.slot_mask & 0x00f000) active_chs |= chan_render(buffer, length, 3, stereo|((pan&0x0c0)>>2)) << 3;
 	if (ym2612.slot_mask & 0x0f0000) active_chs |= chan_render(buffer, length, 4, stereo|((pan&0x300)>>4)) << 4;
 	if (ym2612.slot_mask & 0xf00000) active_chs |= chan_render(buffer, length, 5, stereo|((pan&0xc00)>>6)|(ym2612.dacen<<2)) << 5;
-	chan_render_finish();
+	chan_render_finish(length);
 
 	return active_chs; // 1 if buffer updated
 }

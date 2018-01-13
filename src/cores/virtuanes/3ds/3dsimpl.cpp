@@ -505,7 +505,8 @@ bool impl3dsLoadROM(char *romFilePath)
 		false,
 		nesSampleRate, 
 		numberOfGenerationsPerSecond, 
-		true);
+		true, 
+        1, 4);
 	
 	Config.sound.nRate = soundSamplesPerSecond;
 	Config.sound.nBits = 16;

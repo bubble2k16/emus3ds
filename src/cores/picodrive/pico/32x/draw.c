@@ -11,6 +11,9 @@ int (*PicoScan32xBegin)(unsigned int num);
 int (*PicoScan32xEnd)(unsigned int num);
 int Pico32xDrawMode;
 
+unsigned short *HighPal = Pico.est.HighPal;
+unsigned short *DrawLineDest = 0;
+
 static void convert_pal555(int invert_prio)
 {
   unsigned int *ps = (void *)Pico32xMem->pal;
@@ -229,6 +232,8 @@ void PicoDraw32xLayer(int offs, int lines, int md_bg)
   int which_func;
 
   Pico.est.DrawLineDest = (char *)DrawLineDestBase + offs * DrawLineDestIncrement;
+  DrawLineDest = Pico.est.DrawLineDest;
+
   dram = Pico32xMem->dram[Pico32x.vdp_regs[0x0a/2] & P32XV_FS];
 
   if (Pico32xDrawMode == PDM32X_BOTH) {

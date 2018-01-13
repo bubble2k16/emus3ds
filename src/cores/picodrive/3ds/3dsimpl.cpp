@@ -44,6 +44,7 @@
 #include "../pico/pico.h"
 #include "../pico/pico_int.h"
 #include "../platform/common/emu.h"
+#include "platform.h"
 extern "C" int YM2612Write_(unsigned int a, unsigned int v);
 
 //----------------------------------------------------------------------
@@ -194,7 +195,7 @@ SMenuItem optionMenu[] = {
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("GAME-SPECIFIC SETTINGS"),
     MENU_MAKE_PICKER    (10000, "  Frameskip", "Try changing this if the game runs slow. Skipping frames help it run faster but less smooth.", optionsForFrameskip, DIALOGCOLOR_CYAN),
-    /*MENU_MAKE_PICKER    (12000, "  Framerate", "Some games run at 50 or 60 FPS by default. Override if required.", optionsForFrameRate, DIALOGCOLOR_CYAN),*/
+    MENU_MAKE_PICKER    (12000, "  Framerate", "Some games run at 50 or 60 FPS by default. Override if required.", optionsForFrameRate, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (19000, "  Flickering Sprites", "Sprites on real hardware flicker. You can disable for better visuals.", optionsForSpriteFlicker, DIALOGCOLOR_CYAN),
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("AUDIO"),
@@ -362,7 +363,7 @@ char *impl3dsTitleImage = "./picodrive_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "PicoDrive for 3DS v0.91";
+char *impl3dsTitleText = "PicoDrive for 3DS v0.92b";
 
 
 //---------------------------------------------------------
@@ -437,10 +438,14 @@ bool impl3dsInitializeCore()
 	defaultConfig.msh2_khz = PICO_MSH2_HZ / 1000;
 	defaultConfig.ssh2_khz = PICO_SSH2_HZ / 1000;
 	memcpy(&currentConfig, &defaultConfig, sizeof(currentConfig));
+
+    // Actual PicoDrive configuration.
+    //
 	PicoIn.opt = currentConfig.s_PicoOpt;
 	PicoIn.sndRate = currentConfig.s_PsndRate;
     PicoIn.sndOut = sndBuffer;
     PicoIn.sndVolumeMul = 100;
+	PicoIn.autoRgnOrder = currentConfig.s_PicoAutoRgnOrder;
 
     // ** Initialize core
     PicoInit();
@@ -542,13 +547,13 @@ void impl3dsOutputSoundSamples(int numberOfSamples, short *leftSamples, short *r
 
 
 static const char * const biosfiles_us[] = {
-	"/3ds/picodrive_3ds/bios/us_scd2_9306.bin", "/3ds/picodrive_3ds/bios/SegaCDBIOS9303.bin", "/3ds/picodrive_3ds/bios/us_scd1_9210.bin", "/3ds/picodrive_3ds/bios/bios_CD_U.bin"
+	"sdmc:/3ds/picodrive_3ds/bios/us_scd2_9306.bin", "sdmc:/3ds/picodrive_3ds/bios/SegaCDBIOS9303.bin", "sdmc:/3ds/picodrive_3ds/bios/us_scd1_9210.bin", "sdmc:/3ds/picodrive_3ds/bios/bios_CD_U.bin"
 };
 static const char * const biosfiles_eu[] = {
-	"/3ds/picodrive_3ds/bios/eu_mcd2_9306.bin", "/3ds/picodrive_3ds/bios/eu_mcd2_9303.bin", "/3ds/picodrive_3ds/bios/eu_mcd1_9210.bin", "/3ds/picodrive_3ds/bios/bios_CD_E.bin"
+	"sdmc:/3ds/picodrive_3ds/bios/eu_mcd2_9306.bin", "sdmc:/3ds/picodrive_3ds/bios/eu_mcd2_9303.bin", "sdmc:/3ds/picodrive_3ds/bios/eu_mcd1_9210.bin", "sdmc:/3ds/picodrive_3ds/bios/bios_CD_E.bin"
 };
 static const char * const biosfiles_jp[] = {
-	"/3ds/picodrive_3ds/bios/jp_mcd2_921222.bin", "/3ds/picodrive_3ds/bios/jp_mcd1_9112.bin", "/3ds/picodrive_3ds/bios/jp_mcd1_9111.bin", "/3ds/picodrive_3ds/bios/bios_CD_J.bin"
+	"sdmc:/3ds/picodrive_3ds/bios/jp_mcd2_921222.bin", "sdmc:/3ds/picodrive_3ds/bios/jp_mcd1_9112.bin", "sdmc:/3ds/picodrive_3ds/bios/jp_mcd1_9111.bin", "sdmc:/3ds/picodrive_3ds/bios/bios_CD_J.bin"
 };
 
 static const char *find_bios(int *region, const char *cd_fname)
@@ -557,7 +562,6 @@ static const char *find_bios(int *region, const char *cd_fname)
 	const char * const *files;
 	FILE *f = NULL;
 	int ret;
-
 	if (*region == 4) { // US
 		files = biosfiles_us;
 		count = sizeof(biosfiles_us) / sizeof(char *);
@@ -585,6 +589,31 @@ static const char *find_bios(int *region, const char *cd_fname)
 	}
 }
 
+
+void setSampleRate(bool preserveState)
+{
+    int sampleRate = 30000;
+    int soundLoopsPerSecond = (Pico.m.pal ? 50 : 60);
+
+	// compute a sample rate closes to 33075 kHz for old 3DS, and 44100 Khz for new 3DS.
+	//
+    u8 new3DS = false;
+    APT_CheckNew3DS(&new3DS);
+    if (new3DS)
+        sampleRate = 44100;
+    
+	PicoIn.sndRate = currentConfig.s_PsndRate = defaultConfig.s_PsndRate = sampleRate;
+    
+    soundSamplesPerGeneration = snd3dsComputeSamplesPerLoop(sampleRate, soundLoopsPerSecond);
+	soundSamplesPerSecond = snd3dsComputeSampleRate(sampleRate, soundLoopsPerSecond);
+	snd3dsSetSampleRate(
+		true,
+		sampleRate, 
+		soundLoopsPerSecond, 
+		true);
+    PsndRerate(preserveState ? 0 : 1);
+}
+
 //---------------------------------------------------------
 // This is called when a ROM needs to be loaded and the
 // emulator engine initialized.
@@ -595,6 +624,11 @@ bool impl3dsLoadROM(char *romFilePath)
     PicoPatchUnload();
 	enum media_type_e media_type;
 	media_type = PicoLoadMedia(romFilePath, "/3ds/picodrive_3ds/carthw.cfg", find_bios, NULL);
+    PicoSetInputDevice(0, PICO_INPUT_PAD_6BTN);
+    PicoSetInputDevice(1, PICO_INPUT_PAD_6BTN);
+
+    // ** Load SRAM
+    emu_save_load_sram(file3dsReplaceFilenameExtension(romFileNameFullPath, ".sram"), 1);
 
 	switch (media_type) {
 	case PM_BAD_DETECT:
@@ -608,27 +642,8 @@ bool impl3dsLoadROM(char *romFilePath)
 
     video3dsClearAllSoftwareBuffers();
     
-    int sampleRate = 30000;
-    int soundLoopsPerSecond = (Pico.m.pal ? 50 : 60);
-
-	// compute a sample rate closes to 30000 kHz for old 3DS, and 44100 Khz for new 3DS.
-	//
-    u8 new3DS = false;
-    APT_CheckNew3DS(&new3DS);
-    if (new3DS)
-        sampleRate = 44100;
-    
-	PicoIn.sndRate = currentConfig.s_PsndRate = defaultConfig.s_PsndRate = sampleRate;
-    
     impl3dsResetConsole();
-
-    soundSamplesPerGeneration = snd3dsComputeSamplesPerLoop(sampleRate, soundLoopsPerSecond);
-	soundSamplesPerSecond = snd3dsComputeSampleRate(sampleRate, soundLoopsPerSecond);
-	snd3dsSetSampleRate(
-		true,
-		sampleRate, 
-		soundLoopsPerSecond, 
-		true);
+    setSampleRate(false);
 
 	return true;
 }
@@ -819,7 +834,6 @@ void impl3dsRenderDrawTextureToFrameBuffer()
 // frame is to be run just after the emulator has booted
 // up or returned from the menu.
 //---------------------------------------------------------
-short buffer[40000];
 void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
 {
 	t3dsStartTiming(1, "RunOneFrame");
@@ -890,6 +904,7 @@ void impl3dsEmulationPaused()
     ui3dsDrawStringWithNoWrapping(50, 140, 270, 154, 0x3f7fff, HALIGN_CENTER, "Saving SRAM to SD card...");
 
     // ** Save SRAM
+    emu_save_load_sram(file3dsReplaceFilenameExtension(romFileNameFullPath, ".sram"), 0);
 }
 
 
@@ -1183,16 +1198,19 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
 
     if (updateGameSettings)
     {
-        if (settings3DS.ForceFrameRate == 0)
-            settings3DS.TicksPerFrame = TICKS_PER_SEC / impl3dsGetROMFrameRate();
-
-        /*
-        if (settings3DS.ForceFrameRate == 1)
-            settings3DS.TicksPerFrame = TICKS_PER_FRAME_PAL;
-
-        else if (settings3DS.ForceFrameRate == 2)
-            settings3DS.TicksPerFrame = TICKS_PER_FRAME_NTSC;
-        */
+        if (Pico.rom)
+        {
+            if (settings3DS.ForceFrameRate == 0)
+                PicoDetectRegion();
+            else if (settings3DS.ForceFrameRate == 1)
+                Pico.m.pal = 1;
+            else if (settings3DS.ForceFrameRate == 2)
+                Pico.m.pal = 0;
+        }
+        long oldTicksPerFrame = settings3DS.TicksPerFrame;
+        settings3DS.TicksPerFrame = TICKS_PER_SEC / impl3dsGetROMFrameRate();
+        if (settings3DS.TicksPerFrame != oldTicksPerFrame)
+            setSampleRate(true);
 
         // update global volume
         //

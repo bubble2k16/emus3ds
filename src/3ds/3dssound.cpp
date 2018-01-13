@@ -25,6 +25,8 @@ int snd3dsSampleRate = 44100;
 int snd3dsSamplesPerLoop = 735;
 bool snd3dsIsStereo = true;
 bool snd3dsSpawnMixingThread = true;
+int snd3dsMinLoopBuffer = 1;
+int snd3dsMaxLoopBuffer = 2;
 
 #define SAMPLEBUFFER_SIZE 44100
 
@@ -107,7 +109,7 @@ void snd3dsMixSamples()
         s64 deltaTimeAhead = snd3DS.upToSamplePosition - nowSamplePosition;
         long blocksAhead = deltaTimeAhead / snd3dsSamplesPerLoop;
 
-        if (blocksAhead < MIN_FORWARD_BLOCKS)
+        if (blocksAhead < snd3dsMinLoopBuffer)
         {
             // buffer is about to underrun.
             //
@@ -116,7 +118,7 @@ void snd3dsMixSamples()
                 MIN_FORWARD_BLOCKS * snd3dsSamplesPerLoop;
             break;
         }
-        else if (blocksAhead < MAX_FORWARD_BLOCKS)
+        else if (blocksAhead < snd3dsMaxLoopBuffer)
         {
             // play head is still within acceptable range.
             // so we place the generated samples at where
@@ -319,7 +321,9 @@ void snd3dsSetSampleRate(
     bool isStereo, 
     int idealSampleRate, 
     int loopsPerSecond, 
-    bool spawnMixingThread)
+    bool spawnMixingThread,
+    int minLoopBuffer, 
+    int maxLoopBuffer)
 {
     snd3dsIsStereo = isStereo;
     if (idealSampleRate > 44100)
@@ -327,6 +331,8 @@ void snd3dsSetSampleRate(
     snd3dsSampleRate = snd3dsComputeSampleRate(idealSampleRate, loopsPerSecond);
     snd3dsSamplesPerLoop = snd3dsComputeSamplesPerLoop(idealSampleRate, loopsPerSecond);
     snd3dsSpawnMixingThread = spawnMixingThread;
+    snd3dsMinLoopBuffer = minLoopBuffer;
+    snd3dsMaxLoopBuffer = maxLoopBuffer;
 }
 
 
