@@ -88,12 +88,13 @@ SMenuItem optionsForFont[] = {
 
 SMenuItem optionsForStretch[] = {
     MENU_MAKE_DIALOG_ACTION (0, "No Stretch",               "No stretch"),
-    MENU_MAKE_DIALOG_ACTION (1, "4:3 (NTSC) Fit",           "Stretch to 320x240"),
-    MENU_MAKE_DIALOG_ACTION (5, "5:4 (PAL) Fit",            "Stretch to 300x240"),
-    MENU_MAKE_DIALOG_ACTION (2, "Fullscreen",               "Stretch to 400x240"),
-    MENU_MAKE_DIALOG_ACTION (3, "Cropped 4:3 (NTSC) Fit",   "Crop & Stretch to 320x240"),
-    MENU_MAKE_DIALOG_ACTION (6, "Cropped 5:4 (PAL) Fit",    "Crop & Stretch to 320x240"),
-    MENU_MAKE_DIALOG_ACTION (4, "Cropped Fullscreen",       "Crop & Stretch to 400x240"),
+    MENU_MAKE_DIALOG_ACTION (1, "Always 320x2##",           "Keep resolution at 320x224/320x240"),
+    MENU_MAKE_DIALOG_ACTION (2, "4:3 (NTSC) Fit",           "Stretch to 320x240"),
+    MENU_MAKE_DIALOG_ACTION (6, "5:4 (PAL) Fit",            "Stretch to 300x240"),
+    MENU_MAKE_DIALOG_ACTION (3, "Fullscreen",               "Stretch to 400x240"),
+    MENU_MAKE_DIALOG_ACTION (4, "Cropped 4:3 (NTSC) Fit",   "Crop & Stretch to 320x240"),
+    MENU_MAKE_DIALOG_ACTION (7, "Cropped 5:4 (PAL) Fit",    "Crop & Stretch to 320x240"),
+    MENU_MAKE_DIALOG_ACTION (5, "Cropped Fullscreen",       "Crop & Stretch to 400x240"),
     MENU_MAKE_LASTITEM  ()
 };
 
@@ -797,6 +798,16 @@ void impl3dsRenderDrawTextureToFrameBuffer()
 			gpu3dsAddQuadVertexes(40, 0, 360, 240, 0, 0, 320, 240, 0);
 			break;
 		case 1:
+            // Stretch 256x2## to 320x2## (320x224 or 320x240)
+            gpu3dsSetTextureEnvironmentReplaceColor();
+            gpu3dsDrawRectangle(0, 0, 72, 240, 0, 0x000000ff);
+            gpu3dsDrawRectangle(328, 0, 400, 240, 0, 0x000000ff);
+
+            gpu3dsSetTextureEnvironmentReplaceTexture0();
+            gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
+			gpu3dsAddQuadVertexes(40, 0, 360, 240, tx1, 0, tx2, 240, 0);
+			break;
+		case 2:
             // 4:3 NTSC Fit (320x240)
             gpu3dsSetTextureEnvironmentReplaceColor();
             gpu3dsDrawRectangle(0, 0, 40, 240, 0, 0x000000ff);
@@ -806,7 +817,7 @@ void impl3dsRenderDrawTextureToFrameBuffer()
             gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
 			gpu3dsAddQuadVertexes(40, 0, 360, 240, tx1, ty1, tx2, ty2, 0);
 			break;
-		case 5:
+		case 6:
             // 5:4 PAL Fit (300x240)
             gpu3dsSetTextureEnvironmentReplaceColor();
             gpu3dsDrawRectangle(0, 0, 50, 240, 0, 0x000000ff);
@@ -816,13 +827,13 @@ void impl3dsRenderDrawTextureToFrameBuffer()
             gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
 			gpu3dsAddQuadVertexes(50, 0, 350, 240, tx1, ty1, tx2, ty2, 0);
 			break;
-		case 2:
+		case 3:
             // Full Screen (400x240)
             gpu3dsSetTextureEnvironmentReplaceTexture0();
             gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
 			gpu3dsAddQuadVertexes(0, 0, 400, 240, tx1, ty1, tx2, ty2, 0);
 			break;
-		case 3:
+		case 4:
             // Cropped 4:3 NTSC (320x240)
             gpu3dsSetTextureEnvironmentReplaceColor();
             gpu3dsDrawRectangle(0, 0, 40, 240, 0, 0x000000ff);
@@ -832,7 +843,7 @@ void impl3dsRenderDrawTextureToFrameBuffer()
             gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
 			gpu3dsAddQuadVertexes(40, 0, 360, 240, tx1 + 8, ty1 + 8, tx2 - 8, ty2 - 8, 0);
 			break;
-		case 6:
+		case 7:
             // Cropped 4:3 PAL (320x240)
             gpu3dsSetTextureEnvironmentReplaceColor();
             gpu3dsDrawRectangle(0, 0, 50, 240, 0, 0x000000ff);
@@ -842,7 +853,7 @@ void impl3dsRenderDrawTextureToFrameBuffer()
             gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
 			gpu3dsAddQuadVertexes(50, 0, 350, 240, tx1 + 8, ty1 + 8, tx2 - 8, ty2 - 8, 0);
 			break;
-		case 4:
+		case 5:
             // Cropped Fullscreen (400x240)
             gpu3dsSetTextureEnvironmentReplaceTexture0();
             gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
