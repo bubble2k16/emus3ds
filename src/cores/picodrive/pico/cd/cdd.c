@@ -41,6 +41,8 @@
 #include "cue.h"
 #include "cdd.h"
 
+#include "3dsfilereadahead.h"
+
 #ifdef USE_LIBTREMOR
 #define SUPPORTED_EXT 20
 #else
@@ -150,6 +152,9 @@ static void ogg_free(int i)
 #endif
 #endif
 
+extern cd_read_ahead_struct cdda_read_ahead;
+
+
 void cdd_reset(void)
 {
   /* reset cycle counter */
@@ -244,7 +249,8 @@ int cdd_context_load(uint8 *state)
     /* DATA track */
     if (cdd.toc.tracks[0].fd)
     {
-      pm_seek(cdd.toc.tracks[0].fd, lba * cdd.sectorSize, SEEK_SET);
+      //pm_seek(cdd.toc.tracks[0].fd, lba * cdd.sectorSize, SEEK_SET);
+      read_ahead_fseek(&cdda_read_ahead, ((pm_file *)cdd.toc.tracks[0].fd)->file, lba * cdd.sectorSize, SEEK_SET);
     }
   }
 #ifdef USE_LIBTREMOR
@@ -294,13 +300,15 @@ int cdd_load(const char *filename, int type)
     return ret;
 
   /* read first 16 bytes */
-  pm_read(header, 0x10, cdd.toc.tracks[0].fd);
+  //pm_read(header, 0x10, cdd.toc.tracks[0].fd);
+  read_ahead_fread(&cdda_read_ahead, header, 0x10, ((pm_file *)cdd.toc.tracks[0].fd)->file);
 
   /* look for valid CD image ID string */
   if (memcmp("SEGADISCSYSTEM", header, 14))
   {    
     /* if not found, read next 16 bytes */
-    pm_read(header, 0x10, cdd.toc.tracks[0].fd);
+    //pm_read(header, 0x10, cdd.toc.tracks[0].fd);
+    read_ahead_fread(&cdda_read_ahead, header, 0x10, ((pm_file *)cdd.toc.tracks[0].fd)->file);
 
     /* look again for valid CD image ID string */
     if (memcmp("SEGADISCSYSTEM", header, 14))
@@ -323,7 +331,8 @@ int cdd_load(const char *filename, int type)
     elprintf(EL_STATUS|EL_ANOMALY, "cd: type detection mismatch");
 
   /* read CD image header + security code */
-  pm_read(header + 0x10, 0x200, cdd.toc.tracks[0].fd);
+  //pm_read(header + 0x10, 0x200, cdd.toc.tracks[0].fd);
+  read_ahead_fread(&cdda_read_ahead, header + 0x10, 0x200, ((pm_file *)cdd.toc.tracks[0].fd)->file);
 
   /* Simulate audio tracks if none found */
   if (cdd.toc.last == 1)
@@ -502,11 +511,13 @@ void cdd_read_data(uint8 *dst)
     if (cdd.sectorSize == 2352)
     {
       /* skip 16-byte header */
-      pm_seek(cdd.toc.tracks[0].fd, cdd.lba * 2352 + 16, SEEK_SET);
+      //pm_seek(cdd.toc.tracks[0].fd, cdd.lba * 2352 + 16, SEEK_SET);
+      read_ahead_fseek(&cdda_read_ahead, ((pm_file *)cdd.toc.tracks[0].fd)->file, cdd.lba * 2352 + 16, SEEK_SET);
     }
 
     /* read sector data (Mode 1 = 2048 bytes) */
-    pm_read(dst, 2048, cdd.toc.tracks[0].fd);
+    //pm_read(dst, 2048, cdd.toc.tracks[0].fd);
+    read_ahead_fread(&cdda_read_ahead, dst, 2048, ((pm_file *)cdd.toc.tracks[0].fd)->file);
   }
 }
 
@@ -673,7 +684,7 @@ void cdd_read_audio(unsigned int samples)
 void cdd_update(void)
 {  
 #ifdef LOG_CDD
-  error("LBA = %d (track n°%d)(latency=%d)\n", cdd.lba, cdd.index, cdd.latency);
+  error("LBA = %d (track nï¿½%d)(latency=%d)\n", cdd.lba, cdd.index, cdd.latency);
 #endif
   
   /* seeking disc */
@@ -855,7 +866,8 @@ void cdd_update(void)
       Pico_mcd->s68k_regs[0x36+0] = 0x01;
 
       /* DATA track */
-      pm_seek(cdd.toc.tracks[0].fd, cdd.lba * cdd.sectorSize, SEEK_SET);
+      //pm_seek(cdd.toc.tracks[0].fd, cdd.lba * cdd.sectorSize, SEEK_SET);
+      read_ahead_fseek(&cdda_read_ahead, ((pm_file *)cdd.toc.tracks[0].fd)->file, cdd.lba * cdd.sectorSize, SEEK_SET);
     }
 #ifdef USE_LIBTREMOR
     else if (cdd.toc.tracks[cdd.index].vf.seekable)
@@ -1098,7 +1110,8 @@ void cdd_process(void)
       if (!index)
       {
         /* DATA track */
-        pm_seek(cdd.toc.tracks[0].fd, lba * cdd.sectorSize, SEEK_SET);
+        //pm_seek(cdd.toc.tracks[0].fd, lba * cdd.sectorSize, SEEK_SET);
+        read_ahead_fseek(&cdda_read_ahead, ((pm_file *)cdd.toc.tracks[0].fd)->file, lba * cdd.sectorSize, SEEK_SET);
       }
 #ifdef USE_LIBTREMOR
       else if (cdd.toc.tracks[index].vf.seekable)
@@ -1197,7 +1210,8 @@ void cdd_process(void)
       if (!index)
       {
         /* DATA track */
-        pm_seek(cdd.toc.tracks[0].fd, lba * cdd.sectorSize, SEEK_SET);
+        //pm_seek(cdd.toc.tracks[0].fd, lba * cdd.sectorSize, SEEK_SET);
+        read_ahead_fseek(&cdda_read_ahead, ((pm_file *)cdd.toc.tracks[0].fd)->file, lba * cdd.sectorSize, SEEK_SET);
       }
 #ifdef USE_LIBTREMOR
       else if (cdd.toc.tracks[index].vf.seekable)

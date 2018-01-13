@@ -15,6 +15,8 @@ typedef struct
 
 void read_ahead_init(cd_read_ahead_struct *cd_read_ahead);
 
+long read_ahead_ftell(cd_read_ahead_struct *cd_read_ahead, FILE *fp);
+
 void read_ahead_fseek(cd_read_ahead_struct *, FILE *fp, int pos, int origin);
 
 int read_ahead_fread(cd_read_ahead_struct *, void *dest_buffer, int size, FILE *fp);
