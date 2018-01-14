@@ -4,7 +4,7 @@
 #include "inttypes.h"
 
 #define SOUNDQUEUE_SIZE         8192
-#define DACQUEUE_SIZE           2048
+#define DACQUEUE_SIZE           4096
 
 typedef struct
 {
