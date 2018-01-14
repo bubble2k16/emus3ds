@@ -54,6 +54,9 @@ PICO_INTERNAL void PicoPowerMCD(void)
   // 3DS Bug fix. Otherwise CD games can crash!
   Pico_mcd->cdda_stream = NULL;
   Pico_mcd->pcm_mixpos = 0;
+
+  // clear the PCM mix buffer
+  memset(Pico_mcd->pcm_mixbuf, 0, sizeof(Pico_mcd->pcm_mixbuf));
 }
 
 void pcd_soft_reset(void)
@@ -89,6 +92,10 @@ PICO_INTERNAL int PicoResetMCD(void)
     Pico.sv.data = NULL;
   }
   Pico.sv.start = Pico.sv.end = 0; // unused
+
+  // clear buffers
+  memset(Pico_mcd->pcm_mixbuf, 0, sizeof(Pico_mcd->pcm_mixbuf));
+  Pico_mcd->pcm_mixpos = 0;
 
   return 0;
 }
