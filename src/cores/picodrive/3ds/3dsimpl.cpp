@@ -89,6 +89,7 @@ SMenuItem optionsForFont[] = {
 
 SMenuItem optionsForStretch[] = {
     MENU_MAKE_DIALOG_ACTION (0, "No Stretch",               "No stretch"),
+    MENU_MAKE_DIALOG_ACTION (7, "4:3 (NTSC) Width",         "Stretch Width Only to 320px"),
     MENU_MAKE_DIALOG_ACTION (1, "4:3 (NTSC) Fit",           "Stretch to 320x240"),
     MENU_MAKE_DIALOG_ACTION (5, "5:4 (PAL) Fit",            "Stretch to 300x240"),
     MENU_MAKE_DIALOG_ACTION (2, "Fullscreen",               "Stretch to 400x240"),
@@ -205,7 +206,7 @@ SMenuItem optionMenu[] = {
     MENU_MAKE_HEADER1   ("GAME-SPECIFIC SETTINGS"),
     MENU_MAKE_PICKER    (10000, "  Frameskip", "Try changing this if the game runs slow. Skipping frames help it run faster but less smooth.", optionsForFrameskip, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (12000, "  Framerate", "Some games run at 50 or 60 FPS by default. Override if required.", optionsForFrameRate, DIALOGCOLOR_CYAN),
-    MENU_MAKE_PICKER    (19000, "  Flickering Sprites", "Sprites on real hardware flicker. You can disable for better visuals.", optionsForSpriteFlicker, DIALOGCOLOR_CYAN),
+    //MENU_MAKE_PICKER    (19000, "  Flickering Sprites", "Sprites on real hardware flicker. You can disable for better visuals.", optionsForSpriteFlicker, DIALOGCOLOR_CYAN),
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("AUDIO"),
     MENU_MAKE_CHECKBOX  (20000, "  Low-pass filter", 0),
@@ -408,6 +409,7 @@ u32 input3dsDefaultButtonMappings[10] = { SMD_BUTTON_C, SMD_BUTTON_B, 0, SMD_BUT
 
 SSoundQueue soundQueue;
 SDACQueue dacQueue;
+SDACQueue cddaQueue;
 
 int soundSamplesPerGeneration = 0;
 int soundSamplesPerSecond = 0;
@@ -685,6 +687,7 @@ void impl3dsResetConsole()
     picoFrameCounter = 0;
     soundQueueReset(&soundQueue);
     dacQueueReset(&dacQueue);
+    dacQueueReset(&cddaQueue);
 }
 
 
@@ -805,6 +808,16 @@ void impl3dsRenderDrawTextureToFrameBuffer()
             gpu3dsSetTextureEnvironmentReplaceTexture0();
             gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
 			gpu3dsAddQuadVertexes(40, 0, 360, 240, 0, 0, 320, 240, 0);
+			break;
+		case 7:
+            // 4:3 NTSC Stretch Width (320x2??)
+            gpu3dsSetTextureEnvironmentReplaceColor();
+            gpu3dsDrawRectangle(0, 0, 40, 240, 0, 0x000000ff);
+            gpu3dsDrawRectangle(360, 0, 400, 240, 0, 0x000000ff);
+
+            gpu3dsSetTextureEnvironmentReplaceTexture0();
+            gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
+			gpu3dsAddQuadVertexes(40, 0, 360, 240, tx1, 0, tx2, 240, 0);
 			break;
 		case 1:
             // 4:3 NTSC Fit (320x240)
@@ -1275,10 +1288,11 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
         else
             PicoIn.sndVolumeMul = volumeMul[settings3DS.Volume];
 
+/*
         PicoIn.opt = PicoIn.opt & ~POPT_ACC_SPRITES;
         if (!settings3DS.OtherOptions[SETTINGS_ALLSPRITES])
             PicoIn.opt = PicoIn.opt | POPT_ACC_SPRITES;
-
+*/
         if (settings3DS.OtherOptions[SETTINGS_CONTROLLERTYPE] == 0)
         {
             PicoSetInputDevice(0, PICO_INPUT_PAD_3BTN);
