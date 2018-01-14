@@ -50,6 +50,10 @@ PICO_INTERNAL void PicoPowerMCD(void)
   Pico_mcd->m.busreq = 2;     // busreq on, s68k in reset
   Pico_mcd->s68k_regs[3] = 1; // 2M word RAM mode, m68k access
   memset(Pico_mcd->bios + 0x70, 0xff, 4);
+
+  // 3DS Bug fix. Otherwise CD games can crash!
+  Pico_mcd->cdda_stream = NULL;
+  Pico_mcd->pcm_mixpos = 0;
 }
 
 void pcd_soft_reset(void)
