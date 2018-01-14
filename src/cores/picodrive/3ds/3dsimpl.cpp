@@ -57,6 +57,7 @@ SSettings3DS settings3DS;
 #define SETTINGS_BIOS                   2
 #define SETTINGS_CPUCORE                3
 #define SETTINGS_LOWPASSFILTER          4
+#define SETTINGS_CONTROLLERTYPE         5
 
 
 //----------------------------------------------------------------------
@@ -145,6 +146,12 @@ SMenuItem optionsForButtons[] = {
     MENU_MAKE_LASTITEM  ()
 };
 
+SMenuItem optionsForControllerType[] = {
+    MENU_MAKE_DIALOG_ACTION (0,                 "3-Button Controller",        ""),
+    MENU_MAKE_DIALOG_ACTION (1,                 "6-Button Controller",        ""),
+    MENU_MAKE_LASTITEM  ()
+};
+
 SMenuItem optionsFor3DSButtons[] = {
     MENU_MAKE_DIALOG_ACTION (0,                 "None",             ""),
     MENU_MAKE_DIALOG_ACTION (KEY_A,             "3DS A Button",     ""),
@@ -209,6 +216,9 @@ SMenuItem optionMenu[] = {
 
 
 SMenuItem controlsMenu[] = {
+    MENU_MAKE_HEADER1   ("CONTROLLER TYPE"),
+    MENU_MAKE_PICKER    (13100, "  Sega Controller Type", "", optionsForControllerType, DIALOGCOLOR_CYAN),
+    MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("BUTTON CONFIGURATION"),
     MENU_MAKE_CHECKBOX  (50000, "  Apply button mappings to all games", 0),
     MENU_MAKE_CHECKBOX  (50001, "  Apply rapid fire settings to all games", 0),
@@ -1116,6 +1126,9 @@ bool impl3dsReadWriteSettingsByGame(bool writeMode)
     config3dsReadWriteInt32("ButtonMappingOpenEmulatorMenu=%d\n", &settings3DS.ButtonHotkeyOpenMenu);
     config3dsReadWriteInt32("PalFix=%d\n", &settings3DS.PaletteFix, 0, 1);
 
+    // v0.92 options
+    config3dsReadWriteInt32("InputType=%d\n", &settings3DS.OtherOptions[SETTINGS_CONTROLLERTYPE]);
+
     // New options here.
 
     config3dsCloseFile();
@@ -1263,9 +1276,20 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
             PicoIn.sndVolumeMul = volumeMul[settings3DS.Volume];
 
         PicoIn.opt = PicoIn.opt & ~POPT_ACC_SPRITES;
-        if (!settings3DS.OtherOptions[SETTINGS_ALLSPRITES]);
+        if (!settings3DS.OtherOptions[SETTINGS_ALLSPRITES])
             PicoIn.opt = PicoIn.opt | POPT_ACC_SPRITES;
 
+        if (settings3DS.OtherOptions[SETTINGS_CONTROLLERTYPE] == 0)
+        {
+            PicoSetInputDevice(0, PICO_INPUT_PAD_3BTN);
+            PicoSetInputDevice(1, PICO_INPUT_PAD_3BTN);
+        }
+        else
+        {
+            PicoSetInputDevice(0, PICO_INPUT_PAD_6BTN);
+            PicoSetInputDevice(1, PICO_INPUT_PAD_6BTN);
+        }
+        
     }
 
     return settingsChanged;
@@ -1351,6 +1375,7 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
 
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_ALLSPRITES], -1, 19000);     // sprite flicker
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_LOWPASSFILTER], -1, 20000);  // low pass filter
+    UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_CONTROLLERTYPE], -1, 13100); // controller type
 
     return settingsUpdated;
 	
