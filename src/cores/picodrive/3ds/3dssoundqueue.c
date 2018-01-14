@@ -115,6 +115,7 @@ void soundQueueReset(SSoundQueue *queue)
     queue->readPtr = 0;
     queue->writePtr = 0;
     queue->flushPtr = 0;
+    memset(queue->queue, 0, sizeof(SOUNDQUEUE_SIZE * 2));
 }
 
 
@@ -236,4 +237,6 @@ void dacQueueReset(SDACQueue *queue)
 {
     queue->readPtr = 0;
     queue->writePtr = 0;
+    memset(queue->queueLeft, 0, sizeof(DACQUEUE_SIZE * 2));
+    memset(queue->queueRight, 0, sizeof(DACQUEUE_SIZE * 2));
 }
