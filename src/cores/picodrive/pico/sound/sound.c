@@ -272,7 +272,14 @@ void cdda_raw_update(int *buffer, int length)
   }
 
   if (PicoIn.sndRate == 44100)
-    mix_16h_to_32(buffer, cdda_out_buffer, length*2); 
+  {
+    for (int i = 0; i < length; i++)
+    {
+      buffer[i*2] += cdda_out_buffer[i*2] >> 1;
+      buffer[i*2+1] += cdda_out_buffer[i*2+1] >> 1;
+    }
+    //mix_16h_to_32(buffer, cdda_out_buffer, length*2); 
+  }
   else
   {
     int incr = 44100 * 16384 / PicoIn.sndRate;
@@ -452,7 +459,7 @@ int PsndRender3DS(short *leftBuffer, short *rightBuffer, int length)
   {
     // No low pass filter.
     //
-    for (; count > 0; count--)
+    for (; count >= 0; count--)
     {
       READ_SAMPLE
       WRITE_SAMPLE
@@ -462,7 +469,7 @@ int PsndRender3DS(short *leftBuffer, short *rightBuffer, int length)
   {
     // Low pass filter for Old 3DS (30 KHz)
     //
-    for (; count > 0; count--)
+    for (; count >= 0; count--)
     {
       READ_SAMPLE
 
@@ -490,7 +497,7 @@ int PsndRender3DS(short *leftBuffer, short *rightBuffer, int length)
   else if (PicoIn.lowPassFilter == 4)
   {
     // Low pass filter for New 3DS (44 KHz)
-    for (; count > 0; count--)
+    for (; count >= 0; count--)
     {
       READ_SAMPLE
 
@@ -643,36 +650,17 @@ PICO_INTERNAL void PsndGetSamples(int y)
     {
       if (PicoIn.AHW & (PAHW_MCD | PAHW_32X))
       {
-        if (emulator.fastForwarding)
-        {
-          for (int i = 0; i < Pico.snd.len; i++)
+        if (!emulator.fastForwarding)
+            dacQueueWaitUntilLength(&dacQueue, Pico.snd.len * 2, 20, 1000000);
+        for (int i = 0; i < length; i++)
             dacQueueAddStereo(&dacQueue, PicoIn.sndOut[i*2] + buf32[i*2], PicoIn.sndOut[i*2] + (buf32[i*2 + 1]));
-        }
-        else
-        {
-          for (int i = 0; i < Pico.snd.len; i++)
-          {
-            dacQueueWaitUntilLength(&dacQueue, Pico.snd.len * 2, 16, 100000);
-            dacQueueAddStereo(&dacQueue, PicoIn.sndOut[i*2] + buf32[i*2], PicoIn.sndOut[i*2] + (buf32[i*2 + 1]));
-          }
-        }
       }
       else
       {
-        if (emulator.fastForwarding)
-        {
-          for (int i = 0; i < Pico.snd.len; i++)
+        if (!emulator.fastForwarding)
+            dacQueueWaitUntilLength(&dacQueue, Pico.snd.len * 2, 20, 1000000);
+        for (int i = 0; i < length; i++)
             dacQueueAddStereo(&dacQueue, PicoIn.sndOut[i*2], PicoIn.sndOut[i*2]);
-        }
-        else
-        {
-          for (int i = 0; i < Pico.snd.len; i++)
-          {
-            dacQueueWaitUntilLength(&dacQueue, Pico.snd.len * 2, 16, 100000);
-            dacQueueAddStereo(&dacQueue, PicoIn.sndOut[i*2], PicoIn.sndOut[i*2]);
-          }
-        }
-        
       }
     }
 
@@ -714,7 +702,7 @@ PICO_INTERNAL void PsndGetSamplesMS(void)
     {
       for (int i = 0; i < Pico.snd.len; i++)
       {
-        dacQueueWaitUntilLength(&dacQueue, Pico.snd.len * 2, 32, 100000);
+        dacQueueWaitUntilLength(&dacQueue, Pico.snd.len * 2, 20, 1000000);
         dacQueueAdd(&dacQueue, PicoIn.sndOut[i*2]);
       }
     }

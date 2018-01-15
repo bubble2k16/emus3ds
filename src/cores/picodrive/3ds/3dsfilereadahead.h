@@ -2,7 +2,7 @@
 #ifndef _3DSFILEREADAHEAD_H_
 #define _3DSFILEREADAHEAD_H_
 
-#define CD_READ_AHEAD_BUFFER_SIZE (65536)
+#define CD_READ_AHEAD_BUFFER_SIZE (65536*2)
 
 typedef struct
 {

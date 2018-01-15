@@ -609,20 +609,20 @@ void setSampleRate(bool preserveState)
     int sampleRate = 30000;
     int soundLoopsPerSecond = (Pico.m.pal ? 50 : 60);
 
-	// compute a sample rate closes to 33075 kHz for old 3DS, and 44100 Khz for new 3DS.
+	// compute a sample rate closes to 30000 kHz for old 3DS, and 44100 Khz for new 3DS.
 	//
     u8 new3DS = false;
     APT_CheckNew3DS(&new3DS);
     if (new3DS)
         sampleRate = 44100;
     
-	PicoIn.sndRate = currentConfig.s_PsndRate = defaultConfig.s_PsndRate = sampleRate;
-    
     soundSamplesPerGeneration = snd3dsComputeSamplesPerLoop(sampleRate, soundLoopsPerSecond);
 	soundSamplesPerSecond = snd3dsComputeSampleRate(sampleRate, soundLoopsPerSecond);
+
+	PicoIn.sndRate = currentConfig.s_PsndRate = defaultConfig.s_PsndRate = soundSamplesPerSecond;
 	snd3dsSetSampleRate(
 		true,
-		sampleRate, 
+		soundSamplesPerSecond, 
 		soundLoopsPerSecond, 
 		true);
     PsndRerate(preserveState ? 0 : 1);
@@ -900,8 +900,8 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
 	{
         // Let's try to keep the digital sample queue filled with some data
         emulator.waitBehavior = WAIT_FULL;
-        if (dacQueueGetLength(&dacQueue) <= soundSamplesPerGeneration)
-            emulator.waitBehavior = WAIT_HALF;
+        if (dacQueueGetLength(&dacQueue) <= soundSamplesPerGeneration * 2)
+            emulator.waitBehavior = WAIT_NONE;
 
 		impl3dsEmulationPollInput();
 
