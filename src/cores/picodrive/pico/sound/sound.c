@@ -459,7 +459,7 @@ int PsndRender3DS(short *leftBuffer, short *rightBuffer, int length)
   {
     // No low pass filter.
     //
-    for (; count >= 0; count--)
+    for (; count > 0; count--)
     {
       READ_SAMPLE
       WRITE_SAMPLE
@@ -469,7 +469,7 @@ int PsndRender3DS(short *leftBuffer, short *rightBuffer, int length)
   {
     // Low pass filter for Old 3DS (30 KHz)
     //
-    for (; count >= 0; count--)
+    for (; count > 0; count--)
     {
       READ_SAMPLE
 
@@ -497,7 +497,7 @@ int PsndRender3DS(short *leftBuffer, short *rightBuffer, int length)
   else if (PicoIn.lowPassFilter == 4)
   {
     // Low pass filter for New 3DS (44 KHz)
-    for (; count >= 0; count--)
+    for (; count > 0; count--)
     {
       READ_SAMPLE
 
