@@ -785,7 +785,7 @@ void impl3dsRenderDrawTextureToFrameBuffer()
     float tx1 = 0, ty1 = 8;         
     float tx2 = 320, ty2 = 232;
 
-    if ((Pico.video.reg[12] & 1) == 0)
+    if (((Pico.video.reg[12] & 1) == 0) && !(PicoIn.AHW & PAHW_SMS))
     {
         tx1 = 32;
         tx2 = 288;
