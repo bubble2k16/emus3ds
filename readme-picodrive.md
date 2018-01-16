@@ -56,6 +56,24 @@ https://github.com/bubble2k16/picodrive_3ds/releases
 
 ## Change History
 
+### v0.92
+- Added support for Mega CD games 
+- CD reads are implemented with read-ahead for speed
+- Other optimizations for CD games now allow Sonic CD's 2D levels, Final Fight CD and probably others to be playable on an Old 3DS with frame drops with smooth audio, if you can accept that. (FMV's still run slowly due to heavy processing)
+- Optimizations
+- Fixed PicoDrive crashing bug when loading any save state immediately when the game starts running
+- Removed option for flickering sprites as it doesn't do what I thought it should do
+- Clear Mega CD PCM buffers on reset
+- Fixed random crashing bug when loading CD games due to uninitialized variables
+- Added configurable option for 3- or 6-button controller type.
+- Added some minor optimizations for the YM2612 FM synth (although it did nothing to improve performance and quality on an old 3DS)
+- Fixed bug where the SRAM was previously never saved.
+- Now defaults World region games to 60 FPS.
+- Added option to force 60 FPS, 50 FPS and default frame rate.
+- Added more screen stretching options and properly handles H32 and H40 width modes.
+- Reduced lag in the music and sound playback.
+- Used the assembly version of the 32X renderer (untested).
+
 ### v0.91
 - Added support for more extensions (.smd, .gen, .bin, .rom).
 - Added option to apply a low pass filter to the audio.
