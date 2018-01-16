@@ -1385,9 +1385,9 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
         UPDATE_SETTINGS(settings3DS.ButtonHotkeyDisableFramelimit, -1, 23002);
     }
 
-    UPDATE_SETTINGS(settings3DS.PaletteFix, -1, 16000);
+    //UPDATE_SETTINGS(settings3DS.PaletteFix, -1, 16000);
 
-    UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_ALLSPRITES], -1, 19000);     // sprite flicker
+    //UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_ALLSPRITES], -1, 19000);     // sprite flicker
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_LOWPASSFILTER], -1, 20000);  // low pass filter
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_CONTROLLERTYPE], -1, 13100); // controller type
 
