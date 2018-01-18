@@ -53,6 +53,7 @@ static void convert_pal555(int invert_prio)
                                                                   \
     *pd = ((t & m1) << 11) | ((t & m2) << 1) | ((t & m3) >> 10);  \
   }                                                               \
+  pd += (DrawLineDestIncrement / 2) - 320;                        \
 }
 
 // packed pixel mode
@@ -67,6 +68,7 @@ static void convert_pal555(int invert_prio)
     else                                                          \
       pmd_draw_code;                                              \
   }                                                               \
+  pd += (DrawLineDestIncrement / 2) - 320;                        \
 } 
 
 // run length mode
@@ -83,6 +85,7 @@ static void convert_pal555(int invert_prio)
         pmd_draw_code;                                            \
     }                                                             \
   }                                                               \
+  pd += (DrawLineDestIncrement / 2) - 320;                        \
 }
 
 // this is almost never used (Wiz and menu bg gen only)
@@ -150,7 +153,8 @@ static void do_loop_dc##name(unsigned short *dst,               \
   unsigned short *p32x;                                         \
   int lines = lines_sft_offs >> 16;                             \
   int l;                                                        \
-  (void)palmd;                                                  \
+  /*(void)palmd; */                                             \
+  HighPal = palmd;                                              \
   for (l = 0; l < lines; l++, pmd += 8) {                       \
     pre_code;                                                   \
     p32x = dram + dram[l];                                      \
@@ -170,7 +174,8 @@ static void do_loop_pp##name(unsigned short *dst,               \
   unsigned char  *p32x;                                         \
   int lines = lines_sft_offs >> 16;                             \
   int l;                                                        \
-  (void)palmd;                                                  \
+  /*(void)palmd; */                                             \
+  HighPal = palmd;                                              \
   for (l = 0; l < lines; l++, pmd += 8) {                       \
     pre_code;                                                   \
     p32x = (void *)(dram + dram[l]);                            \
@@ -191,7 +196,8 @@ static void do_loop_rl##name(unsigned short *dst,               \
   unsigned short *p32x;                                         \
   int lines = lines_sft_offs >> 16;                             \
   int l;                                                        \
-  (void)palmd;                                                  \
+  /*(void)palmd; */                                             \
+  HighPal = palmd;                                              \
   for (l = 0; l < lines; l++, pmd += 8) {                       \
     pre_code;                                                   \
     p32x = dram + dram[l];                                      \
@@ -223,6 +229,8 @@ static const do_loop_func do_loop_dc_f[] = { do_loop_dc, do_loop_dc_md, do_loop_
 static const do_loop_func do_loop_pp_f[] = { do_loop_pp, do_loop_pp_md, do_loop_pp_scan, do_loop_pp_scan_md };
 static const do_loop_func do_loop_rl_f[] = { do_loop_rl, do_loop_rl_md, do_loop_rl_scan, do_loop_rl_scan_md };
 
+extern short *Pico32xNativePal;
+
 void PicoDraw32xLayer(int offs, int lines, int md_bg)
 {
   int have_scan = PicoScan32xBegin != NULL && PicoScan32xEnd != NULL;
@@ -232,7 +240,8 @@ void PicoDraw32xLayer(int offs, int lines, int md_bg)
   int which_func;
 
   Pico.est.DrawLineDest = (char *)DrawLineDestBase + offs * DrawLineDestIncrement;
-  DrawLineDest = Pico.est.DrawLineDest;
+  Pico32xNativePal = Pico32xMem->pal_native;
+  HighPal = Pico.est.HighPal;
 
   dram = Pico32xMem->dram[Pico32x.vdp_regs[0x0a/2] & P32XV_FS];
 
@@ -271,6 +280,7 @@ do_it:
   if (Pico32x.vdp_regs[2 / 2] & P32XV_SFT)
     lines_sft_offs |= 1 << 8;
 
+  DrawLineDest = Pico.est.DrawLineDest;
   do_loop[which_func](Pico.est.DrawLineDest, dram, lines_sft_offs, md_bg);
 }
 
@@ -314,11 +324,6 @@ void PicoDraw32xLayerMdOnly(int offs, int lines)
 
 void PicoDrawSetOutFormat32x(pdso_t which, int use_32x_line_mode)
 {
-#ifdef _ASM_32X_DRAW
-  extern void *Pico32xNativePal;
-  Pico32xNativePal = Pico32xMem->pal_native;
-#endif
-
   if (which == PDF_RGB555 && use_32x_line_mode) {
     // we'll draw via FinalizeLine32xRGB555 (rare)
     PicoDrawSetInternalBuf(NULL, 0);
