@@ -439,7 +439,7 @@ bool impl3dsInitializeCore()
 				  POPT_EN_32X|POPT_EN_PWM | POPT_DIS_IDLE_DET;
 	defaultConfig.s_PsndRate = sampleRate;
 	defaultConfig.s_PicoRegion = 0; // auto
-	defaultConfig.s_PicoAutoRgnOrder = 0x184; // US, EU, JP
+	defaultConfig.s_PicoAutoRgnOrder = 0x814; // US, JP, EU 
 	defaultConfig.s_PicoCDBuffers = 0;
 	defaultConfig.confirm_save = EOPT_CONFIRM_SAVE;
 	defaultConfig.Frameskip = -1; // auto
@@ -638,6 +638,7 @@ bool impl3dsLoadROM(char *romFilePath)
     PicoPatchUnload();
 	enum media_type_e media_type;
 	media_type = PicoLoadMedia(romFilePath, "/3ds/picodrive_3ds/carthw.cfg", find_bios, NULL);
+
     PicoSetInputDevice(0, PICO_INPUT_PAD_6BTN);
     PicoSetInputDevice(1, PICO_INPUT_PAD_6BTN);
 
