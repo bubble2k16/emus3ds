@@ -4,7 +4,7 @@ This is a port of notaz's PicoDrive emulator to the old 3DS / 2DS. Although Pico
 
 The screen rendering is done completely using the original PicoDrive's ARM processor-optimized renderer. 
 
-You can play Master System, Mega Drive games and Sega CD games, but it does not support 32X games yet. CD games run a little slower (you should enable 1-2 frameskips) on and Old 3DS, but it runs very well on a New 3DS. Meanwhile, use the Retroarch versions for 32X games. :)
+You can play Master System, Mega Drive games and Sega CD games, but it does not support 32X games yet. CD games run a little slower (you should enable 1-2 frameskips) on an Old 3DS, but it runs very well on a New 3DS. Meanwhile, use the Retroarch versions for 32X games. :)
 
 The default maps for the controls are: 
 1. 3DS' Y Button -> MD's A Button, 
@@ -27,6 +27,17 @@ https://github.com/bubble2k16/picodrive_3ds/releases
 2. Place your ROMs inside any folder.
 3. Copy picodrive_3ds_top.png to ROOT of your SD card.
 4. Exit your CIA installer and go to your CFW's home screen to launch the app.
+
+### CD-ROM BIOS
+
+1. If you have the CD ROM BIOS, place them in the /3ds/picodrive_3ds/bios folder.
+2. They must be named:
+   - bios_CD_U.bin,
+   - bios_CD_J.bin,
+   - bios_CD_E.bin, 
+   for the respective regions.
+3. You can place all three BIOS in the /3ds/picodrive_3ds/bios folder. 
+
 
 ### When in-game,
 
