@@ -26,6 +26,13 @@
 #include "3dsconfig.h"
 #include "3dsvideo.h"
 
+extern "C" {
+#include "3dshack.h"
+}
+
+extern "C" void debugWait();
+extern "C" void clearBottomScreen();
+
 #include "extern.h"
 #include "3dssoundqueue.h"
 
@@ -45,7 +52,9 @@
 #include "../pico/pico_int.h"
 #include "../platform/common/emu.h"
 #include "platform.h"
+
 extern "C" int YM2612Write_(unsigned int a, unsigned int v);
+extern int ctr_svchack_successful;
 
 //----------------------------------------------------------------------
 // Settings
@@ -402,7 +411,7 @@ u32 input3dsValidButtonMappings[10] = { SMD_BUTTON_A, SMD_BUTTON_B, SMD_BUTTON_C
 //
 // This should NOT include D-keys.
 //---------------------------------------------------------
-u32 input3dsDefaultButtonMappings[10] = { SMD_BUTTON_C, SMD_BUTTON_B, 0, SMD_BUTTON_A, 0, 0, 0, 0, SMD_BUTTON_MODE, SMD_BUTTON_START };
+u32 input3dsDefaultButtonMappings[10] = { SMD_BUTTON_C, SMD_BUTTON_B, SMD_BUTTON_X, SMD_BUTTON_A, SMD_BUTTON_Y, SMD_BUTTON_Z, 0, 0, SMD_BUTTON_MODE, SMD_BUTTON_START };
 
 
 
@@ -426,6 +435,7 @@ static short __attribute__((aligned(4))) sndBuffer[2*44100/50];
 //---------------------------------------------------------
 bool impl3dsInitializeCore()
 {
+clearBottomScreen();
     int sampleRate = 30000;
     int soundLoopsPerSecond = 60;
     soundSamplesPerGeneration = snd3dsComputeSamplesPerLoop(sampleRate, soundLoopsPerSecond);
@@ -435,7 +445,7 @@ bool impl3dsInitializeCore()
 	defaultConfig.EmuOpt    = 0x9d | EOPT_EN_CD_LEDS;
 	defaultConfig.s_PicoOpt = POPT_EN_STEREO|POPT_EN_FM|POPT_EN_PSG|POPT_EN_Z80 |
 				  POPT_EN_MCD_PCM|POPT_EN_MCD_CDDA|POPT_EN_MCD_GFX |
-				  POPT_EN_DRC|POPT_ACC_SPRITES |
+				  POPT_ACC_SPRITES |
 				  POPT_EN_32X|POPT_EN_PWM | POPT_DIS_IDLE_DET;
 	defaultConfig.s_PsndRate = sampleRate;
 	defaultConfig.s_PicoRegion = 0; // auto
@@ -510,6 +520,16 @@ bool impl3dsInitializeCore()
     }
 
 	gpu3dsUseShader(0);
+
+printf("a");
+    //ctr_svchack_successful = hack3dsInitializeSvcHack();
+    if (hack3dsInitializeSvcHack() && emulator.isReal3DS)
+    {
+        hack3dsTestDynamicRecompilation();
+        ctr_svchack_successful = 1;
+        PicoIn.opt |= POPT_EN_DRC;
+    }
+    
     return true;
 }
 
@@ -1257,6 +1277,8 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
 
     if (updateGameSettings)
     {
+        // This fixes the bug where the 50 FPS is selected menu, but game still running in 60 FPS.
+        long oldTicksPerFrame = TICKS_PER_SEC / impl3dsGetROMFrameRate();
         if (Pico.rom)
         {
             if (settings3DS.ForceFrameRate == 0)
@@ -1266,7 +1288,7 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
             else if (settings3DS.ForceFrameRate == 2)
                 Pico.m.pal = 0;
         }
-        long oldTicksPerFrame = settings3DS.TicksPerFrame;
+        //long oldTicksPerFrame = TICKS_PER_SEC / impl3dsGetROMFrameRate(); 
         settings3DS.TicksPerFrame = TICKS_PER_SEC / impl3dsGetROMFrameRate();
         if (settings3DS.TicksPerFrame != oldTicksPerFrame)
             setSampleRate(true);
