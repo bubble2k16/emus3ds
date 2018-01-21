@@ -1071,14 +1071,14 @@ static void chan_render_finish(int length)
 {
 	// This is weird: because if the channels are all disabled, the timer will
 	// not be incremented.
-	//ym2612.OPN.eg_cnt = crct.eg_cnt;		
-	//ym2612.OPN.eg_timer = crct.eg_timer;
-	ym2612.OPN.eg_timer += ym2612.OPN.eg_timer_add;
+	ym2612.OPN.eg_cnt = crct.eg_cnt;		
+	ym2612.OPN.eg_timer = crct.eg_timer;
+	/*ym2612.OPN.eg_timer += ym2612.OPN.eg_timer_add * length;
 	while (ym2612.OPN.eg_timer > EG_TIMER_OVERFLOW)
 	{
 		ym2612.OPN.eg_timer -= EG_TIMER_OVERFLOW;
 		ym2612.OPN.eg_cnt++;		
-	}
+	}*/
 
 	g_lfo_ampm = crct.pack >> 16; // need_save
 	ym2612.OPN.lfo_cnt = crct.lfo_cnt;
@@ -1618,7 +1618,7 @@ int YM2612UpdateOne_(int *buffer, int length, int stereo, int is_buf_empty)
 	/* refresh PG and EG */
 	refresh_fc_eg_chan( &ym2612.CH[0] );
 	refresh_fc_eg_chan( &ym2612.CH[1] );
-	if( (ym2612.OPN.ST.mode & 0xc0) )
+	if( (ym2612.OPN.ST.mode_internal & 0xc0) )
 		/* 3SLOT MODE */
 		refresh_fc_eg_chan_sl3();
 	else
@@ -1674,7 +1674,6 @@ void YM2612ResetChip_(void)
 	ym2612.OPN.eg_timer = 0;
 	ym2612.OPN.eg_cnt   = 0;
 	ym2612.OPN.ST.status = 0;
-	ym2612.OPN.ST.address_internal = 0;
 
 	reset_channels( &ym2612.CH[0] );
 	for(i = 0xb6 ; i >= 0xb4 ; i-- )
@@ -1694,6 +1693,10 @@ void YM2612ResetChip_(void)
 	ym2612.dacen = 0;
 	ym2612.dacout = 0;
 	ym2612.addr_A1 = 0;
+
+	// for 3DS
+	ym2612.OPN.ST.address_internal = 0;
+	ym2612.OPN.ST.mode_internal = 0;
 	ym2612.addr_A1_internal = 0;
 }
 
@@ -1772,6 +1775,7 @@ int YM2612Write_(unsigned int a, unsigned int v)
 #endif
 			case 0x27:	/* mode, timer control */
 				//set_timers( v );
+				ym2612.OPN.ST.mode_internal = v;
 				ret=0;
 				break;
 			case 0x28:	/* key on / off */
@@ -2017,6 +2021,11 @@ int YM2612PicoStateLoad2(int *tat, int *tbt)
 		ym2612.OPN.SL3.kcode[c]= (blk<<2) | opn_fktable[fn >> 7];
 		ym2612.OPN.SL3.fc[c] = fn_table[fn*2]>>(7-blk);
 	}
+
+	// For 3DS
+	ym2612.OPN.ST.address_internal = ym2612.OPN.ST.address;
+	ym2612.OPN.ST.mode_internal = ym2612.OPN.ST.mode;
+	ym2612.addr_A1_internal = ym2612.addr_A1;
 
 	return 0;
 }
