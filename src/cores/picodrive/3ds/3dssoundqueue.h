@@ -68,6 +68,16 @@ int soundQueueReadNext(SSoundQueue *queue, int64_t *time, int *data, int *addr, 
 int soundQueuePeekNext(SSoundQueue *queue, int64_t *time, int *data, int *addr, int *value);
 
 //-----------------------------------------------------------------------------
+// Peeks at the last flushed command without incrementing the readPtr.
+//-----------------------------------------------------------------------------
+int soundQueuePeekLast(SSoundQueue *queue, int64_t *time, int *data, int *addr, int *value);
+
+//-----------------------------------------------------------------------------
+// Counts how many items are in the queue.
+//-----------------------------------------------------------------------------
+int soundQueueGetLength(SSoundQueue *queue);
+
+//-----------------------------------------------------------------------------
 // Checks if the sound queue is empty.
 //-----------------------------------------------------------------------------
 int soundQueueIsEmpty(SSoundQueue *queue);

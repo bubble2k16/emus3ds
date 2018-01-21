@@ -102,6 +102,7 @@ typedef struct
 
 	// For 3DS.
 	UINT8	address_internal;	/* 10 address register | need_save     */
+	UINT8	mode_internal;		/* mode  CSM / 3SLOT    */
 } FM_ST;
 
 /***********************************************************/

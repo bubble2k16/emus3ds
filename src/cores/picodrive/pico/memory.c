@@ -940,6 +940,8 @@ void ym2612_sync_timers(int z80_cycles, int mode_old, int mode_new)
 }
 
 extern int picoFrameCounter;
+extern int picoSoundBlockCounter;
+
 // For 3DS
 // ym2612 DAC and timer I/O handlers for z80
 static int ym2612_write_local(u32 a, u32 d, int is_from_z80)
@@ -965,6 +967,8 @@ printf ("ym2612 %04x <- %02x (%d)\n", a, d, get_scanline(is_from_z80));
 DEBUG_WAIT_L_KEY
 }
 */
+#define BLOCKS_PER_LOOP 2
+
   switch (a)
   {
     case 0: /* address port 0 */
@@ -1031,6 +1035,9 @@ DEBUG_WAIT_L_KEY
           if (d & 0x20)
             ym2612.OPN.ST.status &= ~2;
 
+          soundQueueAdd(&soundQueue, picoSoundBlockCounter, 0, 0, ym2612.OPN.ST.address);
+          soundQueueAdd(&soundQueue, picoSoundBlockCounter, 0, 1, d);
+
           if ((d ^ old_mode) & 0xc0) {
             return 1;
           }
@@ -1046,8 +1053,8 @@ DEBUG_WAIT_L_KEY
         }
       } 
 
-      soundQueueAdd(&soundQueue, picoFrameCounter * lines + get_scanline(is_from_z80), 0, 0, ym2612.OPN.ST.address);
-      soundQueueAdd(&soundQueue, picoFrameCounter * lines + get_scanline(is_from_z80), 0, 1, d);
+      soundQueueAdd(&soundQueue, picoSoundBlockCounter, 0, 0, ym2612.OPN.ST.address);
+      soundQueueAdd(&soundQueue, picoSoundBlockCounter, 0, 1, d);
       //printf ("ym2612 %02x <- %02x (%d, %d)\n", ym2612.OPN.ST.address, d, is_from_z80, get_scanline(is_from_z80));
       break;
 
@@ -1063,8 +1070,8 @@ DEBUG_WAIT_L_KEY
       addr = ym2612.OPN.ST.address | 0x100;
       ym2612.REGS[addr] = d;
 
-      soundQueueAdd(&soundQueue, picoFrameCounter * lines + get_scanline(is_from_z80), 0, 2, ym2612.OPN.ST.address);
-      soundQueueAdd(&soundQueue, picoFrameCounter * lines + get_scanline(is_from_z80), 0, 3, d);
+      soundQueueAdd(&soundQueue, picoSoundBlockCounter, 0, 2, ym2612.OPN.ST.address);
+      soundQueueAdd(&soundQueue, picoSoundBlockCounter, 0, 3, d);
       //printf ("ym2612 %02x <- %02x (%d, %d)\n", ym2612.OPN.ST.address, d, is_from_z80, get_scanline(is_from_z80));
       break;
   }

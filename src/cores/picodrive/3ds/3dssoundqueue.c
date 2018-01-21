@@ -91,6 +91,36 @@ int soundQueuePeekNext(SSoundQueue *queue, int64_t *time, int *data, int *addr, 
 }
 
 //-----------------------------------------------------------------------------
+// Peeks at the last flushed command without incrementing the readPtr.
+//-----------------------------------------------------------------------------
+int soundQueuePeekLast(SSoundQueue *queue, int64_t *time, int *data, int *addr, int *value)
+{
+    if (soundQueueIsEmpty(queue))
+        return false;
+
+    int flushPtr = queue->flushPtr - 1;
+    if (flushPtr < 0)
+        flushPtr += SOUNDQUEUE_SIZE;
+    *time = queue->queue[flushPtr].time;
+    *addr = queue->queue[flushPtr].addr;
+    *value = queue->queue[flushPtr].value;
+    *data = queue->queue[flushPtr].data;
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+// Counts how many items are in the queue.
+//-----------------------------------------------------------------------------
+int soundQueueGetLength(SSoundQueue *queue)
+{
+    int length = queue->flushPtr - queue->readPtr;
+    if (length < 0)
+        length += SOUNDQUEUE_SIZE;
+    return length;
+}
+
+
+//-----------------------------------------------------------------------------
 // Checks if the sound queue is empty.
 //-----------------------------------------------------------------------------
 int soundQueueIsEmpty(SSoundQueue *queue)

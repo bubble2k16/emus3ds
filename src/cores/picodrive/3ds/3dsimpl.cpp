@@ -426,6 +426,7 @@ int soundSamplesPerSecond = 0;
 int audioFrame = 0;
 int emulatorFrame = 0;
 int picoFrameCounter = 0;
+int picoSoundBlockCounter = 0;
 int picoDebugC = 0;
 
 static short __attribute__((aligned(4))) sndBuffer[2*44100/50];
@@ -435,7 +436,6 @@ static short __attribute__((aligned(4))) sndBuffer[2*44100/50];
 //---------------------------------------------------------
 bool impl3dsInitializeCore()
 {
-clearBottomScreen();
     int sampleRate = 30000;
     int soundLoopsPerSecond = 60;
     soundSamplesPerGeneration = snd3dsComputeSamplesPerLoop(sampleRate, soundLoopsPerSecond);
@@ -568,15 +568,52 @@ void impl3dsGenerateSoundSamples(int numberOfSamples)
 //---------------------------------------------------------
 void impl3dsOutputSoundSamples(int numberOfSamples, short *leftSamples, short *rightSamples)
 {
-    while (!soundQueueIsEmpty(&soundQueue))
-    {
-        int addr, data, value;
-        s64 time;
-        soundQueueRead(&soundQueue, 0x7fffffffffffffffLL, &data, &addr, &value);
-        YM2612Write_(addr, value);
-    }
-    PsndRender3DS(leftSamples, rightSamples, numberOfSamples);
+    #define BLOCKS_PER_LOOP 2
 
+    for (int i = 0; i < BLOCKS_PER_LOOP; i++)
+    {
+        if (!soundQueueIsEmpty(&soundQueue))
+        {
+            int addr, data, value;
+            s64 time;
+
+            // Gets all YM2612 commands for the current block.
+            //
+            // Based BLOCKS_PER_LOOP (= 2), we are generating two blocks of
+            // sound samples per frame. Each block generates samples
+            // for the number of scanlines / BLOCKS_PER_LOOP.
+            //
+            soundQueuePeekNext(&soundQueue, &time, &data, &addr, &value);
+            time += 1;
+
+            if (i == (BLOCKS_PER_LOOP - 1))
+            {
+                s64 lastFlushedCommandTime;
+
+                // Gets all YM2612 commands before the last blocks in the queue.
+                // (this prevents the queue from overflowing, just in case
+                // we don't have enough CPU resources to generate the samples,
+                // esp on an Old 3DS.)
+                soundQueuePeekLast(&soundQueue, &lastFlushedCommandTime, &data, &addr, &value);
+
+                if (lastFlushedCommandTime - time > BLOCKS_PER_LOOP * 2)
+                    time = lastFlushedCommandTime;
+            }
+            while (true)
+            {
+                if (!soundQueueRead(&soundQueue, time, &data, &addr, &value))
+                    break;
+                YM2612Write_(addr, value);
+            }
+        }
+
+        int samplesPerLoop = numberOfSamples / BLOCKS_PER_LOOP;
+        int samplesThisLoop = numberOfSamples / BLOCKS_PER_LOOP;
+        if (i == (BLOCKS_PER_LOOP - 1))
+            samplesThisLoop = numberOfSamples - samplesThisLoop * (BLOCKS_PER_LOOP - 1);
+
+        PsndRender3DS(&leftSamples[samplesPerLoop*i], &rightSamples[samplesPerLoop*i], samplesThisLoop);
+    }
 }
 
 
@@ -706,6 +743,7 @@ void impl3dsResetConsole()
     // ** Reset
     PicoReset();
     picoFrameCounter = 0;
+    picoSoundBlockCounter = 1;
     soundQueueReset(&soundQueue);
     dacQueueReset(&dacQueue);
     dacQueueReset(&cddaQueue);
@@ -929,7 +967,6 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
         PicoIn.skipFrame = skipDrawingFrame;
         PicoDrawSetOutBuf(video3dsGetCurrentSoftwareBuffer(), 1024);
         PicoFrame();
-        soundQueueFlush(&soundQueue);
 	}
 
 	t3dsEndTiming(10);

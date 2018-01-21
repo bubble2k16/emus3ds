@@ -7,6 +7,7 @@
  */
 
 #include "3dsopt.h"
+#include "3dssoundqueue.h"
 
 #define CYCLES_M68K_LINE     488 // suitable for both PAL/NTSC
 #define CYCLES_M68K_VINT_LAG 112
@@ -22,6 +23,8 @@
 #define CPUS_RUN(m68k_cycles) \
   SekRunM68k(m68k_cycles)
 #endif
+
+extern int picoSoundBlockCounter;
 
 // sync m68k to Pico.t.m68c_aim
 static void SekSyncM68k(void)
@@ -157,6 +160,9 @@ static int PicoFrameHints(void)
     // get samples from sound chips
     if ((y == 224 || y == line_sample) && PicoIn.sndOut)
     {
+      soundQueueFlush(&soundQueue);
+      picoSoundBlockCounter++;
+
       cycles = SekCyclesDone();
 
       if (Pico.m.z80Run && !Pico.m.z80_reset && (PicoIn.opt&POPT_EN_Z80))

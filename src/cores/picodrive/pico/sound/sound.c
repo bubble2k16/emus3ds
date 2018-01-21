@@ -693,19 +693,11 @@ PICO_INTERNAL void PsndGetSamplesMS(void)
   //
   if (emulator.isReal3DS)
   {
-    if (emulator.fastForwarding)
-    {
-      for (int i = 0; i < Pico.snd.len; i++)
-        dacQueueAddStereo(&dacQueue, PicoIn.sndOut[i*2], PicoIn.sndOut[i*2]);
-    }
-    else
-    {
-      for (int i = 0; i < Pico.snd.len; i++)
-      {
+    if (!emulator.fastForwarding)
         dacQueueWaitUntilLength(&dacQueue, Pico.snd.len * 2, 20, 1000000);
-        dacQueueAddStereo(&dacQueue, PicoIn.sndOut[i*2], PicoIn.sndOut[i*2]);
-      }
-    }
+
+    for (int i = 0; i < Pico.snd.len; i++)
+      dacQueueAddStereo(&dacQueue, PicoIn.sndOut[i*2], PicoIn.sndOut[i*2]);
   }
 
   if (PicoIn.writeSound != NULL)
