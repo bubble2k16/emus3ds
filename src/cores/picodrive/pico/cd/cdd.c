@@ -42,6 +42,7 @@
 #include "cdd.h"
 
 #include "3dsfilereadahead.h"
+#include "3dsdbg.h"
 
 #ifdef USE_LIBTREMOR
 #define SUPPORTED_EXT 20

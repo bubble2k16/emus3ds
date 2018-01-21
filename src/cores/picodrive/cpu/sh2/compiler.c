@@ -270,7 +270,7 @@ typedef struct {
 // note: reg_temp[] must have at least the amount of
 // registers used by handlers in worst case (currently 4)
 #ifdef __arm__
-#include "../drc/emit_arm.c"
+#include "../drc/emit_arm.c.inc"
 
 #ifndef __MACH__
 
@@ -621,7 +621,7 @@ static void REGPARM(3) *dr_lookup_block(u32 pc, int is_slave, int *tcache_id)
 
 static void *dr_failure(void)
 {
-  lprintf("recompilation failed\n");
+  printf("recompilation failed\n");
   exit(1);
 }
 

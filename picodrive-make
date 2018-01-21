@@ -54,7 +54,7 @@ ARCH	:=	-march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
 
 CFLAGS	:=	-g -w -O3 -mword-relocations -finline-limit=20000 \
             -D_ASM_DRAW_C -D_ASM_MEMORY_C -D_ASM_MISC_C -D_ASM_YM2612_C -D_ASM_CD_MEMORY_C -D_ASM_32X_DRAW \
-			-DEMU_C68K -D_USE_DRZ80 \
+			-DEMU_C68K -D_USE_DRZ80 -D__arm__ -DDRC_SH2 -D_SVP_DRC -D_3DS \
 			-fno-rtti -fomit-frame-pointer -ffunction-sections -fpermissive \
 			$(ARCH)
 
@@ -94,6 +94,7 @@ SFILES		:=	$(foreach file,$(notdir $(wildcard src/cores/picodrive/*.s)),					cor
 				$(foreach file,$(notdir $(wildcard src/cores/picodrive/cpu/cyclone/*.s)),		cores/picodrive/cpu/cyclone/$(file)) \
 				$(foreach file,$(notdir $(wildcard src/cores/picodrive/cpu/cyclone/tools/*.s)),	cores/picodrive/cpu/cyclone/tools/$(file)) \
 				$(foreach file,$(notdir $(wildcard src/cores/picodrive/cpu/DrZ80/*.s)),			cores/picodrive/cpu/DrZ80/$(file)) \
+				$(foreach file,$(notdir $(wildcard src/cores/picodrive/cpu/drc/*.s)),			cores/picodrive/cpu/drc/$(file)) \
 				$(foreach file,$(notdir $(wildcard src/cores/picodrive/pico/*.s)),				cores/picodrive/pico/$(file)) \
 				$(foreach file,$(notdir $(wildcard src/cores/picodrive/pico/32x/*.s)),			cores/picodrive/pico/32x/$(file)) \
 				$(foreach file,$(notdir $(wildcard src/cores/picodrive/pico/carthw/svp/*.s)),	cores/picodrive/pico/carthw/svp/$(file)) \
@@ -107,6 +108,7 @@ CFILES		:=	$(foreach file,$(notdir $(wildcard src/3ds/zlib/*.c)),							3ds/zlib
 				$(foreach file,$(notdir $(wildcard src/cores/picodrive/3ds/*.c)),				cores/picodrive/3ds/$(file)) \
 				$(foreach file,$(notdir $(wildcard src/cores/picodrive/cpu/*.c)),				cores/picodrive/cpu/$(file)) \
 				$(foreach file,$(notdir $(wildcard src/cores/picodrive/cpu/cyclone/*.c)),		cores/picodrive/cpu/cyclone/$(file)) \
+				$(foreach file,$(notdir $(wildcard src/cores/picodrive/cpu/drc/*.c)),			cores/picodrive/cpu/drc/$(file)) \
 				$(foreach file,$(notdir $(wildcard src/cores/picodrive/cpu/sh2/*.c)),			cores/picodrive/cpu/sh2/$(file)) \
 				$(foreach file,$(notdir $(wildcard src/cores/picodrive/cpu/sh2/mame/*.c)),		cores/picodrive/cpu/sh2/mame/$(file)) \
 				$(foreach file,$(notdir $(wildcard src/cores/picodrive/pico/*.c)),				cores/picodrive/pico/$(file)) \
@@ -219,6 +221,7 @@ $(BUILD):
 	[ -d build/cores/picodrive/cpu ] 					|| mkdir -p build/cores/picodrive/cpu
 	[ -d build/cores/picodrive/cpu/cyclone ] 			|| mkdir -p build/cores/picodrive/cpu/cyclone
 	[ -d build/cores/picodrive/cpu/cyclone/tools ] 		|| mkdir -p build/cores/picodrive/cpu/cyclone/tools
+	[ -d build/cores/picodrive/cpu/drc ] 				|| mkdir -p build/cores/picodrive/cpu/drc
 	[ -d build/cores/picodrive/cpu/fame ] 				|| mkdir -p build/cores/picodrive/cpu/fame
 	[ -d build/cores/picodrive/cpu/musashi ] 			|| mkdir -p build/cores/picodrive/cpu/musashi
 	[ -d build/cores/picodrive/cpu/DrZ80 ] 				|| mkdir -p build/cores/picodrive/cpu/DrZ80

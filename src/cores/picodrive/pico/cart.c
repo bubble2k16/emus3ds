@@ -12,6 +12,7 @@
 //#include "../unzip/unzip.h"
 //#include <zlib.h>
 
+#include "3dsdbg.h"
 
 static int rom_alloc_size;
 static const char *rom_exts[] = { "bin", "gen", "smd", "iso", "sms", "gg", "sg" };

@@ -21,9 +21,12 @@ void drc_cmn_init(void)
   if (tcache == NULL)
     tcache = tcache_default;
 
+  if (PicoIn.opt & POPT_EN_DRC)
+  {
   ret = plat_mem_set_exec(tcache, DRC_TCACHE_SIZE);
   elprintf(EL_STATUS, "drc_cmn_init: %p, %zd bytes: %d",
     tcache, DRC_TCACHE_SIZE, ret);
+  }
 
 #ifdef __arm__
   if (PicoIn.opt & POPT_EN_DRC)

@@ -39,7 +39,7 @@ void ssp_drc_end(void){}
 #endif
 
 #define COUNT_OP
-#include "../../../cpu/drc/emit_arm.c"
+#include "../../../cpu/drc/emit_arm.c.inc"
 
 // -----------------------------------------------------
 

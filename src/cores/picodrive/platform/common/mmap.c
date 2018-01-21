@@ -1,6 +1,7 @@
 #include "3ds.h"
+#include "3dshack.h"
 
-static int ctr_svchack_successful = 0;
+int ctr_svchack_successful = 0;
 
 typedef struct
 {
@@ -13,6 +14,31 @@ pico_mmap_t pico_mmaps[] = {
    {0x06000000, 0},
    {NULL,       0}
 };
+
+void ctr_flush_invalidate_cache()
+{
+    hack3dsInvalidateAndFlushCaches();
+}
+
+void cache_flush_d_inval_i(void *start, void *end)
+{
+#ifdef __arm__
+   size_t len = (char *)end - (char *)start;
+   (void)len;
+#if defined(__BLACKBERRY_QNX__)
+   msync(start, end - start, MS_SYNC | MS_CACHE_ONLY | MS_INVALIDATE_ICACHE);
+#elif defined(__MACH__)
+   sys_dcache_flush(start, len);
+   sys_icache_invalidate(start, len);
+#elif defined(_3DS)
+   ctr_flush_invalidate_cache();
+#elif defined(VITA)
+   sceKernelSyncVMDomain(sceBlock, start, len);
+#else
+   __clear_cache(start, end);
+#endif
+#endif
+}
 
 void *plat_mmap(unsigned long addr, size_t size, int need_exec, int is_fixed)
 {
@@ -124,4 +150,48 @@ void plat_munmap(void *ptr, size_t size)
    }
 
    free(ptr);
+}
+
+// if NULL is returned, static buffer is used
+void *plat_mem_get_for_drc(size_t size)
+{
+   void *mem = NULL;
+#ifdef VITA
+   sceKernelGetMemBlockBase(sceBlock, &mem);
+#endif
+   return mem;
+}
+
+int plat_mem_set_exec(void *ptr, size_t size)
+{
+   int ret = -1;
+#ifdef _WIN32
+   ret = VirtualProtect(ptr, size, PAGE_EXECUTE_READWRITE, 0);
+   if (ret == 0 && log_cb)
+      log_cb(RETRO_LOG_ERROR, "VirtualProtect(%p, %d) failed: %d\n", ptr, (int)size,
+             GetLastError());
+#elif defined(_3DS)
+
+   if (ctr_svchack_successful)
+   {
+      unsigned int currentHandle;
+      svcDuplicateHandle(&currentHandle, 0xFFFF8001);
+      ret = svcControlProcessMemory(currentHandle, ptr, 0x0,
+                              size, MEMOP_PROT, 0b111);
+      svcCloseHandle(currentHandle);
+      ctr_flush_invalidate_cache();
+   }
+   else
+   {
+      exit(1);
+   }
+
+#elif defined(VITA)
+   ret = sceKernelOpenVMDomain();
+#else
+   ret = mprotect(ptr, size, PROT_READ | PROT_WRITE | PROT_EXEC);
+   if (ret != 0 && log_cb)
+      log_cb(RETRO_LOG_ERROR, "mprotect(%p, %zd) failed: %d\n", ptr, size, errno);
+#endif
+   return ret;
 }
