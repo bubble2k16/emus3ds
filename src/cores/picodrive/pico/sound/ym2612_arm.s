@@ -525,193 +525,13 @@
 .endm
 
 
-/* 
-.global update_eg_phase @ FM_SLOT *SLOT, UINT32 eg_cnt
-
-update_eg_phase:
-    stmfd   sp!, {r5,r6}
-    mov     r5, r0             @ slot
-    ldrh    r3, [r5,#0x18]       @ tl
-    ldrh    r6, [r5,#0x1a]       @ volume
-    add     r6, r6, r3
-    update_eg_phase_slot SLOT1
-    mov     r0, r6
-    ldmfd   sp!, {r5,r6}
-    bx      lr
-.pool
-
-
-.global advance_lfo @ int lfo_ampm, UINT32 lfo_cnt_old, UINT32 lfo_cnt
-
-advance_lfo:
-    mov     r12, r0, lsl #16
-    advance_lfo_m
-    mov     r0, r12, lsr #16
-    bx      lr
-.pool
-
-
-.global upd_algo0 @ chan_rend_context *c
-upd_algo0:
-    stmfd   sp!, {r4-r10,lr}
-    mov     lr, r0
-
-    ldr     r3, =ym_sin_tab
-    ldr     r5, =ym_tl_tab
-    ldmia   lr, {r6-r7}
-    ldr     r10, [lr, #0x54]
-    ldr     r12, [lr, #0x4c]
-
-    upd_algo0_m
-
-    ldmfd   sp!, {r4-r10,pc}
-.pool
-
-
-.global upd_algo1 @ chan_rend_context *c
-upd_algo1:
-    stmfd   sp!, {r4-r10,lr}
-    mov     lr, r0
-
-    ldr     r3, =ym_sin_tab
-    ldr     r5, =ym_tl_tab
-    ldmia   lr, {r6-r7}
-    ldr     r10, [lr, #0x54]
-    ldr     r12, [lr, #0x4c]
-
-    upd_algo1_m
-
-    ldmfd   sp!, {r4-r10,pc}
-.pool
-
-
-.global upd_algo2 @ chan_rend_context *c
-upd_algo2:
-    stmfd   sp!, {r4-r10,lr}
-    mov     lr, r0
-
-    ldr     r3, =ym_sin_tab
-    ldr     r5, =ym_tl_tab
-    ldmia   lr, {r6-r7}
-    ldr     r10, [lr, #0x54]
-    ldr     r12, [lr, #0x4c]
-
-    upd_algo2_m
-
-    ldmfd   sp!, {r4-r10,pc}
-.pool
-
-
-.global upd_algo3 @ chan_rend_context *c
-upd_algo3:
-    stmfd   sp!, {r4-r10,lr}
-    mov     lr, r0
-
-    ldr     r3, =ym_sin_tab
-    ldr     r5, =ym_tl_tab
-    ldmia   lr, {r6-r7}
-    ldr     r10, [lr, #0x54]
-    ldr     r12, [lr, #0x4c]
-
-    upd_algo3_m
-
-    ldmfd   sp!, {r4-r10,pc}
-.pool
-
-
-.global upd_algo4 @ chan_rend_context *c
-upd_algo4:
-    stmfd   sp!, {r4-r10,lr}
-    mov     lr, r0
-
-    ldr     r3, =ym_sin_tab
-    ldr     r5, =ym_tl_tab
-    ldmia   lr, {r6-r7}
-    ldr     r10, [lr, #0x54]
-    ldr     r12, [lr, #0x4c]
-
-    upd_algo4_m
-
-    ldmfd   sp!, {r4-r10,pc}
-.pool
-
-
-.global upd_algo5 @ chan_rend_context *c
-upd_algo5:
-    stmfd   sp!, {r4-r10,lr}
-    mov     lr, r0
-
-    ldr     r3, =ym_sin_tab
-    ldr     r5, =ym_tl_tab
-    ldmia   lr, {r6-r7}
-    ldr     r10, [lr, #0x54]
-    ldr     r12, [lr, #0x4c]
-
-    upd_algo5_m
-
-    ldmfd   sp!, {r4-r10,pc}
-.pool
-
-
-.global upd_algo6 @ chan_rend_context *c
-upd_algo6:
-    stmfd   sp!, {r4-r10,lr}
-    mov     lr, r0
-
-    ldr     r3, =ym_sin_tab
-    ldr     r5, =ym_tl_tab
-    ldmia   lr, {r6-r7}
-    ldr     r10, [lr, #0x54]
-    ldr     r12, [lr, #0x4c]
-
-    upd_algo6_m
-
-    ldmfd   sp!, {r4-r10,pc}
-.pool
-
-
-.global upd_algo7 @ chan_rend_context *c
-upd_algo7:
-    stmfd   sp!, {r4-r10,lr}
-    mov     lr, r0
-
-    ldr     r3, =ym_sin_tab
-    ldr     r5, =ym_tl_tab
-    ldmia   lr, {r6-r7}
-    ldr     r10, [lr, #0x54]
-    ldr     r12, [lr, #0x4c]
-
-    upd_algo7_m
-
-    ldmfd   sp!, {r4-r10,pc}
-.pool
-
-
-.global upd_slot1 @ chan_rend_context *c
-upd_slot1:
-    stmfd   sp!, {r4-r10,lr}
-    mov     lr, r0
-
-    ldr     r3, =ym_sin_tab
-    ldr     r5, =ym_tl_tab
-    ldmia   lr, {r6-r7}
-    ldr     r10, [lr, #0x54]
-    ldr     r12, [lr, #0x4c]
-
-    upd_slot1_m
-    str     r10, [lr, #0x38]
-
-    ldmfd   sp!, {r4-r10,pc}
-.pool
-*/
-
-
 @ lr=context, r12=pack (stereo, lastchan, disabled, lfo_enabled | pan_r, pan_l, ams[2] | AMmasks[4] | FB[4] | lfo_ampm[16])
 @ r0-r2=scratch, r3=sin_tab/scratch, r4=(length<<8)|unused[4],was_update,algo[3], r5=tl_tab/slot,
 @ r6-r7=vol_out[4], r8=eg_timer, r9=eg_timer_add[31:16], r10=op1_out, r11=buffer
 .global chan_render_loop @ chan_rend_context *ct, int *buffer, int length
 
-chan_render_loop:
+
+.macro chan_render_loop_for_algo algo disabled pan_l pan_r
     stmfd   sp!, {r4-r11,lr}
     mov     lr,  r0
     mov     r4,  r2, lsl #8      @ no more 24 bits here
@@ -726,14 +546,14 @@ chan_render_loop:
     ldmia   lr,  {r6,r7}         @ load volumes
 
     tst     r12, #8              @ lfo?
-    beq     crl_loop
+    beq     101f @ crl_loop
 
-crl_loop_lfo:
+100: @ crl_loop_lfo:
     add     r0, lr, #0x30
     ldmia   r0, {r1,r2}
 
     subs    r4, r4, #0x100
-    bmi     crl_loop_end
+    bmi     105f @ crl_loop_end
 
     add     r2, r2, r1
     str     r2, [lr, #0x30]
@@ -743,42 +563,26 @@ crl_loop_lfo:
 
     add     r4, r4, #0x100
 
-crl_loop:
+101: @crl_loop:
     subs    r4, r4, #0x100
-    bmi     crl_loop_end
+    bmi     105f @ crl_loop_end
 
     @ -- EG --
     add     r8, r8, r9
     cmp     r8, #EG_TIMER_OVERFLOW
-    bcc     eg_done
-    add     r0, lr, #0x3c
-    ldmia   r0, {r1,r5}         @ eg_cnt, CH
-eg_loop:
-    sub     r8, r8, #EG_TIMER_OVERFLOW
-    add     r1, r1, #1
-                                        @ SLOT1 (0)
-    @ r5=slot, r1=eg_cnt, trashes: r0,r2,r3
-    update_eg_phase_slot SLOT1
-    add     r5, r5, #SLOT_STRUCT_SIZE*2 @ SLOT2 (2)
-    update_eg_phase_slot SLOT2
-    sub     r5, r5, #SLOT_STRUCT_SIZE   @ SLOT3 (1)
-    update_eg_phase_slot SLOT3
-    add     r5, r5, #SLOT_STRUCT_SIZE*2 @ SLOT4 (3)
-    update_eg_phase_slot SLOT4
+    bcs     106f @ eg_overflow
 
-    cmp     r8, #EG_TIMER_OVERFLOW
-    subcs   r5, r5, #SLOT_STRUCT_SIZE*3
-    bcs     eg_loop
-    str     r1, [lr, #0x3c]
+103: @eg_done:
 
-eg_done:
-
+.if \disabled == 1
     @ -- disabled? --
     and     r0, r12, #0xC
     cmp     r0, #0xC
-    beq     crl_loop_lfo
+    beq     100b @ crl_loop_lfo
     cmp     r0, #0x4
-    beq     crl_loop
+    beq     101b @ crl_loop
+
+.else
 
     @ -- SLOT1 --
     ldr     r3, =ym_tl_tab
@@ -787,65 +591,31 @@ eg_done:
     @ r0-r2=scratch, r3=tl_tab, r5=scratch, r6-r7=vol_out[4], r10=op1_out
     upd_slot1_m
 
-    @ -- SLOT2+ --
-    and     r0, r4, #7
-    ldr     pc, [pc, r0, lsl #2]
-    nop
-    .word   crl_algo0
-    .word   crl_algo1
-    .word   crl_algo2
-    .word   crl_algo3
-    .word   crl_algo4
-    .word   crl_algo5
-    .word   crl_algo6
-    .word   crl_algo7
-    .pool
+    \algo
 
-crl_algo0:
-    upd_algo0_m
-    b       crl_algo_done
-    .pool
-
-crl_algo1:
-    upd_algo1_m
-    b       crl_algo_done
-    .pool
-
-crl_algo2:
-    upd_algo2_m
-    b       crl_algo_done
-    .pool
-
-crl_algo3:
-    upd_algo3_m
-    b       crl_algo_done
-    .pool
-
-crl_algo4:
-    upd_algo4_m
-    b       crl_algo_done
-    .pool
-
-crl_algo5:
-    upd_algo5_m
-    b       crl_algo_done
-    .pool
-
-crl_algo6:
-    upd_algo6_m
-    b       crl_algo_done
-    .pool
-
-crl_algo7:
-    upd_algo7_m
-
-
-crl_algo_done:
     @ -- WRITE SAMPLE --
     tst     r0, r0
-    beq     ctl_sample_skip
-    orr     r4, r4, #8              @ have_output
+    beq     104f @ ctl_sample_skip
 
+    @ we don't really care about this in this port:
+    @orr     r4, r4, #8              @ have_output
+
+.if \pan_l == 1
+    ldr     r1, [r11]
+    add     r1, r0, r1
+    str     r1, [r11], #4
+.else
+    add     r11, r11, #4
+.endif
+.if \pan_r == 1
+    ldr     r1, [r11]
+    add     r1, r0, r1
+    str     r1, [r11], #4
+.else
+    add     r11, r11, #4
+.endif
+
+/*
     tst     r12, #0x20              @ L
     ldrne   r1, [r11]
     addeq   r11, r11, #4
@@ -856,7 +626,7 @@ crl_algo_done:
     addeq   r11, r11, #4
     addne   r1, r0, r1
     strne   r1, [r11], #4
-
+*/
     /* duplicated this here to avoid the branch */
     @ -- PHASE UPDATE --
     add     r5, lr, #0x10
@@ -876,14 +646,15 @@ crl_algo_done:
     stmia   r5, {r0-r1}
 
     tst     r12, #8
-    bne     crl_loop_lfo
-    b       crl_loop
+    bne     100b @ crl_loop_lfo
+    b       101b @ crl_loop
 
 
-ctl_sample_skip:
-    and     r1, r12, #1
-    add     r1, r1,  #1
-    add     r11,r11, r1, lsl #2
+104: @ ctl_sample_skip:
+    @and     r1, r12, #1
+    @add     r1, r1,  #1
+    @add     r11,r11, r1, lsl #2
+    add     r11,r11, #8             @ assume stereo
 
     @ -- PHASE UPDATE --
     add     r5, lr, #0x10
@@ -903,11 +674,11 @@ ctl_sample_skip:
     stmia   r5, {r0-r1}
 
     tst     r12, #8
-    bne     crl_loop_lfo
-    b       crl_loop
+    bne     100b @ crl_loop_lfo
+    b       101b @ crl_loop
+.endif
 
-
-crl_loop_end:
+105: @ crl_loop_end:
 @    stmia   lr,  {r6,r7}         @ save volumes (for debug)
     str     r8,  [lr, #0x44]     @ eg_timer
     str     r12, [lr, #0x4c]     @ pack (for lfo_ampm)
@@ -915,6 +686,63 @@ crl_loop_end:
     str     r10, [lr, #0x54]     @ op1_out
     ldmfd   sp!, {r4-r11,pc}
 
+    /* Place the EG overflow code to minimize branch? */
+106: @ eg_overflow:
+    add     r0, lr, #0x3c
+    ldmia   r0, {r1,r5}         @ eg_cnt, CH
+
+102: @eg_loop:
+    sub     r8, r8, #EG_TIMER_OVERFLOW
+    add     r1, r1, #1
+                                        @ SLOT1 (0)
+    @ r5=slot, r1=eg_cnt, trashes: r0,r2,r3
+    update_eg_phase_slot SLOT1
+    add     r5, r5, #SLOT_STRUCT_SIZE*2 @ SLOT2 (2)
+    update_eg_phase_slot SLOT2
+    sub     r5, r5, #SLOT_STRUCT_SIZE   @ SLOT3 (1)
+    update_eg_phase_slot SLOT3
+    add     r5, r5, #SLOT_STRUCT_SIZE*2 @ SLOT4 (3)
+    update_eg_phase_slot SLOT4
+
+    cmp     r8, #EG_TIMER_OVERFLOW
+    subcs   r5, r5, #SLOT_STRUCT_SIZE*3
+    bcs     102b @ eg_loop
+    str     r1, [lr, #0x3c]
+    b       103b @ eg_done
+
 .pool
+.endm
+
+/* optimized versions of the chan_render_loop functions (channel enabled) */
+
+.macro chan_render_loop_m algo disabled l r
+.global chan_render_loop_algo\algo\()_\disabled\()_\l\r
+chan_render_loop_algo\algo\()_\disabled\()_\l\r:
+    chan_render_loop_for_algo upd_algo\algo\()_m \disabled \l \r
+.endm
+
+.macro chan_render_loop_expand_algo_m disabled l r
+chan_render_loop_m 0 \disabled \l \r
+chan_render_loop_m 1 \disabled \l \r
+chan_render_loop_m 2 \disabled \l \r
+chan_render_loop_m 3 \disabled \l \r
+chan_render_loop_m 4 \disabled \l \r
+chan_render_loop_m 5 \disabled \l \r
+chan_render_loop_m 6 \disabled \l \r
+chan_render_loop_m 7 \disabled \l \r
+.endm
+
+// enabled
+chan_render_loop_expand_algo_m 0 0 0 
+chan_render_loop_expand_algo_m 0 0 1
+chan_render_loop_expand_algo_m 0 1 0 
+chan_render_loop_expand_algo_m 0 1 1 
+
+// disabled (actually never used)
+chan_render_loop_expand_algo_m 1 0 0 
+chan_render_loop_expand_algo_m 1 0 1
+chan_render_loop_expand_algo_m 1 1 0 
+chan_render_loop_expand_algo_m 1 1 1 
+
 
 @ vim:filetype=armasm
