@@ -160,6 +160,7 @@ static int PicoFrameHints(void)
     // get samples from sound chips
     if ((y == 224 || y == line_sample) && PicoIn.sndOut)
     {
+      soundQueueAdd(&soundQueue, picoSoundBlockCounter, 0xff, 0, 0);  // dummy synchronization entry.
       soundQueueFlush(&soundQueue);
       picoSoundBlockCounter++;
 

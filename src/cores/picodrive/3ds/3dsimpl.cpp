@@ -603,6 +603,8 @@ void impl3dsOutputSoundSamples(int numberOfSamples, short *leftSamples, short *r
             {
                 if (!soundQueueRead(&soundQueue, time, &data, &addr, &value))
                     break;
+                if (data == 0xff)
+                    break;
                 YM2612Write_(addr, value);
             }
         }
