@@ -10,6 +10,9 @@ The default maps for the controls are:
 1. 3DS' Y Button -> MD's A Button, 
 2. 3DS' B Button -> MD's B Button,
 3. 3DS' A Button -> MD's C Button,
+1. 3DS' X Button -> MD's X Button, 
+2. 3DS' L Button -> MD's Y Button,
+3. 3DS' R Button -> MD's Z Button,
 
 This emulator uses the same user interface as VirtuaNES for 3DS, TemperPCE for 3DS, Snes9x for 3DS. It will run better on the New 3DS as usual, where all music and sound samples will be generated at 44100Hz.
 
