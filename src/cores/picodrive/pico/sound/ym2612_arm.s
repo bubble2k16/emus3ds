@@ -575,7 +575,8 @@
 103: @eg_done:
 
 .if \disabled == 1
-    @ -- disabled? --
+    @ -- disabled? -- 
+    @ seems like it is never disabled!
     and     r0, r12, #0xC
     cmp     r0, #0xC
     beq     100b @ crl_loop_lfo
@@ -594,25 +595,40 @@
     \algo
 
     @ -- WRITE SAMPLE --
-    tst     r0, r0
-    beq     104f @ ctl_sample_skip
+    @tst     r0, r0
+    @beq     104f @ ctl_sample_skip
 
     @ we don't really care about this in this port:
     @orr     r4, r4, #8              @ have_output
 
 .if \pan_l == 1
-    ldr     r1, [r11]
-    add     r1, r0, r1
-    str     r1, [r11], #4
-.else
-    add     r11, r11, #4
-.endif
+
 .if \pan_r == 1
+    @ L + R
+    ldmia   r11, {r1, r2}
+    add     r1, r0, r1
+    add     r2, r0, r2
+    stmia   r11!, {r1, r2}
+.else
+    @ L only
     ldr     r1, [r11]
     add     r1, r0, r1
-    str     r1, [r11], #4
+    str     r1, [r11], #8
+.endif
+
 .else
-    add     r11, r11, #4
+
+.if \pan_r == 1
+    @ R only
+    ldr     r1, [r11, #4]
+    add     r1, r0, r1
+    str     r1, [r11, #4]
+    add     r11, r11, #8
+.else
+    @ no output
+    add     r11, r11, #8
+.endif
+
 .endif
 
 /*
@@ -630,16 +646,20 @@
     /* duplicated this here to avoid the branch */
     @ -- PHASE UPDATE --
     add     r5, lr, #0x10
+
     ldmia   r5, {r0-r1}
     add     r5, lr, #0x20
     ldmia   r5, {r2-r3}
+    
     add     r5, lr, #0x10
     add     r0, r0, r2
     add     r1, r1, r3
     stmia   r5!,{r0-r1}
+
     ldmia   r5, {r0-r1}
     add     r5, lr, #0x28
     ldmia   r5, {r2-r3}
+
     add     r5, lr, #0x18
     add     r0, r0, r2
     add     r1, r1, r3
