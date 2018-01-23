@@ -1,17 +1,17 @@
 
 // Taken from PicoDrive's libretro implementation for 3DS.
 
+#include "3ds.h"
+#include "3dsdbg.h"
 #include "3dshack.h"
 
 typedef int (*ctr_callback_type)(void);
 
-int srvGetServiceHandle(unsigned int* out, const char* name);
-int svcCloseHandle(unsigned int handle);
-int svcBackdoor(ctr_callback_type);
 
 static int hack3dsSvcInitialized = 0;
+static int __attribute__ ((aligned (4096))) hack3dsTestBuffer[4096];
 
-static int hack3dsTestBuffer[5];
+static unsigned int s1, s2, s3, s0;
 
 //-----------------------------------------------------------------------------
 // Internal function that enables all services. This must be run via
@@ -21,12 +21,18 @@ static void ctrEnableAllServices(void)
 {
    __asm__ volatile("cpsid aif");
 
-   unsigned int*  svc_access_control = *(*(unsigned int***)0xFFFF9000 + 0x22) - 0x6;
+   unsigned int *svc_access_control = *(*(unsigned int***)0xFFFF9000 + 0x22) - 0x6;
 
+   s0 = svc_access_control[0];
+   s1 = svc_access_control[1];
+   s2 = svc_access_control[2];
+   s3 = svc_access_control[3];
+   
    svc_access_control[0]=0xFFFFFFFE;
    svc_access_control[1]=0xFFFFFFFF;
    svc_access_control[2]=0xFFFFFFFF;
    svc_access_control[3]=0x3FFFFFFF;
+
 }
 
 
@@ -59,67 +65,50 @@ static void ctrFlushDataCache(void)
 
 //-----------------------------------------------------------------------------
 // Mirrors memory and marks its access.
+// You must ensutre that buffer and size are 0x1000-aligned.
 //-----------------------------------------------------------------------------
-void hack3dsMirrorMemory(int virtualAddr, void *buffer, int size, int permission)
+int hack3dsMapMemory(int virtualAddr, void *buffer, int size, int permission)
 {
     #define MEMOP_MAP     4 ///< Mirror mapping
 
-    unsigned int bufferAligned;
     unsigned int currentHandle;
-    
-    size = (size + 0xFFF) & ~0xFFF;
-    bufferAligned = (((unsigned int)buffer) + 0xFFF) & ~0xFFF;
     svcDuplicateHandle(&currentHandle, 0xFFFF8001);
-    svcControlProcessMemory(currentHandle, virtualAddr, bufferAligned, size, MEMOP_MAP, permission);
+    int res = svcControlProcessMemory(currentHandle, virtualAddr, buffer, size, MEMOP_MAP, permission);
     svcCloseHandle(currentHandle);
+
+    return res;
+}
+
+
+//-----------------------------------------------------------------------------
+// Mirrors memory and marks its access.
+// You must ensutre that buffer and size are 0x1000-aligned.
+//-----------------------------------------------------------------------------
+int hack3dsUnmapMemory(int virtualAddr, void *buffer, int size)
+{
+    #define MEMOP_MAP     4 ///< Mirror mapping
+
+    unsigned int currentHandle;
+    svcDuplicateHandle(&currentHandle, 0xFFFF8001);
+    int res = svcControlProcessMemory(currentHandle, virtualAddr, buffer, size, MEMOP_UNMAP, 0x3);
+    svcCloseHandle(currentHandle);
+
+    return res;
 }
 
 
 //-----------------------------------------------------------------------------
 // Sets the permissions for memory.
+// You must ensutre that buffer and size are 0x1000-aligned.
 //-----------------------------------------------------------------------------
-void hack3dsSetMemoryPermission(void *buffer, int size, int permission)
+int hack3dsSetMemoryPermission(void *buffer, int size, int permission)
 {
-    #define MEMOP_PROT    6
-
     unsigned int currentHandle;
     svcDuplicateHandle(&currentHandle, 0xFFFF8001);
-    svcControlProcessMemory(currentHandle, buffer, 0, size, MEMOP_PROT, permission);
+    int res = svcControlProcessMemory(currentHandle, buffer, 0, size, MEMOP_PROT, permission);
     svcCloseHandle(currentHandle);
-}
 
-
-//-----------------------------------------------------------------------------
-// Allocates memory from the heap and marks it as executable
-//-----------------------------------------------------------------------------
-void *hack3dsAllocateMemory(int virtualAddr, int size)
-{
-    void *buffer = malloc(size + 0x1000);
-    hack3dsMirrorMemory(virtualAddr, buffer, size, 0b111); // read/write/exec
-    return buffer;   
-}
-
-
-//-----------------------------------------------------------------------------
-// Reallocates memory from the heap and marks it as non-executable.
-//-----------------------------------------------------------------------------
-void *hack3dsReallocMemory(int virtualAddr, void *buffer, int oldSize, int newSize)
-{
-    hack3dsMapMemory(virtualAddr, buffer, oldSize, 0b011); // read/write
-    void *result = realloc(buffer, newSize);
-    hack3dsMirrorMemory(virtualAddr, buffer, newSize, 0b111); // read/write/exec
-    return result;
-}
-
-
-
-//-----------------------------------------------------------------------------
-// Frees memory from the heap and marks it as non-executable.
-//-----------------------------------------------------------------------------
-void hack3dsFreeMemory(int virtualAddr, void *buffer, int size)
-{
-    hack3dsMirrorMemory(virtualAddr, buffer, size, 0b011); // read/write
-    free(buffer);
+    return res;
 }
 
 
@@ -159,8 +148,19 @@ void hack3dsInvalidateAndFlushCaches(void)
 //-----------------------------------------------------------------------------
 int hack3dsTestDynamicRecompilation(void)
 {
+    if (hack3dsSetMemoryPermission(&hack3dsTestBuffer[0], 4096, 0x7))
+    {
+        // If svcControlProcessMemory didn't succeed, likely dynarec
+        // will just crash. 
+#ifndef EMU_RELEASE
+        printf ("Dynarec test: svcControlProcessMemory failed!\n");
+#endif
+
+        return 0;
+    }
+
     int *test_out = hack3dsTestBuffer;
-    int (*testfunc)(void) = &hack3dsTestBuffer[0];
+    int (*testfunc)(void) = hack3dsTestBuffer;
 
     *test_out++ = 0xe3a000dd; // mov r0, 0xdd
     *test_out++ = 0xe12fff1e; // bx lr
@@ -169,15 +169,17 @@ int hack3dsTestDynamicRecompilation(void)
     // we'll usually crash on broken platforms or bad ports,
     // but do a value check too just in case
     int ret = testfunc();
+    int result = 0;
 
     if (ret == 0xdd)
     {
 #ifndef EMU_RELEASE
-        printf ("Successful!\n");
+        printf ("Dynarec test: SUCCESSFUL!!\n");
 #endif
-        return 1;
+        result = 1;
     }
-    return 0;
+
+    return result;
 }
 
 
@@ -190,12 +192,28 @@ int hack3dsTestDynamicRecompilation(void)
 //-----------------------------------------------------------------------------
 int hack3dsInitializeSvcHack(void)
 {
-   extern unsigned int __service_ptr;
-   if(__service_ptr)          
-      return 0;         // Means this was launched from Homebrew Launcher
+    if(envIsHomebrew())
+    {
+#ifndef EMU_RELEASE
+        printf("svcHack failed: Inside homebrew\n");
+#endif
+        return 0;         // Means this was launched from Homebrew Launcher
+    }
 
-   svcBackdoor((ctr_callback_type)ctrEnableAllServices);
-   hack3dsSvcInitialized = 1;
-   return 1;
+    svcBackdoor((ctr_callback_type)ctrEnableAllServices);
+    svcBackdoor((ctr_callback_type)ctrEnableAllServices);
+#ifndef EMU_RELEASE
+    printf("svc_access_control: %x %x %x %x\n", s0, s1, s2, s3);
+#endif
+    if (s0 != 0xFFFFFFFE || s1 != 0xFFFFFFFF || s2 != 0xFFFFFFFF || s3 != 0x3FFFFFFF)
+    {
+#ifndef EMU_RELEASE
+        printf("svcHack failed: svcBackdoor unsuccessful.\n");
+#endif
+        return 0;
+    }
+
+    hack3dsSvcInitialized = 1;
+    return 1;
 }
 

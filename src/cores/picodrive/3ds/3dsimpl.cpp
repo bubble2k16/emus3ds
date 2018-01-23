@@ -521,15 +521,20 @@ bool impl3dsInitializeCore()
 
 	gpu3dsUseShader(0);
 
-printf("a");
-    //ctr_svchack_successful = hack3dsInitializeSvcHack();
-    if (hack3dsInitializeSvcHack() && emulator.isReal3DS)
+#ifndef EMU_RELEASE
+    printf("Homebrew: %d\n", envIsHomebrew());
+    printf("IsReal3DS: %d\n", emulator.isReal3DS);
+#endif
+
+    if (hack3dsInitializeSvcHack())
     {
-        hack3dsTestDynamicRecompilation();
-        ctr_svchack_successful = 1;
-        PicoIn.opt |= POPT_EN_DRC;
+        if (hack3dsTestDynamicRecompilation())
+        {
+            ctr_svchack_successful = 1;
+            PicoIn.opt |= POPT_EN_DRC;
+        }
     }
-    
+
     return true;
 }
 

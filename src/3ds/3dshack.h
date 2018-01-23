@@ -1,21 +1,23 @@
 #ifndef _3DSHACK_H_
 #define _3DSHACK_H_
 
+//-----------------------------------------------------------------------------
+// Mirrors memory and marks its access.
+// You must ensutre that buffer and size are 0x1000-aligned.
+//-----------------------------------------------------------------------------
+int hack3dsMapMemory(int virtualAddr, void *buffer, int size, int permission);
 
 //-----------------------------------------------------------------------------
-// Allocates memory from the heap and marks it as executable
+// Mirrors memory and marks its access.
+// You must ensutre that buffer and size are 0x1000-aligned.
 //-----------------------------------------------------------------------------
-void *hack3dsAllocateMemory(int virtualAddr, int size);
+int hack3dsUnmapMemory(int virtualAddr, void *buffer, int size);
 
 //-----------------------------------------------------------------------------
-// Reallocates memory from the heap and marks it as non-executable.
+// Sets the permissions for memory.
+// You must ensutre that buffer and size are 0x1000-aligned.
 //-----------------------------------------------------------------------------
-void *hack3dsReallocMemory(int virtualAddr, void *buffer, int oldSize, int newSize);
-
-//-----------------------------------------------------------------------------
-// Frees memory from the heap and marks it as non-executable.
-//-----------------------------------------------------------------------------
-void hack3dsFreeMemory(int virtualAddr, void *buffer, int size);
+int hack3dsSetMemoryPermission(void *buffer, int size, int permission);
 
 //-----------------------------------------------------------------------------
 // Invalidates the instruction cache.

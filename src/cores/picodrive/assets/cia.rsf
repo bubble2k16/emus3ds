@@ -149,6 +149,8 @@ AccessControlInfo:
     UnmapMemoryBlock: 32
     WaitSynchronization1: 36
     WaitSynchronizationN: 37
+    Backdoor: 123
+    
   InterruptNumbers:
   ServiceAccessControl:
   - APT:U
