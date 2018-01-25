@@ -599,18 +599,23 @@ static int PsndRender(int offset, int length)
 PICO_INTERNAL void PsndGetSamples(int y)
 {
   static int curr_pos = 0;
+  int length = Pico.snd.len;
 
   if (ym2612.dacen && Pico.snd.dac_line < y)
     PsndDoDAC(y - 1);
   PsndDoPSG(y - 1);
 
+  if (y != 224)
+  {
+    if (PicoIn.AHW & (PAHW_MCD | PAHW_32X))
+      memset32(PsndBufferPCM, 0, length * 2);
+    
+    if ((PicoIn.AHW & PAHW_32X) && (PicoIn.opt & POPT_EN_PWM))
+      p32x_pwm_update(PsndBufferPCM, length / 2, true);
+  }
   if (y == 224)
   {
     int *buf32 = PsndBufferPCM;
-    int length = Pico.snd.len;
-
-    if (PicoIn.AHW & (PAHW_MCD | PAHW_32X))
-      memset32(PsndBufferPCM, 0, length * 2);
 
     // CD: PCM sound
     if (PicoIn.AHW & PAHW_MCD) {
@@ -631,9 +636,7 @@ PICO_INTERNAL void PsndGetSamples(int y)
     }
 
     if ((PicoIn.AHW & PAHW_32X) && (PicoIn.opt & POPT_EN_PWM))
-    {
-      p32x_pwm_update(PsndBufferPCM, length, true);
-    }
+      p32x_pwm_update(&PsndBufferPCM[(length / 2) * 2], length - length / 2, true);
   
     /*if (Pico.m.status & 2)
          curr_pos += PsndRender(curr_pos, Pico.snd.len-Pico.snd.len/2);
