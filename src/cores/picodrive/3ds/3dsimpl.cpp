@@ -372,7 +372,7 @@ extern SSettings3DS settings3DS;
 //---------------------------------------------------------
 // Provide a comma-separated list of file extensions
 //---------------------------------------------------------
-char *impl3dsRomExtensions = "sms,md,smd,gen,rom,bin,iso";
+char *impl3dsRomExtensions = "sms,md,smd,gen,rom,bin,iso,32x";
 
 
 //---------------------------------------------------------
