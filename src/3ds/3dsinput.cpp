@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 
+#include "3dsemu.h"
 #include "3dsgpu.h"
 #include "3dsmain.h"
 #include "3dssound.h"

@@ -2,6 +2,7 @@
 // Taken from PicoDrive's libretro implementation for 3DS.
 
 #include "3ds.h"
+#include "3dsemu.h"
 #include "3dsdbg.h"
 #include "3dshack.h"
 

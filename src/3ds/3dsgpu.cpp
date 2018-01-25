@@ -13,6 +13,7 @@
 #include "3dsgpu.h"
 #include "3dsfiles.h"
 #include "3dsmain.h"
+#include "3dsemu.h"
 
 #include "3dsinterface.h"
 
