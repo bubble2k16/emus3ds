@@ -14,14 +14,20 @@ static int pwm_irq_reload;
 static int pwm_doing_fifo;
 static int pwm_silent;
 
+static int dc_offset_l = 0;
+static int dc_offset_r = 0;
+
+
 void p32x_pwm_ctl_changed(void)
 {
   int control = Pico32x.regs[0x30 / 2];
   int cycles = Pico32x.regs[0x32 / 2];
 
+  dc_offset_l = 0;
+  dc_offset_r = 0;
+
   cycles = (cycles - 1) & 0x0fff;
   pwm_cycles = cycles;
-
   // supposedly we should stop FIFO when xMd is 0,
   // but mars test disagrees
   pwm_mult = 0;
@@ -216,7 +222,6 @@ void p32x_pwm_write16(unsigned int a, unsigned int d,
   }
   else if (a <= 8) {
     d = (d - 1) & 0x0fff;
-
     if (a == 4 || a == 8) { // L ch or MONO
       unsigned short *fifo = Pico32xMem->pwm_fifo[0];
       if (Pico32x.pwm_p[0] < 3)
@@ -258,13 +263,37 @@ void p32x_pwm_update(int *buf32, int length, int stereo)
   step = (pwm_ptr << 16) / length;
   pwmb = Pico32xMem->pwm;
 
+  // find if all samples are the same. If so, we will
+  // assume this is the 'silent' level, and we will 
+  // set the dc_offset.
+  //
+  int first_sample_l = pwmb[0];
+  for (int i = 1; i < pwm_ptr; i++)
+    if (pwmb[i * 2] != first_sample_l)
+    {
+      first_sample_l = 0xf000000;
+      break;
+    }
+  if (first_sample_l != 0xf000000)
+    dc_offset_l = first_sample_l;
+
+  int first_sample_r = pwmb[1];
+  for (int i = 1; i < pwm_ptr; i++)
+    if (pwmb[i * 2 + 1] != first_sample_r)
+    {
+      first_sample_r = 0xf000000;
+      break;
+    }
+  if (first_sample_r != 0xf000000)
+    dc_offset_r = first_sample_r;
+
   if (stereo)
   {
     if (xmd == 0x05) {
       // normal
       while (length-- > 0) {
-        *buf32++ += pwmb[0];
-        *buf32++ += pwmb[1];
+        *buf32++ += pwmb[0] - dc_offset_l;
+        *buf32++ += pwmb[1] - dc_offset_r;
 
         p += step;
         pwmb += (p >> 16) * 2;
@@ -274,8 +303,8 @@ void p32x_pwm_update(int *buf32, int length, int stereo)
     else if (xmd == 0x0a) {
       // channel swap
       while (length-- > 0) {
-        *buf32++ += pwmb[1];
-        *buf32++ += pwmb[0];
+        *buf32++ += pwmb[1] - dc_offset_r;
+        *buf32++ += pwmb[0] - dc_offset_l;
 
         p += step;
         pwmb += (p >> 16) * 2;
@@ -284,12 +313,16 @@ void p32x_pwm_update(int *buf32, int length, int stereo)
     }
     else {
       // mono - LMD, RMD specify dst
+      int dc_offset = dc_offset_l;
       if (xmd & 0x06) // src is R
+      {
         pwmb++;
+        dc_offset = dc_offset_r;
+      }
       if (xmd & 0x0c) // dst is R
         buf32++;
       while (length-- > 0) {
-        *buf32 += *pwmb;
+        *buf32 += *pwmb - dc_offset;
 
         p += step;
         pwmb += (p >> 16) * 2;
