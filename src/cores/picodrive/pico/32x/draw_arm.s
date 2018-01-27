@@ -119,6 +119,9 @@ Pico32xNativePal:
     mov     r7, r7, lsl #1
     ldreqh  r12,[r9, r7]
     streqh  r12,[r0], #2     @ *dst++ = palmd[*pmd]
+.else
+    mov     r12, #0
+    streqh  r12,[r0], #2     @ bug fix?? Fixes Blackthorne
 .endif
     beq     2b @ loop_inner
 
