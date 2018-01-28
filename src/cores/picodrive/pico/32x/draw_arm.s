@@ -77,6 +77,7 @@ Pico32xNativePal:
     ldr     r10,[r10, #0x40] @ Pico32x.vdp_regs[0]
     @ldr     r11,[r11]       @ ??
     ldr     r9, =HighPal     @ palmd
+    ldr     r9, [r9]
     and     r4, r2, #0xff
     mov     r5, #328
     lsl     r3, #26          @ mdbg << 26
@@ -151,6 +152,7 @@ Pico32xNativePal:
     @ldr     r11,[r11]         @??
     ldr     r10,[r10]        
     ldr     r9, =HighPal     @ palmd
+    ldr     r9, [r9]
     and     r4, r2, #0xff
     mov     r5, #328
     lsl     r3, #26          @ mdbg << 26
@@ -310,6 +312,7 @@ Pico32xNativePal:
     @ldr     r11,[r11]      @??
     ldr     r10,[r10]     
     ldr     r9, =HighPal     @ palmd
+    ldr     r9, [r9]
     and     r4, r2, #0xff
     mov     r5, #328
     lsl     r3, #26          @ mdbg << 26
