@@ -4,15 +4,15 @@ This is a port of notaz's PicoDrive emulator to the old 3DS / 2DS. Although Pico
 
 The screen rendering is done completely using the original PicoDrive's ARM processor-optimized renderer. 
 
-You can play Master System, Mega Drive games and Sega CD games, but it does not support 32X games yet. CD games run a little slower (you should enable 1-2 frameskips) on an Old 3DS, but it runs very well on a New 3DS. Meanwhile, use the Retroarch versions for 32X games. :)
+You can play Master System, Mega Drive games and Sega CD games, and 32X games. CD games run a little slower (you should enable 1-2 frameskips) on an Old 3DS, but it runs very well on a New 3DS. 32X games can only played at a reasonable speed on a New 3DS using the .CIA version of the emulator.
 
 The default maps for the controls are: 
 1. 3DS' Y Button -> MD's A Button, 
 2. 3DS' B Button -> MD's B Button,
 3. 3DS' A Button -> MD's C Button,
-1. 3DS' X Button -> MD's X Button, 
-2. 3DS' L Button -> MD's Y Button,
-3. 3DS' R Button -> MD's Z Button,
+4. 3DS' X Button -> MD's X Button, 
+5. 3DS' L Button -> MD's Y Button,
+6. 3DS' R Button -> MD's Z Button
 
 This emulator uses the same user interface as VirtuaNES for 3DS, TemperPCE for 3DS, Snes9x for 3DS. It will run better on the New 3DS as usual, where all music and sound samples will be generated at 44100Hz.
 
@@ -69,6 +69,21 @@ https://github.com/bubble2k16/picodrive_3ds/releases
 -------------------------------------------------------------------------------------------
 
 ## Change History
+
+### v0.93
+- Fixes a sound bug that plays the previous sound from a CD-ROM game when you load up an SMS ROM.
+- Re-ordered region priority to US, JP, EU.
+- Added support for .32x extensions and 32X games.
+  (but some games like Virtual Fighter, Virtual Racing Deluxe cause the emulator to crash, just like the RetroArch versions)
+- Fixed ASM version of the 32X rendering routines to prevent crashing, and Blackthorne games.
+- Fixed the frame-rate bug that is not consistent with the frame-rate selected in the menu.
+- Enabled 32X / SVP dynarec when running in CIA mode and the necessary custom firmware is available.
+- Sets the default mapping for Sega MD's X, Y, Z buttons.
+- Fixed a read-ahead library bug that previous caused small ISO games to boot to the CD player.
+- Fixed minor sound emulation issues and improved sound sync.
+- Fixed YM2612 timer bug.
+- Implemented more aggressive optimzation of the YM2612 assembly emulation. Less skipping in some games on the Old 3DS.
+- Fixed playing PWM samples by deducting the DC offset of the waveform (CSND is unable to reliably play samples with a significant DC offset)
 
 ### v0.92
 - Added support for Mega CD games 
