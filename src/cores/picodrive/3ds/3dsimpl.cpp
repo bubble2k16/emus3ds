@@ -385,7 +385,7 @@ char *impl3dsTitleImage = "./picodrive_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "PicoDrive for 3DS v0.93b";
+char *impl3dsTitleText = "PicoDrive for 3DS v0.93";
 
 
 //---------------------------------------------------------
