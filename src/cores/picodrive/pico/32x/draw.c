@@ -333,7 +333,7 @@ void PicoDrawSetOutFormat32x(pdso_t which, int use_32x_line_mode)
 
   // use the same layout as alt renderer
   PicoDrawSetInternalBuf(Pico.est.Draw2FB, 328);
-  Pico32xDrawMode = (which == PDF_RGB555) ? PDM32X_32X_ONLY : PDM32X_BOTH;
+  Pico32xDrawMode = /*(which == PDF_RGB555) ? PDM32X_32X_ONLY : */ PDM32X_BOTH;
 }
 
 // vim:shiftwidth=2:ts=2:expandtab
