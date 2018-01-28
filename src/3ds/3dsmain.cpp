@@ -26,6 +26,7 @@
 #include "3dslodepng.h"
 #include "3dsmenu.h"
 #include "3dsmain.h"
+#include "3dsdbg.h"
 
 #include "3dsinterface.h"
 #include "3dscheat.h"
@@ -490,14 +491,14 @@ void menuPause()
                     //
                     if (impl3dsCopyMenuToOrFromSettings(true))
                     {
-                        emulatorSettingsSave(true, true, true);
+                        emulatorSettingsSave(true, true, false);
                     }
                     else
                     {
-                        emulatorSettingsSave(true, false, true);
+                        emulatorSettingsSave(true, false, false);
                     }
                     settingsSaved = true;
-                    
+
                     if (!emulatorLoadRom())
                     {
                         menu3dsShowDialog("Load ROM", "Hmm... unable to load ROM.", DIALOGCOLOR_RED, optionsForOk);
