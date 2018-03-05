@@ -67,6 +67,7 @@ SSettings3DS settings3DS;
 #define SETTINGS_CPUCORE                3
 #define SETTINGS_LOWPASSFILTER          4
 #define SETTINGS_CONTROLLERTYPE         5
+#define SETTINGS_REGION                 6
 
 
 //----------------------------------------------------------------------
@@ -121,6 +122,14 @@ SMenuItem optionsForFrameRate[] = {
     MENU_MAKE_DIALOG_ACTION (0, "Default based on ROM",     ""),
     MENU_MAKE_DIALOG_ACTION (1, "50 FPS",                   ""),
     MENU_MAKE_DIALOG_ACTION (2, "60 FPS",                   ""),
+    MENU_MAKE_LASTITEM  ()
+};
+
+SMenuItem optionsForRegion[] = {
+    MENU_MAKE_DIALOG_ACTION (0, "Default based on ROM",     ""),
+    MENU_MAKE_DIALOG_ACTION (1, "USA",                      ""),
+    MENU_MAKE_DIALOG_ACTION (2, "Europe",                   ""),
+    MENU_MAKE_DIALOG_ACTION (3, "Japan",                    ""),
     MENU_MAKE_LASTITEM  ()
 };
 
@@ -214,7 +223,8 @@ SMenuItem optionMenu[] = {
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("GAME-SPECIFIC SETTINGS"),
     MENU_MAKE_PICKER    (10000, "  Frameskip", "Try changing this if the game runs slow. Skipping frames help it run faster but less smooth.", optionsForFrameskip, DIALOGCOLOR_CYAN),
-    MENU_MAKE_PICKER    (12000, "  Framerate", "Some games run at 50 or 60 FPS by default. Override if required.", optionsForFrameRate, DIALOGCOLOR_CYAN),
+    MENU_MAKE_PICKER    (12000, "  Framerate", "Some games run at 50 (PAL), 60 (NTSC) FPS by default. Override if required.", optionsForFrameRate, DIALOGCOLOR_CYAN),
+    MENU_MAKE_PICKER    (12003, "  Region", "Each game a default supported region. Override if required.", optionsForRegion, DIALOGCOLOR_CYAN),
     //MENU_MAKE_PICKER    (19000, "  Flickering Sprites", "Sprites on real hardware flicker. You can disable for better visuals.", optionsForSpriteFlicker, DIALOGCOLOR_CYAN),
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("AUDIO"),
@@ -385,7 +395,7 @@ char *impl3dsTitleImage = "./picodrive_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "PicoDrive for 3DS v0.93";
+char *impl3dsTitleText = "PicoDrive for 3DS v0.94b";
 
 
 //---------------------------------------------------------
@@ -868,12 +878,14 @@ void impl3dsRenderDrawTextureToFrameBuffer()
 		case 0:
             // No stretch
             gpu3dsSetTextureEnvironmentReplaceColor();
-            gpu3dsDrawRectangle(0, 0, 72, 240, 0, 0x000000ff);
-            gpu3dsDrawRectangle(328, 0, 400, 240, 0, 0x000000ff);
+            gpu3dsDrawRectangle(0, 0, 400, 240, 0, 0x000000ff);
+            //gpu3dsDrawRectangle(328, 0, 400, 240, 0, 0x000000ff);
 
             gpu3dsSetTextureEnvironmentReplaceTexture0();
             gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
-			gpu3dsAddQuadVertexes(40, 0, 360, 240, 0, 0, 320, 240, 0);
+
+            int bx = (400 - (tx2 - tx1)) / 2;
+            gpu3dsAddQuadVertexes(bx, 0, 400 - bx, 240, tx1, 0, tx2, 240, 0);
 			break;
 		case 7:
             // 4:3 NTSC Stretch Width (320x2??)
@@ -1207,7 +1219,8 @@ bool impl3dsReadWriteSettingsByGame(bool writeMode)
     // v0.92 options
     config3dsReadWriteInt32("InputType=%d\n", &settings3DS.OtherOptions[SETTINGS_CONTROLLERTYPE]);
 
-    // New options here.
+    // v0.94 options
+    config3dsReadWriteInt32("Region=%d\n", &settings3DS.OtherOptions[SETTINGS_REGION]);
 
     config3dsCloseFile();
     return true;
@@ -1325,13 +1338,36 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
         long oldTicksPerFrame = TICKS_PER_SEC / impl3dsGetROMFrameRate();
         if (Pico.rom)
         {
-            if (settings3DS.ForceFrameRate == 0)
+            if (settings3DS.ForceFrameRate == 0 || 
+                settings3DS.OtherOptions[SETTINGS_REGION] == 0)
                 PicoDetectRegion();
-            else if (settings3DS.ForceFrameRate == 1)
+
+            if (settings3DS.ForceFrameRate == 1)
+            {
                 Pico.m.pal = 1;
+            }
             else if (settings3DS.ForceFrameRate == 2)
+            {
                 Pico.m.pal = 0;
+            }
+
+            if (settings3DS.OtherOptions[SETTINGS_REGION] == 1)
+            {
+                Pico.m.hardware &= ~0xc0;
+                Pico.m.hardware |= 0x80;        // NTSC US
+            }
+            else if (settings3DS.OtherOptions[SETTINGS_REGION] == 2)
+            {
+                Pico.m.hardware &= ~0xc0;
+                Pico.m.hardware |= 0xc0;        // Europe
+            }
+            else if (settings3DS.OtherOptions[SETTINGS_REGION] == 3)
+            {
+                Pico.m.hardware &= ~0xc0;
+                Pico.m.hardware |= 0x00;        // NTSC JP
+            }
         }
+
         //long oldTicksPerFrame = TICKS_PER_SEC / impl3dsGetROMFrameRate(); 
         settings3DS.TicksPerFrame = TICKS_PER_SEC / impl3dsGetROMFrameRate();
         if (settings3DS.TicksPerFrame != oldTicksPerFrame)
@@ -1405,6 +1441,7 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
     UPDATE_SETTINGS(settings3DS.HideUnnecessaryBottomScrText, -1, 15001);
     UPDATE_SETTINGS(settings3DS.MaxFrameSkips, -1, 10000);
     UPDATE_SETTINGS(settings3DS.ForceFrameRate, -1, 12000);
+    UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_REGION], -1, 12003);
     UPDATE_SETTINGS(settings3DS.AutoSavestate, -1, 12002);
 
     UPDATE_SETTINGS(settings3DS.UseGlobalButtonMappings, -1, 50000);
