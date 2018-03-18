@@ -37,9 +37,9 @@
  *
  ****************************************************************************************/
 
-#include "3ds.h"
 #include "pico/pico.h"
 #include "pico/pico_int.h"
+#include "pico/memory.h"
 
 #define MAX_CHEATS (200)
 #define MAX_DESC_LENGTH (63)
@@ -200,7 +200,7 @@ u32 decode_cheat(char *string, int index)
   }
 
   /* Action Replay code */
-  else if (string[6] == ':')
+  else if (string[6] == ':' || string[4] == ' ')
   {
     if (!(PicoIn.AHW & PAHW_SMS))
     {
@@ -231,6 +231,14 @@ u32 decode_cheat(char *string, int index)
     }
     else
     {
+      /* Convert (xxAA AADD to xxAAAA:DD) */
+      if (string[4] == ' ')
+      {
+        string[4] = string[5];
+        string[5] = string[6];
+        string[6] = ':';
+      }
+
       /* 8-bit code (xxAAAA:DD) */
       if (strlen(string) < 9) return 0;
 
@@ -292,6 +300,19 @@ u32 enable_cheat(int index, u8 enable)
       {
         *(u16 *)(Pico.rom + (cheatlist[index].address & 0xFFFFFE)) = cheatlist[index].old;
       }
+      else
+      {
+          // LATER
+          /* check if previous banked ROM address has been patched */
+          if (cheatlist[index-1].prev != NULL)
+          {
+            /* restore original data */
+            *cheatlist[index-1].prev = cheatlist[index-1].old;
+
+            /* no more patched ROM address */
+            cheatlist[index-1].prev = NULL;
+          }        
+      }
     }
 }
 
@@ -318,28 +339,28 @@ void apply_cheats(void)
         }
         else
         {
-          // LATER
           /* add ROM patch */
-          //maxROMcheats++;
-          //cheatIndexes[MAX_CHEATS - maxROMcheats] = i;
-
+          maxROMcheats++;
+          cheatIndexes[MAX_CHEATS - maxROMcheats] = i;
+ 
           /* get current banked ROM address */
-          //ptr = &z80_readmap[(cheatlist[i].address) >> 10][cheatlist[i].address & 0x03FF];
+          u8 *addr = z80_read_map[(cheatlist[i].address) >> Z80_MEM_SHIFT] << 1;
+          ptr = &addr[cheatlist[i].address];
 
           /* check if reference matches original ROM data */
-          //if (((u8)cheatlist[i].old) == *ptr)
-          //{
+          if (((u8)cheatlist[i].old) == *ptr)
+          {
             /* patch data */
-            //*ptr = cheatlist[i].data;
+            *ptr = cheatlist[i].data;
 
             /* save patched ROM address */
-            //cheatlist[i].prev = ptr;
-          //}
-          //else
-          //{
+            cheatlist[i].prev = ptr;
+          }
+          else
+          {
             /* no patched ROM address yet */
-            //cheatlist[i].prev = NULL;
-          //}
+            cheatlist[i].prev = NULL;
+          }
         }
       }
       else if (cheatlist[i].address >= 0xFF0000)
@@ -355,40 +376,58 @@ void clear_cheats(void)
 {
   int i = maxcheats;
 
-  /* disable cheats in reversed order in case the same address is used by multiple patches */
-  while (i > 0)
-  {
-    if (cheatlist[i-1].enable)
-    {
-      if (cheatlist[i-1].address < Pico.romsize)
-      {
-        if (!(PicoIn.AHW & PAHW_SMS))
-        {
-          /* restore original ROM data */
-          *(u16 *)(Pico.rom + (cheatlist[i-1].address & 0xFFFFFE)) = cheatlist[i-1].old;
-        }
-        else
-        {
-          // LATER
-          /* check if previous banked ROM address has been patched */
-          if (cheatlist[i-1].prev != NULL)
-          {
-            /* restore original data */
-            *cheatlist[i-1].prev = cheatlist[i-1].old;
-
-            /* no more patched ROM address */
-            cheatlist[i-1].prev = NULL;
-          }
-        }
-      }
-    }
-
-    i--;
-  }
+  maxROMcheats = maxRAMcheats = 0;
 
   maxcheats = 0;
 }
 
+
+/****************************************************************************
+ * ROMCheatUpdate
+ *
+ * Apply ROM patches (this should be called each time banking is changed)
+ *
+ ****************************************************************************/ 
+void ROMCheatUpdate(void)
+{
+  int index, cnt = maxROMcheats;
+  u8 *ptr;
+  
+  while (cnt)
+  {
+    /* get cheat index */
+    index = cheatIndexes[MAX_CHEATS - cnt];
+
+    /* check if previous banked ROM address was patched */
+    if (cheatlist[index].prev != NULL)
+    {
+      /* restore original data */
+      *cheatlist[index].prev = cheatlist[index].old;
+
+      /* no more patched ROM address */
+      cheatlist[index].prev = NULL;
+    }
+
+    /* get current banked ROM address */
+    u8 *addr = z80_read_map[(cheatlist[index].address) >> Z80_MEM_SHIFT] << 1;
+    ptr = &addr[cheatlist[index].address];
+    
+    //ptr = &z80_readmap[(cheatlist[index].address) >> 10][cheatlist[index].address & 0x03FF];
+
+    /* check if reference matches original ROM data */
+    if (((u8)cheatlist[index].old) == *ptr)
+    {
+      /* patch data */
+      *ptr = cheatlist[index].data;
+
+      /* save patched ROM address */
+      cheatlist[index].prev = ptr;
+    }
+
+    /* next ROM patch */
+    cnt--;
+  }
+}
 
 /****************************************************************************
  * RAMCheatUpdate
@@ -409,12 +448,12 @@ void RAMCheatUpdate(void)
     if (cheatlist[index].data & 0xFF00)
     {
       /* word patch */
-      *(u16 *)(PicoMem.ram + (cheatlist[index].address & 0xFFFE)) = cheatlist[index].data;
+      *(u16 *)(PicoMem.zram + (cheatlist[index].address & 0xFFFE)) = cheatlist[index].data;
     }
     else
     {
       /* byte patch */
-      PicoMem.ram[cheatlist[index].address & 0xFFFF] = cheatlist[index].data;
+      PicoMem.zram[cheatlist[index].address & 0xFFFF] = cheatlist[index].data;
     }
   }
 }

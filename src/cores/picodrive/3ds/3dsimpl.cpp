@@ -975,6 +975,7 @@ void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
 
     // Cheats
     apply_cheats();
+    ROMCheatUpdate();
     RAMCheatUpdate();
     
 	if (!skipDrawingPreviousFrame)
