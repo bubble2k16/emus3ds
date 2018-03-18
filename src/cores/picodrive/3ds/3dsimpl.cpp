@@ -454,7 +454,7 @@ bool impl3dsInitializeCore()
 	memset(&defaultConfig, 0, sizeof(defaultConfig));
 	defaultConfig.EmuOpt    = 0x9d | EOPT_EN_CD_LEDS;
 	defaultConfig.s_PicoOpt = POPT_EN_STEREO|POPT_EN_FM|POPT_EN_PSG|POPT_EN_Z80 |
-				  POPT_EN_MCD_PCM|POPT_EN_MCD_CDDA|POPT_EN_MCD_GFX |
+				  POPT_EN_MCD_PCM|POPT_EN_MCD_CDDA|POPT_EN_MCD_GFX | POPT_EN_MCD_RAMCART |
 				  POPT_ACC_SPRITES |
 				  POPT_EN_32X|POPT_EN_PWM | POPT_DIS_IDLE_DET;
 	defaultConfig.s_PsndRate = sampleRate;
@@ -873,6 +873,7 @@ void impl3dsRenderDrawTextureToFrameBuffer()
         ty1 += 16; ty2 -= 16;
     }
 
+    int bx = (400 - (tx2 - tx1)) / 2;
 	switch (settings3DS.ScreenStretch)
 	{
 		case 0:
@@ -884,7 +885,6 @@ void impl3dsRenderDrawTextureToFrameBuffer()
             gpu3dsSetTextureEnvironmentReplaceTexture0();
             gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
 
-            int bx = (400 - (tx2 - tx1)) / 2;
             gpu3dsAddQuadVertexes(bx, 0, 400 - bx, 240, tx1, 0, tx2, 240, 0);
 			break;
 		case 7:
@@ -895,6 +895,7 @@ void impl3dsRenderDrawTextureToFrameBuffer()
 
             gpu3dsSetTextureEnvironmentReplaceTexture0();
             gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
+            printf ("%d %d\n", tx1, tx2);
 			gpu3dsAddQuadVertexes(40, 0, 360, 240, tx1, 0, tx2, 240, 0);
 			break;
 		case 1:
@@ -1367,7 +1368,6 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
                 Pico.m.hardware |= 0x00;        // NTSC JP
             }
         }
-
         //long oldTicksPerFrame = TICKS_PER_SEC / impl3dsGetROMFrameRate(); 
         settings3DS.TicksPerFrame = TICKS_PER_SEC / impl3dsGetROMFrameRate();
         if (settings3DS.TicksPerFrame != oldTicksPerFrame)
