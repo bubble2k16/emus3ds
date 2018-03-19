@@ -99,6 +99,8 @@ bool emulatorSettingsSave(bool, bool, bool);
 
 bool emulatorLoadRom()
 {
+    impl3dsClearAllCheats();
+    
     menu3dsShowDialog("Load ROM", "Loading... this may take a while.", DIALOGCOLOR_CYAN, NULL);
 
     char romFileNameFullPathOriginal[_MAX_PATH];
