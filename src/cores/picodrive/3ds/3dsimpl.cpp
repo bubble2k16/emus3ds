@@ -52,6 +52,7 @@ extern "C" void clearBottomScreen();
 #include "../pico/pico_int.h"
 #include "../platform/common/emu.h"
 #include "platform.h"
+#include "cheats.h"
 
 extern "C" int YM2612Write_(unsigned int a, unsigned int v);
 extern int ctr_svchack_successful;
@@ -229,7 +230,7 @@ SMenuItem optionMenu[] = {
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("AUDIO"),
     MENU_MAKE_CHECKBOX  (20000, "  Low-pass filter", 0),
-    MENU_MAKE_CHECKBOX  (50002, "  Apply volume to all games", 0),
+    MENU_MAKE_CHECKBOX  (13502, "  Apply volume to all games", 0),
     MENU_MAKE_GAUGE     (14000, "  Volume Amplification", 0, 8, 4),
     MENU_MAKE_LASTITEM  ()
 };
@@ -240,8 +241,8 @@ SMenuItem controlsMenu[] = {
     MENU_MAKE_PICKER    (13100, "  Sega Controller Type", "", optionsForControllerType, DIALOGCOLOR_CYAN),
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("BUTTON CONFIGURATION"),
-    MENU_MAKE_CHECKBOX  (50000, "  Apply button mappings to all games", 0),
-    MENU_MAKE_CHECKBOX  (50001, "  Apply rapid fire settings to all games", 0),
+    MENU_MAKE_CHECKBOX  (13500, "  Apply button mappings to all games", 0),
+    MENU_MAKE_CHECKBOX  (13501, "  Apply rapid fire settings to all games", 0),
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER2   ("3DS A Button"),
     MENU_MAKE_PICKER    (13010, "  Maps to", "", optionsForButtons, DIALOGCOLOR_CYAN),
@@ -292,7 +293,7 @@ SMenuItem controlsMenu[] = {
     MENU_MAKE_PICKER    (13029, "  Maps to", "", optionsForButtons, DIALOGCOLOR_CYAN),
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("EMULATOR FUNCTIONS"),
-    MENU_MAKE_CHECKBOX  (50003, "Apply keys to all games", 0),
+    MENU_MAKE_CHECKBOX  (13503, "Apply keys to all games", 0),
     MENU_MAKE_PICKER    (23001, "Open Emulator Menu", "", optionsFor3DSButtons, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (23002, "Fast Forward", "", optionsFor3DSButtons, DIALOGCOLOR_CYAN),
     MENU_MAKE_DISABLED  ("  (Works better on N3DS. May freeze/corrupt games.)"),
@@ -438,6 +439,7 @@ int emulatorFrame = 0;
 int picoFrameCounter = 0;
 int picoSoundBlockCounter = 0;
 int picoDebugC = 0;
+
 
 static short __attribute__((aligned(4))) sndBuffer[2*44100/50];
 
@@ -895,7 +897,6 @@ void impl3dsRenderDrawTextureToFrameBuffer()
 
             gpu3dsSetTextureEnvironmentReplaceTexture0();
             gpu3dsBindTextureMainScreen(video3dsGetPreviousScreenTexture(), GPU_TEXUNIT0);
-            printf ("%d %d\n", tx1, tx2);
 			gpu3dsAddQuadVertexes(40, 0, 360, 240, tx1, 0, tx2, 240, 0);
 			break;
 		case 1:
@@ -971,6 +972,10 @@ void impl3dsRenderDrawTextureToFrameBuffer()
 void impl3dsEmulationRunOneFrame(bool firstFrame, bool skipDrawingFrame)
 {
 	t3dsStartTiming(1, "RunOneFrame");
+
+    // Cheats
+    apply_cheats();
+    RAMCheatUpdate();
     
 	if (!skipDrawingPreviousFrame)
         video3dsTransferFrameBufferToScreenAndSwap();
@@ -1444,10 +1449,10 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
     UPDATE_SETTINGS(settings3DS.OtherOptions[SETTINGS_REGION], -1, 12003);
     UPDATE_SETTINGS(settings3DS.AutoSavestate, -1, 12002);
 
-    UPDATE_SETTINGS(settings3DS.UseGlobalButtonMappings, -1, 50000);
-    UPDATE_SETTINGS(settings3DS.UseGlobalTurbo, -1, 50001);
-    UPDATE_SETTINGS(settings3DS.UseGlobalVolume, -1, 50002);
-    UPDATE_SETTINGS(settings3DS.UseGlobalEmuControlKeys, -1, 50003);
+    UPDATE_SETTINGS(settings3DS.UseGlobalButtonMappings, -1, 13500);
+    UPDATE_SETTINGS(settings3DS.UseGlobalTurbo, -1, 13501);
+    UPDATE_SETTINGS(settings3DS.UseGlobalVolume, -1, 13502);
+    UPDATE_SETTINGS(settings3DS.UseGlobalEmuControlKeys, -1, 13503);
     if (settings3DS.UseGlobalButtonMappings || copyMenuToSettings)
     {
         for (int i = 0; i < 2; i++)
@@ -1509,7 +1514,9 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
 //----------------------------------------------------------------------
 void impl3dsClearAllCheats()
 {
+    clear_cheats();
 }
+
 
 
 //----------------------------------------------------------------------
@@ -1522,8 +1529,17 @@ void impl3dsClearAllCheats()
 // This method must return true if the cheat code format is valid,
 // and the cheat is added successfully into the core.
 //----------------------------------------------------------------------
+extern int cheatCount;
 bool impl3dsAddCheat(bool cheatEnabled, char *name, char *code)
 {
+    int index = cheatCount;
+
+    if (decode_cheat(code, index))
+    {
+        enable_cheat(index, cheatEnabled);
+        return true;
+    }
+    return false;
 }
 
 
@@ -1535,6 +1551,7 @@ bool impl3dsAddCheat(bool cheatEnabled, char *name, char *code)
 //----------------------------------------------------------------------
 void impl3dsSetCheatEnabledFlag(int cheatIdx, bool enabled)
 {
+    enable_cheat(cheatIdx, enabled);
 }
 
 
