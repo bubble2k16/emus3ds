@@ -58,6 +58,9 @@ https://github.com/bubble2k16/temperpce_3ds/releases
 
 ## Change History
 
+### v1.02
+- Fixed the sound lag problem.
+
 ### v1.01
 - Fixed a crashing bug that happens if there are too many ROMs in the list.
 - Fixed text description in the BIOS picker.
