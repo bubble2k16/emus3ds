@@ -628,8 +628,10 @@ BOOL	bSplit;
 				// Get Pattern
 
 				// Fixes some games, esp Super Mario All Stars hack
+				//printf ("%d", chr_mode);
 				//if( chr_type ) {
-				if( !chr_mode ) {
+				//if( !chr_mode ) {
+				if (((PPUREG[0] & 0x20) == 0)) {
 					chr_l = PPU_MEM_BANK[tileadr>>10][ tileadr&0x03FF   ];
 					chr_h = PPU_MEM_BANK[tileadr>>10][(tileadr&0x03FF)+8];
 				} else {
@@ -668,7 +670,8 @@ BOOL	bSplit;
 
 			// Fixes some games, esp Super Mario All Stars hack
 			//if( chr_type ) {
-			if( !chr_mode ) {
+			//if( chr_mode == 0 ) {
+			if (((PPUREG[0] & 0x20) == 0)) {
 				chr_l = PPU_MEM_BANK[tileadr>>10][ tileadr&0x03FF   ];
 				chr_h = PPU_MEM_BANK[tileadr>>10][(tileadr&0x03FF)+8];
 			} else {
