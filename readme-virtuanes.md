@@ -53,6 +53,11 @@ It also runs on your New 3DS as well!
 
 *VirtuaNES:*
 
+### v1.02
+- Fixed bug in MMC5 mapper that was causing Castlevania 3's graphics to corrupt.
+- Optimized rendering to 16-bit buffer to reduce cache misses, and minor optimizations for MMC5 rendering.
+- Fixed occassional crashing bug when loading a ROM.
+
 ### v1.01
 - Fixed cheats (previously cheats couldn't be activated whatever you did)
 - Fixed mapper problem in Kabuki Quantum Fighter
