@@ -498,7 +498,7 @@ LPBYTE	Mapper169::Load_DiskIMG()
 	if( !(fp = ::fopen( "YuXing.img", "rb" )) ) {
 		LPCSTR	szErrStr = CApp::GetErrorString( IDS_ERROR_OPEN );
 		::wsprintf( szErrorString, szErrStr, "YuXing.img" );
-		///throw	szErrorString;
+		return NULL;
 	}
 	::fread(lpDisk, 0x168000, 1, fp);
 	FCLOSE(fp);

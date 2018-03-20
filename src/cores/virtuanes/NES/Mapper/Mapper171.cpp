@@ -608,7 +608,7 @@ LPBYTE	Mapper171::Load_DiskIMG()
 	if( !(fp = ::fopen( img_fname, "rb" )) ) {
 		LPCSTR	szErrStr = CApp::GetErrorString( IDS_ERROR_OPEN );
 		::wsprintf( szErrorString, szErrStr, img_fname );
-		//throw	szErrorString;
+		return NULL;
 	}
 	::fread(lpDisk, 0x168000, 1, fp);
 	FCLOSE(fp);

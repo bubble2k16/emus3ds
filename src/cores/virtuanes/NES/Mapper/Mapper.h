@@ -96,7 +96,7 @@ private:
 };
 
 // Create class instance
-extern	Mapper*	CreateMapper( NES* parent, INT no,BOOL bUnif = false);
+extern	Mapper*	CreateMapper( NES* parent, INT no, BOOL bUnif = false);
 
 #endif
 
@@ -556,7 +556,7 @@ enum BoardID
 	WHIRLWIND_2706             ,
 	// Unknown
 	NROM_256_CN		   ,
-	// ÐÂ¼Ó
+	// ï¿½Â¼ï¿½
 	SUBOR_999,
 	SMART_GENIUS,
 	FK23CA,
