@@ -108,7 +108,7 @@ PPU::PPU( NES* parent ) : nes(parent)
 {
 	//lpScreen = NULL;
 	lpColormode = NULL;
-	lpScreen32 = NULL;		// Bug fix.
+	lpScreen16 = NULL;		// Bug fix.
 
 	bVSMode = FALSE;
 	nVSColorMap = -1;
@@ -160,8 +160,8 @@ void	PPU::Reset()
 	//if( lpScreen )
 	//	::memset( lpScreen, 0x3F, SCREEN_WIDTH*SCREEN_HEIGHT*sizeof(BYTE) );
 
-	if( lpScreen32 )
-		::memset( lpScreen32, 0x00, 512*256*4 );
+	if( lpScreen16 )
+		::memset( lpScreen16, 0x00, 512*256*4 );
 
 	if( lpColormode )
 		::memset( lpColormode, 0, SCREEN_HEIGHT*sizeof(BYTE) );
@@ -458,8 +458,8 @@ void	PPU::ScanlineNext()
 
 #include "palette.h"
 
-u32 bgPalette[16];
-u32 sprPalette[16];
+u16 bgPalette[16];
+u16 sprPalette[16];
 BYTE	BGwrite[33+1];
 
 
@@ -490,22 +490,35 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 		PAL_Changed = 0;
 	}
 
-	u32 *pScnRGBA = &lpScreen32[512 * scanline];
+	u16 *pScnRGBA = &lpScreen16[512 * scanline];
 
 	#define COPY_BG_TILES \
-		pScnRGBA[0] = pScnRGBA[-8]; \
-		pScnRGBA[1] = pScnRGBA[-7]; \
-		pScnRGBA[2] = pScnRGBA[-6]; \
-		pScnRGBA[3] = pScnRGBA[-5]; \
-		pScnRGBA[4] = pScnRGBA[-4]; \
-		pScnRGBA[5] = pScnRGBA[-3]; \
-		pScnRGBA[6] = pScnRGBA[-2]; \
-		pScnRGBA[7] = pScnRGBA[-1]; \
+		u16 *pScnRGBASrc = &pScnRGBA[-8]; \
+		pScnRGBA[0] = pScnRGBASrc[0]; \
+		pScnRGBA[1] = pScnRGBASrc[1]; \
+		pScnRGBA[2] = pScnRGBASrc[2]; \
+		pScnRGBA[3] = pScnRGBASrc[3]; \
+		pScnRGBA[4] = pScnRGBASrc[4]; \
+		pScnRGBA[5] = pScnRGBASrc[5]; \
+		pScnRGBA[6] = pScnRGBASrc[6]; \
+		pScnRGBA[7] = pScnRGBASrc[7]; \
+
+	#define COPY_BG_TILES_N(n) \
+		u16 *pScnRGBASrc = &pScnRGBA[-(n*8)]; \
+		pScnRGBA[0] = pScnRGBASrc[0]; \
+		pScnRGBA[1] = pScnRGBASrc[1]; \
+		pScnRGBA[2] = pScnRGBASrc[2]; \
+		pScnRGBA[3] = pScnRGBASrc[3]; \
+		pScnRGBA[4] = pScnRGBASrc[4]; \
+		pScnRGBA[5] = pScnRGBASrc[5]; \
+		pScnRGBA[6] = pScnRGBASrc[6]; \
+		pScnRGBA[7] = pScnRGBASrc[7]; \
+
 
 	#define RENDER_BG_TILES \
 		register INT	c1 = ((chr_l>>1)&0x55)|(chr_h&0xAA); \
 		register INT	c2 = (chr_l&0x55)|((chr_h<<1)&0xAA); \
-		u32 *tilePalette = &bgPalette[attr]; \
+		u16 *tilePalette = &bgPalette[attr]; \
 		pScnRGBA[0] = tilePalette[(c1>>6)]; \
 		pScnRGBA[1] = tilePalette[(c2>>6)]; \
 		pScnRGBA[2] = tilePalette[(c1>>4)&3]; \
@@ -666,29 +679,44 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 				INT	ntbladr = 0x2000+(loopy_v&0x0FFF);
 				INT	ntbl_x  = ntbladr & 0x1F;
 
-				INT	cache_tile = 0xFFFF0000;
-				BYTE	cache_attr = 0xFF;
+				INT		cache_tile_attr_1 = 0x7f000000;
+				INT		cache_tile_attr_2 = 0x7f000000;
 
 				BYTE	chr_h, chr_l, attr, exattr;
 
+				//printf ("%3d:", nes->GetScanline());
 				for( INT i = 0; i < 33; i++ ) {
 					nes->mapper->PPU_ExtLatchX( i );
 					nes->mapper->PPU_ExtLatch( ntbladr, chr_l, chr_h, exattr );
 					attr = exattr&0x0C;
 
-					if( cache_tile != (((INT)chr_h<<8)+(INT)chr_l) || cache_attr != attr ) {
-						cache_tile = (((INT)chr_h<<8)+(INT)chr_l);
-						cache_attr = attr;
+					INT 	cur_tile_attr = ((INT)chr_h << 16) + ((INT)chr_l << 8) + (INT)attr;
+
+					if (cur_tile_attr == cache_tile_attr_1)
+					{
+						COPY_BG_TILES_N(1);
+						*(pBGw+0) = *(pBGw-1);
+						//printf ("1");
+					}
+					else if (cur_tile_attr == cache_tile_attr_2)
+					{
+						COPY_BG_TILES_N(2);
+						*(pBGw+0) = *(pBGw-2);
+						//printf ("2");
+					}
+					else
+					{
 						*pBGw = chr_h|chr_l;
 
 						LPBYTE	pBGPAL = &BGPAL[attr];
 						{
 							RENDER_BG_TILES
 						}
-					} else {
-						COPY_BG_TILES
-						*(pBGw+0) = *(pBGw-1);
-					}
+						//printf ("-");
+					} 
+					cache_tile_attr_2 = cache_tile_attr_1;
+					cache_tile_attr_1 = cur_tile_attr;
+
 					//pScn+=8;
 					pScnRGBA+=8;
 					pBGw++;
@@ -700,6 +728,7 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 						ntbladr++;
 					}
 				}
+				//printf ("\n");
 			}
 		} else {
 			if( !bExtLatch ) {
@@ -831,7 +860,8 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 				INT	ntbladr = 0x2000+(loopy_v&0x0FFF);
 				INT	ntbl_x  = ntbladr & 0x1F;
 
-				INT	cache_tile = 0xFFFF0000;
+				INT		cache_tile_addr_1 = 0xFFFF0000;
+				INT		cache_tile_addr_2 = 0xFFFF0000;
 				BYTE	cache_attr = 0xFF;
 
 				BYTE	chr_h, chr_l, attr, exattr;
@@ -844,8 +874,10 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 					nes->mapper->PPU_ExtLatch( ntbladr, chr_l, chr_h, exattr );
 					attr = exattr&0x0C;
 
-					if( cache_tile != (((INT)chr_h<<8)+(INT)chr_l) || cache_attr != attr ) {
-						cache_tile = (((INT)chr_h<<8)+(INT)chr_l);
+					INT 	cur_tile_attr = ((INT)chr_h << 16) + ((INT)chr_l << 8) + attr;
+
+					if( cache_tile_addr_1 != cur_tile_attr ) {
+						cache_tile_addr_1 = cur_tile_attr;
 						cache_attr = attr;
 						*pBGw = chr_l|chr_h;
 
@@ -876,7 +908,7 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 			//for( INT i = 0; i < 8; i++ ) {
 			//	pScn[i] = BGPAL[0];
 			//}
-			u32 *pScnRGBA = &lpScreen32[512 * scanline];
+			u16 *pScnRGBA = &lpScreen16[512 * scanline];
 			uint32 pal0 = bgPalette[0];
 			for (int i = 0; i < 8; i++)
 				pScnRGBA[i+8] = pal0;
@@ -1020,8 +1052,8 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 		// Ptr
 		//LPBYTE	pScn   = lpScanline+sp->x+8;
 
-		u32     *objPalette = &sprPalette[(sp->attr&SP_COLOR_BIT)<<2];
-		u32 	*pScnRGBA = &lpScreen32[512 * scanline + sp->x + 8];
+		u16     *objPalette = &sprPalette[(sp->attr&SP_COLOR_BIT)<<2];
+		u16 	*pScnRGBA = &lpScreen16[512 * scanline + sp->x + 8];
 
 		if( !bExtMono ) {
 			register INT	c1 = ((chr_l>>1)&0x55)|(chr_h&0xAA); \

@@ -12,7 +12,7 @@ typedef struct
 } SNesPalette;
 
 extern SNesPalette     nesPalette[64];
-extern u32             rgbaPalette[16][64];
+extern u16             rgbaPalette[16][64];
 
 void nespalInitialize();
 

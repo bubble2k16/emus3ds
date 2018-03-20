@@ -106,9 +106,9 @@ public:
 	BOOL	IsSprite0( INT scanline );
 
 	void	SetScreenPtr( LPBYTE lpScn, LPBYTE lpMode ) { /*lpScreen = lpScn;*/ lpColormode = lpMode; }
-	void	SetScreenRGBAPtr( DWORD *lpScn, LPBYTE lpMode ) { lpScreen32 = lpScn; lpColormode = lpMode; }
+	void	SetScreenRGBAPtr( WORD *lpScn, LPBYTE lpMode ) { lpScreen16 = lpScn; lpColormode = lpMode; }
 	//LPBYTE	GetScreenPtr()	{ return lpScreen; }
-	u32		*GetScreen32Ptr()	{ return lpScreen32; }
+	u16		*GetScreen16Ptr()	{ return lpScreen16; }
 
 	INT	GetScanlineNo()	{ return ScanlineNo; }
 
@@ -134,7 +134,7 @@ protected:
 	WORD	loopy_shift;
 
 	//LPBYTE	lpScreen;
-	DWORD 	*lpScreen32;
+	WORD 	*lpScreen16;
 	//LPBYTE	lpScanline;
 	INT	ScanlineNo;
 	LPBYTE	lpColormode;

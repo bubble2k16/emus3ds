@@ -389,7 +389,7 @@ bool impl3dsInitializeCore()
     //
     //nesTileCacheTexture = gpu3dsCreateTextureInLinearMemory(1024, 1024, GPU_RGBA5551);
  
-    if (!video3dsInitializeSoftwareRendering(512, 256, GX_TRANSFER_FMT_RGBA8))
+    if (!video3dsInitializeSoftwareRendering(512, 256, GX_TRANSFER_FMT_RGB565))
         return false;
 
 	// allocate all necessary vertex lists

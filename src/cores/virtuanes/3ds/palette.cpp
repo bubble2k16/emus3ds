@@ -106,12 +106,13 @@ static float blueDeemphFactor[]={
 	0.75
 };
 
-u32 rgbaPalette[16][64];
+u16 rgbaPalette[16][64];
 
 
 void nespalInitialize()
 {
-    #define MAKE_COLOR(r,g,b,a) (a << 0) | (r << 24) | (g << 16) | (b << 8)
+    //#define MAKE_COLOR(r,g,b,a) (a << 0) | (r << 24) | (g << 16) | (b << 8)
+    #define MAKE_COLOR(r,g,b,a) ((r >> 3) << 11) | ((g >> 3) << 6) | ((b >> 3) << 0)
 
     for (int index = 0; index < 64; index++)
     {
