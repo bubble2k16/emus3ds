@@ -677,6 +677,7 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 				INT		cache_tile_attr_2 = 0x7f000000;
 
 				BYTE	chr_h, chr_l, attr, exattr;
+				u16 	zeroColor = bgPalette[0];
 
 				//printf ("%3d:", nes->GetScanline());
 				for( INT i = 0; i < 33; i++ ) {
@@ -692,12 +693,12 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 						*(pBGw+0) = *(pBGw-1);
 						//printf ("1");
 					}
-					else if (cur_tile_attr == cache_tile_attr_2)
+					/*else if (cur_tile_attr == cache_tile_attr_2)
 					{
 						COPY_BG_TILES_N(2);
 						*(pBGw+0) = *(pBGw-2);
 						//printf ("2");
-					}
+					}*/
 					else
 					{
 						*pBGw = chr_h|chr_l;
@@ -706,7 +707,6 @@ void	PPU::Scanline( INT scanline, BOOL bMax, BOOL bLeftClip )
 						{
 							RENDER_BG_TILES
 						}
-						//printf ("-");
 					} 
 					cache_tile_attr_2 = cache_tile_attr_1;
 					cache_tile_attr_1 = cur_tile_attr;
