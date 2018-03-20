@@ -477,7 +477,10 @@ void impl3dsOutputSoundSamples(int numberOfSamples, short *leftSamples, short *r
 bool impl3dsLoadROM(char *romFilePath)
 {
 	if (nes)
+    {
 		delete nes;
+        nes = NULL;
+    }
 
 	nes = new NES(romFilePath);
 	if (nes->error)

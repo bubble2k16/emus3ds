@@ -127,12 +127,6 @@ PPU::PPU( NES* parent ) : nes(parent)
 		Bit2Rev[i] = c;
 	}
 
-	for (INT chr_h = 0; chr_h < 256; chr_h++)
-		for (INT chr_l = 0; chr_l < 256; chr_l++)
-		{
-			chrLUT1[chr_h * 256 + chr_l] = ((chr_l>>1)&0x55)|(chr_h&0xAA);
-			chrLUT2[chr_h * 256 + chr_l] = (chr_l&0x55)|((chr_h<<1)&0xAA);
-		}
 }
 
 PPU::~PPU()

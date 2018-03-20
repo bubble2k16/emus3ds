@@ -120,8 +120,6 @@ public:
 	TPPU_UPDATE_QUEUE *currentQ;
 
 protected:
-	INT		chrLUT1[65536];		
-	INT		chrLUT2[65536];		
 	NES*	nes;
 
 	BOOL	bExtLatch;	// For MMC5
