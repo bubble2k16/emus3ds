@@ -1273,7 +1273,8 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
 //----------------------------------------------------------------------
 void impl3dsClearAllCheats()
 {
-    nes->GenieInitial();
+    if (nes)
+        nes->GenieInitial();
 }
 
 
