@@ -115,7 +115,7 @@ void snd3dsMixSamples()
             //
             generateAtSamplePosition =
                 ((u64)((nowSamplePosition + snd3dsSamplesPerLoop - 1) / snd3dsSamplesPerLoop)) * snd3dsSamplesPerLoop +
-                MIN_FORWARD_BLOCKS * snd3dsSamplesPerLoop;
+                snd3dsMinLoopBuffer * snd3dsSamplesPerLoop;
             break;
         }
         else if (blocksAhead < snd3dsMaxLoopBuffer)
