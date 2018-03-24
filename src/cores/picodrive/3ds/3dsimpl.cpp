@@ -120,9 +120,9 @@ SMenuItem optionsForFrameskip[] = {
 };
 
 SMenuItem optionsForFrameRate[] = {
-    MENU_MAKE_DIALOG_ACTION (0, "Default based on ROM",     ""),
-    MENU_MAKE_DIALOG_ACTION (1, "50 FPS",                   ""),
-    MENU_MAKE_DIALOG_ACTION (2, "60 FPS",                   ""),
+    MENU_MAKE_DIALOG_ACTION (0, "Default based on ROM/Region",  ""),
+    MENU_MAKE_DIALOG_ACTION (1, "50 FPS",                       ""),
+    MENU_MAKE_DIALOG_ACTION (2, "60 FPS",                       ""),
     MENU_MAKE_LASTITEM  ()
 };
 
@@ -224,8 +224,8 @@ SMenuItem optionMenu[] = {
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("GAME-SPECIFIC SETTINGS"),
     MENU_MAKE_PICKER    (10000, "  Frameskip", "Try changing this if the game runs slow. Skipping frames help it run faster but less smooth.", optionsForFrameskip, DIALOGCOLOR_CYAN),
-    MENU_MAKE_PICKER    (12000, "  Framerate", "Some games run at 50 (PAL), 60 (NTSC) FPS by default. Override if required.", optionsForFrameRate, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (12003, "  Region", "Each game a default supported region. Override if required.", optionsForRegion, DIALOGCOLOR_CYAN),
+    MENU_MAKE_PICKER    (12000, "  Framerate", "Some games run at 50 (PAL), 60 (NTSC) FPS by default. Override if required.", optionsForFrameRate, DIALOGCOLOR_CYAN),
     //MENU_MAKE_PICKER    (19000, "  Flickering Sprites", "Sprites on real hardware flicker. You can disable for better visuals.", optionsForSpriteFlicker, DIALOGCOLOR_CYAN),
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_HEADER1   ("AUDIO"),
@@ -396,7 +396,7 @@ char *impl3dsTitleImage = "./picodrive_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "PicoDrive for 3DS v0.94b";
+char *impl3dsTitleText = "PicoDrive for 3DS v0.94";
 
 
 //---------------------------------------------------------
@@ -1362,16 +1362,22 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
             {
                 Pico.m.hardware &= ~0xc0;
                 Pico.m.hardware |= 0x80;        // NTSC US
+                if (settings3DS.ForceFrameRate == 0)
+                    Pico.m.pal = 0;
             }
             else if (settings3DS.OtherOptions[SETTINGS_REGION] == 2)
             {
                 Pico.m.hardware &= ~0xc0;
                 Pico.m.hardware |= 0xc0;        // Europe
+                if (settings3DS.ForceFrameRate == 0)
+                    Pico.m.pal = 1;
             }
             else if (settings3DS.OtherOptions[SETTINGS_REGION] == 3)
             {
                 Pico.m.hardware &= ~0xc0;
                 Pico.m.hardware |= 0x00;        // NTSC JP
+                if (settings3DS.ForceFrameRate == 0)
+                    Pico.m.pal = 0;
             }
         }
         //long oldTicksPerFrame = TICKS_PER_SEC / impl3dsGetROMFrameRate(); 
