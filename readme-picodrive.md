@@ -70,6 +70,12 @@ https://github.com/bubble2k16/picodrive_3ds/releases
 
 ## Change History
 
+### v0.94
+- Added support to save battery-backed RAM for CD games
+- Fixed problems with games that show parts of the previous screens at the left/right edges
+- Added support for cheats.
+- Added configuration for region selection between (Default, US, Europe, Japan)
+
 ### v0.93
 - Fixes a sound bug that plays the previous sound from a CD-ROM game when you load up an SMS ROM.
 - Re-ordered region priority to US, JP, EU.
@@ -109,6 +115,34 @@ https://github.com/bubble2k16/picodrive_3ds/releases
 
 ### v0.90
 - First release.
+
+-------------------------------------------------------------------------------------------------------
+
+## .CHX Cheat File format
+
+The .CHX is a cheat file format that you can create with any text editor. Each line in the file corresponds to one cheat, and is of the following format:
+
+     [Y/N],[CheatCode],[Name]
+
+1. [Y/N] represents whether the cheat is enabled. Whenever you enable/disable it in the emulator, the .CHX cheat file will be modified to save your changes.
+2. [CheatCode] must be an Genesis / Mega Drive Game Genie or Pro Action Replay cheat code. The cheat code looks like one of the following: 
+- **RHVA-A6WR** (Game Genie)
+- **FFFE0D:0099** (Pro Action Replay)
+- **FFB933:00** (Pro Action Replay)
+- **FFB9 3300** (Pro Action Replay)
+3. [Name] is a short name that represents this cheat. Since this will appear in the emulator, keep it short (< 30 characters). 
+
+The .CHX must have the same name as your ROM. This is an example of a .CHX file:
+
+Filename: **Contra - Hard Corps (USA).chx**
+```
+N,RHVA-A6WR,Invincible
+N,NNCT-AAH4,Start with 99 lives
+N,H9GA-AAE6,Start with all weapons
+N,AM4A-AA8C,You don't lose a weapon when you die 
+```
+
+NOTE: Some games may not boot when cheat codes are enabled at the start. Disable the cheat codes when booting the games, and enable them only after the game has started.
 
 -------------------------------------------------------------------------------------------------------
 
