@@ -80,12 +80,12 @@ SMenuItem optionsForStretch[] = {
 // TEST
 //
 SMenuItem optionsForPalette[] = {
-	MENU_MAKE_DIALOG_ACTION (0, "FCEUX", ""),
+	MENU_MAKE_DIALOG_ACTION (0, "FCEUX", "Default"),
     MENU_MAKE_DIALOG_ACTION (1, "Composite Direct (FBX)", ""),
     MENU_MAKE_DIALOG_ACTION (2, "NES Classic (FBX)", ""),
 	MENU_MAKE_DIALOG_ACTION (3, "PC-10", ""),
 	MENU_MAKE_DIALOG_ACTION (4, "PVM Style D93 (FBX)", ""),
-	MENU_MAKE_DIALOG_ACTION (5, "Smooth (FBX)", "Default"), // Default is 4
+	MENU_MAKE_DIALOG_ACTION (5, "Smooth (FBX)", ""),
 	MENU_MAKE_DIALOG_ACTION (6, "Sony CXA", ""),
 	MENU_MAKE_DIALOG_ACTION (7, "Wavebeam", ""),
     MENU_MAKE_LASTITEM  ()

@@ -65,7 +65,7 @@ void nespalInitialize()
 {
 	for(int i; i < 64; i++)
 	{
-		nesPalette[i] = palChoices[i][0];
+		nesPalette[i] = palChoices[0][i];
 	}
 	
     //#define MAKE_COLOR(r,g,b,a) (a << 0) | (r << 24) | (g << 16) | (b << 8)
