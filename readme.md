@@ -35,8 +35,6 @@ It also runs on your New 3DS as well!
 
 ## Change History
 
-*VirtuaNES:*
-
 ### v1.03
 - Replaced the FCEUX palette with FirebrandX's Smooth FBX Palette
 
