@@ -21,6 +21,10 @@ typedef struct
     int     CropPixels;
 
     int     Font = 0;                       // 0 - Tempesta, 1 - Ronda, 2 - Arial
+	
+	// TEST
+	int 	nesPalette = 0;					// 0 - FCEUX default
+	// TEST
 
     int     HideUnnecessaryBottomScrText = 0;
                                             // Feature: add new option to disable unnecessary bottom screen text.
