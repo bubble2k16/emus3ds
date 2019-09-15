@@ -33,25 +33,12 @@ It also runs on your New 3DS as well!
 
 -------------------------------------------------------------------------------------------------------
 
-## VirtuaNES Screenshots
-
-![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/VirtuaNES%20-%20Bionic%20Commando.bmp)
-
-![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/VirtuaNES%20-%20Gradius%20II.bmp)
-
-![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/VirtuaNES%20-%20Kirby's%20Adventure.bmp)
-
-![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/VirtuaNES%20-%20Legend%20of%20Link.bmp)
-
-![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/VirtuaNES%20-%20Rockman%204%20Minus%20Infinity.bmp)
-
-![alt tag](https://github.com/bubble2k16/emus3ds/blob/master/screenshots/VirtuaNES%20-%20Super%20Mario%20Bros%203.bmp)
-
--------------------------------------------------------------------------------------------
-
 ## Change History
 
 *VirtuaNES:*
+
+### v1.03
+- Replaced the FCEUX palette with FirebrandX's Smooth FBX Palette
 
 ### v1.02
 - Fixed bug in MMC5 mapper that was causing Castlevania 3's graphics to corrupt.
@@ -164,3 +151,4 @@ Then build by using *make*.
 2. Authors of the Citra 3DS Emulator team. Without them, this project would have been extremely difficult.
 5. SG6000 for helping with debugging the nasty crashing bug.
 6. Fellow forummers on GBATemp for the bug reports and suggestions for improvements.
+7. FirebrandX for their amazing work recreating the NES color palette.
