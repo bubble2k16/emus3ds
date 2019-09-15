@@ -147,7 +147,7 @@ Then build by using *make*.
 
 ## Credits
 
-1. Bubble2k16 for making this in the first place.
+1. Bubble2k16 for the emus3DS repository.
 1. Norix team for the fantastic well-optimized VirtuaNES emulator
 2. Authors of the Citra 3DS Emulator team. Without them, this project would have been extremely difficult.
 3. SG6000 for helping with debugging the nasty crashing bug.
