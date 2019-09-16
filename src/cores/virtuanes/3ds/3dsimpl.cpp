@@ -1143,7 +1143,7 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
 	// Update color palette
 	//
 	nespalInitialize(settings3DS.NESPalette);
-
+	
     // update screen stretch
     //
     if (settings3DS.ScreenStretch == 0)
