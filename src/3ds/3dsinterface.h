@@ -23,7 +23,7 @@ typedef struct
     int     Font = 0;                       // 0 - Tempesta, 1 - Ronda, 2 - Arial
 	
 	// TEST
-	int 	nesPalette = 0;					// 0 - FCEUX default
+	int 	NESPalette = 0;					// 0 - FCEUX default
 	// TEST
 
     int     HideUnnecessaryBottomScrText = 0;
