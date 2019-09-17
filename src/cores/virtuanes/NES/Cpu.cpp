@@ -697,6 +697,7 @@ inline	void	CPU::WR6502( WORD addr, BYTE data )
 //
 void	CPU::Reset()
 {
+	// hit a dead end for palettes :( 
 	apu = nes->apu;
 	mapper = nes->mapper;
 

@@ -23,7 +23,7 @@
 #include "Config.h"
 #include "Crclib.h"
 
-#include "nes.h"
+#include "Nes.h"
 #include "mmu_fceux.h"
 #include "mmu.h"
 #include "cpu.h"
@@ -505,6 +505,7 @@ void	NES::Reset()
 void	NES::SoftReset()
 {
 	pad->Reset();
+	// commenting this out prevents resetting - including changing palette
 	cpu->Reset();
 	apu->Reset();
 

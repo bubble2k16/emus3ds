@@ -504,7 +504,7 @@ bool impl3dsLoadROM(char *romFilePath)
 
 	//nes->ppu->SetScreenPtr( NULL, linecolor );
 	nes->ppu->SetScreenRGBAPtr( video3dsGetCurrentSoftwareBuffer(), linecolor );
-
+	
 	// compute a sample rate closes to 32000 kHz.
 	//
     int nesSampleRate = 32000;
@@ -1142,6 +1142,8 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
 	
 	// Update color palette
 	//
+	// NOT WORKING FOR DUCK HUNT, NINJA GAIDEN, DR MARIO, CASTLEVANIA,... :(
+	// - requires "Console Reset"
 	nespalInitialize(settings3DS.NESPalette);
 	
     // update screen stretch
