@@ -162,7 +162,7 @@ SMenuItem optionMenu[] = {
     MENU_MAKE_CHECKBOX  (21000, "  Automatically save state on exit and load state on start", 0),
     MENU_MAKE_DISABLED  (""),
 	
-	MENU_MAKE_PICKER    (69696, "  Palette", "Choose which NES color palette you prefer. \n May require resetting the NES.", optionsForPalette, DIALOGCOLOR_CYAN),
+	MENU_MAKE_PICKER    (69696, "  Palette", "Choose which NES color palette you prefer.\nMay require resetting the NES.", optionsForPalette, DIALOGCOLOR_CYAN),
 	MENU_MAKE_DISABLED  (""),
 	
     MENU_MAKE_HEADER1   ("GAME-SPECIFIC SETTINGS"),
