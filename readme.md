@@ -157,4 +157,4 @@ Then build by using *make*.
 3. SG6000 for helping with debugging the nasty crashing bug.
 4. Fellow forummers on GBATemp for the bug reports and suggestions for improvements.
 5. FirebrandX for their amazing work recreating the NES color palette.
-   - https://www.firebrandx.com/nespalette.html
+  - https://www.firebrandx.com/nespalette.html
