@@ -76,6 +76,18 @@ SMenuItem optionsForStretch[] = {
     MENU_MAKE_LASTITEM  ()
 };
 
+SMenuItem optionsForPalette[] = {
+	MENU_MAKE_DIALOG_ACTION (0, "FCEUX", "Default"),
+    MENU_MAKE_DIALOG_ACTION (1, "Composite Direct (FBX)", "direct capture palette"),
+    MENU_MAKE_DIALOG_ACTION (2, "NES Classic (FBX)", "taken from NES Classic"),
+	MENU_MAKE_DIALOG_ACTION (3, "PC-10", "Playchoice 10 arcade"),
+	MENU_MAKE_DIALOG_ACTION (4, "PVM Style D93 (FBX)", "Sony PVM with D93 color temp"),
+	MENU_MAKE_DIALOG_ACTION (5, "Smooth (FBX)", "Firebrandx's premiere final palette"),
+	MENU_MAKE_DIALOG_ACTION (6, "Sony CXA", "consumer-grade Sony TV sets"),
+	MENU_MAKE_DIALOG_ACTION (7, "Wavebeam", "Nakedarthur's final aprox palette"),
+    MENU_MAKE_LASTITEM  ()
+};
+
 SMenuItem optionsForFrameskip[] = {
     MENU_MAKE_DIALOG_ACTION (0, "Disabled",                 ""),
     MENU_MAKE_DIALOG_ACTION (1, "Enabled (max 1 frame)",    ""),
@@ -149,6 +161,10 @@ SMenuItem optionMenu[] = {
     MENU_MAKE_DISABLED  (""),
     MENU_MAKE_CHECKBOX  (21000, "  Automatically save state on exit and load state on start", 0),
     MENU_MAKE_DISABLED  (""),
+	
+	MENU_MAKE_PICKER    (69696, "  Palette", "Choose which NES color palette you prefer.\nMay require resetting the NES.", optionsForPalette, DIALOGCOLOR_CYAN),
+	MENU_MAKE_DISABLED  (""),
+	
     MENU_MAKE_HEADER1   ("GAME-SPECIFIC SETTINGS"),
     MENU_MAKE_PICKER    (10000, "  Frameskip", "Try changing this if the game runs slow. Skipping frames help it run faster but less smooth.", optionsForFrameskip, DIALOGCOLOR_CYAN),
     MENU_MAKE_PICKER    (12000, "  Framerate", "Some games run at 50 or 60 FPS by default. Override if required.", optionsForFrameRate, DIALOGCOLOR_CYAN),
@@ -330,7 +346,7 @@ char *impl3dsTitleImage = "./virtuanes_3ds_top.png";
 // The title that displays at the bottom right of the
 // menu.
 //---------------------------------------------------------
-char *impl3dsTitleText = "VirtuaNES for 3DS v1.02";
+char *impl3dsTitleText = "VirtuaNES for 3DS v1.50";
 
 
 //---------------------------------------------------------
@@ -364,7 +380,7 @@ u32 input3dsDefaultButtonMappings[10] = { BTNNES_A, BTNNES_B, BTNNES_A, BTNNES_B
 //---------------------------------------------------------
 bool impl3dsInitializeCore()
 {
-	nespalInitialize();
+	nespalInitialize(settings3DS.NESPalette);
 
 	// Initialize our GPU.
 	// Load up and initialize any shaders
@@ -488,7 +504,7 @@ bool impl3dsLoadROM(char *romFilePath)
 
 	//nes->ppu->SetScreenPtr( NULL, linecolor );
 	nes->ppu->SetScreenRGBAPtr( video3dsGetCurrentSoftwareBuffer(), linecolor );
-
+	
 	// compute a sample rate closes to 32000 kHz.
 	//
     int nesSampleRate = 32000;
@@ -600,7 +616,7 @@ SGPUTexture 	*screenTexture = 0;
 // before the emulation loop begins.
 //---------------------------------------------------------
 void impl3dsEmulationBegin()
-{
+{	
 	bufferToTransfer = 0;
 	screenTexture = 0;
 	skipDrawingPreviousFrame = true;
@@ -1061,6 +1077,9 @@ bool impl3dsReadWriteSettingsGlobal(bool writeMode)
     config3dsReadWriteInt32("ScreenStretch=%d\n", &settings3DS.ScreenStretch, 0, 7);
     config3dsReadWriteInt32("HideUnnecessaryBottomScrText=%d\n", &settings3DS.HideUnnecessaryBottomScrText, 0, 1);
     config3dsReadWriteInt32("Font=%d\n", &settings3DS.Font, 0, 2);
+	
+	config3dsReadWriteInt32("NESPalette=%d\n", &settings3DS.NESPalette, 0, 7);
+	
     config3dsReadWriteInt32("UseGlobalButtonMappings=%d\n", &settings3DS.UseGlobalButtonMappings, 0, 1);
     config3dsReadWriteInt32("UseGlobalTurbo=%d\n", &settings3DS.UseGlobalTurbo, 0, 1);
     config3dsReadWriteInt32("UseGlobalVolume=%d\n", &settings3DS.UseGlobalVolume, 0, 1);
@@ -1120,7 +1139,13 @@ bool impl3dsReadWriteSettingsGlobal(bool writeMode)
 bool impl3dsApplyAllSettings(bool updateGameSettings)
 {
     bool settingsChanged = false;
-
+	
+	// Update color palette
+	//
+	// NOT WORKING FOR DUCK HUNT, NINJA GAIDEN, DR MARIO, CASTLEVANIA,... :(
+	// - requires "Console Reset"
+	nespalInitialize(settings3DS.NESPalette);
+	
     // update screen stretch
     //
     if (settings3DS.ScreenStretch == 0)
@@ -1213,6 +1238,8 @@ bool impl3dsCopyMenuToOrFromSettings(bool copyMenuToSettings)
     UPDATE_SETTINGS(settings3DS.UseGlobalTurbo, -1, 20001);
     UPDATE_SETTINGS(settings3DS.UseGlobalVolume, -1, 20002);
     UPDATE_SETTINGS(settings3DS.AutoSavestate, -1, 21000);
+	
+	UPDATE_SETTINGS(settings3DS.NESPalette, -1, 69696);
 
     UPDATE_SETTINGS(settings3DS.UseGlobalEmuControlKeys, -1, 50003);
     if (settings3DS.UseGlobalButtonMappings || copyMenuToSettings)
