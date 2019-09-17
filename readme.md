@@ -35,6 +35,12 @@ It also runs on your New 3DS as well!
 
 ## Change History
 
+### v1.50
+- Added palette selection menu
+  - Includes default FCEUX palette, plus palettes from FirebrandX's palette selection
+  - May require resetting the NES with "Reset Console" for change to take effect
+    - Palettes don't apply automatically to Duck Hunt, Castlevania, Dr. Mario, and potentially others
+
 ### v1.03
 - Replaced the FCEUX palette with FirebrandX's Smooth FBX Palette
 
@@ -151,3 +157,4 @@ Then build by using *make*.
 3. SG6000 for helping with debugging the nasty crashing bug.
 4. Fellow forummers on GBATemp for the bug reports and suggestions for improvements.
 5. FirebrandX for their amazing work recreating the NES color palette.
+   - https://www.firebrandx.com/nespalette.html
