@@ -35,6 +35,12 @@ It also runs on your New 3DS as well!
 
 ## Change History
 
+### v1.50
+- Added palette selection menu
+  - Includes default FCEUX palette, plus palettes from FirebrandX's palette selection
+  - May require resetting the NES with "Reset Console" for change to take effect
+    - Palettes don't apply automatically to Duck Hunt, Castlevania, Dr. Mario, and potentially others
+
 ### v1.03
 - Replaced the FCEUX palette with FirebrandX's Smooth FBX Palette
 
