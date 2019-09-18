@@ -380,6 +380,7 @@ u32 input3dsDefaultButtonMappings[10] = { BTNNES_A, BTNNES_B, BTNNES_A, BTNNES_B
 //---------------------------------------------------------
 bool impl3dsInitializeCore()
 {
+	// Original call to nespalInitialize()
 	nespalInitialize(settings3DS.NESPalette);
 
 	// Initialize our GPU.
@@ -1141,10 +1142,9 @@ bool impl3dsApplyAllSettings(bool updateGameSettings)
     bool settingsChanged = false;
 	
 	// Update color palette
-	//
-	// NOT WORKING FOR DUCK HUNT, NINJA GAIDEN, DR MARIO, CASTLEVANIA,... :(
-	// - requires "Console Reset"
 	nespalInitialize(settings3DS.NESPalette);
+	// Must also update this for DuckHunt, Castlevania, MegaMan2, DrMario,...
+	PAL_Changed = true;
 	
     // update screen stretch
     //

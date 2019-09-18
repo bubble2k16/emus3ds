@@ -505,7 +505,6 @@ void	NES::Reset()
 void	NES::SoftReset()
 {
 	pad->Reset();
-	// commenting this out prevents resetting - including changing palette
 	cpu->Reset();
 	apu->Reset();
 

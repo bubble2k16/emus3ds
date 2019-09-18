@@ -61,6 +61,7 @@ u16 rgbaPalette[16][64];
 
 void nespalInitialize(int choice)
 {	
+	// Sets chosen color palette
 	for(int i; i < 64; i++)
 	{
 		nesPalette[i] = palChoices[choice][i];
