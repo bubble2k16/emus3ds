@@ -35,6 +35,10 @@ It also runs on your New 3DS as well!
 
 ## Change History
 
+### v2.00
+- Fully functioning palette changing
+  - Now works for all games without resetting
+
 ### v1.50
 - Added palette selection menu
   - Includes default FCEUX palette, plus palettes from FirebrandX's palette selection
