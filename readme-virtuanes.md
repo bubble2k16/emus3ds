@@ -162,5 +162,7 @@ Then build by using *make*.
 
 1. Norix team for the fantastic well-optimized VirtuaNES emulator
 2. Authors of the Citra 3DS Emulator team. Without them, this project would have been extremely difficult.
-5. SG6000 for helping with debugging the nasty crashing bug.
-6. Fellow forummers on GBATemp for the bug reports and suggestions for improvements.
+3. SG6000 for helping with debugging the nasty crashing bug.
+4. Fellow forummers on GBATemp for the bug reports and suggestions for improvements.
+5. FirebrandX for their work recreating the NES color palette.
+    https://www.firebrandx.com/nespalette.html
