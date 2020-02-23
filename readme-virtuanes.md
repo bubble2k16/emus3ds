@@ -53,6 +53,10 @@ It also runs on your New 3DS as well!
 
 *VirtuaNES:*
 
+### v1.50
+- Fully functioning palette changing
+  - Includes default FCEUX palette, plus palettes from FirebrandX's palette selection
+
 ### v1.02
 - Fixed bug in MMC5 mapper that was causing Castlevania 3's graphics to corrupt.
 - Optimized rendering to 16-bit buffer to reduce cache misses, and minor optimizations for MMC5 rendering.
